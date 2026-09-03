@@ -325,6 +325,13 @@ footer .gold{color:var(--gold)}
 /* P1-5: 逆位科普注 */
 .rev-note{background:rgba(201,168,106,.06);border:1px solid var(--gold-faint);border-radius:10px;padding:12px 16px;margin-bottom:8px;font-size:13px;color:var(--ink-dim);line-height:1.9;letter-spacing:.04em}
 
+/* 浮动设置入口（所有舞台可见） */
+.float-settings{position:fixed;right:16px;bottom:16px;z-index:20;width:40px;height:40px;border-radius:50%;
+  background:rgba(18,16,28,.85);border:1px solid var(--gold-dim);color:var(--gold);font-size:16px;cursor:pointer;
+  display:none;align-items:center;justify-content:center;backdrop-filter:blur(6px);transition:opacity .3s}
+.float-settings:hover{border-color:var(--gold);box-shadow:0 0 14px rgba(201,168,106,.2)}
+.float-settings.show{display:flex}
+
 /* P1-6: 解读折叠 */
 .rc-collapse{font-size:12.5px;color:var(--gold);letter-spacing:.14em;cursor:pointer;background:none;border:none;font-family:var(--sans);margin-top:14px;padding:4px 0;border-bottom:1px solid transparent;transition:border-color .3s}
 .rc-collapse:hover{border-bottom-color:var(--gold-dim)}
@@ -333,17 +340,49 @@ footer .gold{color:var(--gold)}
 @media (max-width:600px){
   :root{--card-w:112px}
   .shell{padding:0 16px 70px}
-  .ritual-arena{height:430px}
+  .ritual-arena{height:380px}
   .fan{height:96px;padding:16px 10px 8px}
   .fan .fcard{width:40px;margin-left:-28px}
   .hold-wrap.show{position:sticky;bottom:10px;z-index:10;background:rgba(7,7,14,.88);border-radius:14px;padding:10px 0 4px;backdrop-filter:blur(6px)}
   .ask-panel{padding:26px 18px}
-  .reading-card{padding:24px 18px}
-  .synthesis{padding:30px 18px}
+  /* 解除 ask-row min-width 撑爆问题 */
+  .ask-row > div[style*="min-width"]{min-width:unset !important;width:100% !important}
+  .num-wrap{flex:0 0 130px}
+  .reading-card{padding:24px 16px}
+  .synthesis{padding:30px 16px}
   .m-grid{grid-template-columns:1fr}
   .rc-lens{margin-left:0;width:100%}
   .cover-flow{gap:18px}
   .cover-flow span:not(:last-child)::after{right:-14px}
+  /* 输入框 font-size≥16px 防 iOS 自动放大 */
+  textarea,.num-input,textarea::placeholder,.num-input::placeholder{font-size:16px}
+  #llm-baseurl,#llm-apikey,#llm-model{font-size:16px !important}
+  /* 设置弹窗移动端适配 */
+  .modal{padding:24px 18px}
+  #settings-mask .modal{max-width:100%}
+  /* 仪式舞台紧凑化 */
+  #stage-cover{padding-top:10vh;min-height:88vh}
+  #stage-ask,#stage-reading{padding-top:5vh}
+  /* 封面按钮间距收紧 */
+  .cover-cta{margin-top:0}
+  .btn{padding:12px 32px;font-size:15px}
+  .btn.ghost{font-size:13px;padding:9px 22px}
+}
+@media (max-width:380px){
+  :root{--card-w:100px}
+  .shell{padding:0 12px 60px}
+  .cover-title{font-size:26px}
+  .num-wrap{flex:0 0 110px}
+  .num-input{height:46px;font-size:18px}
+  .fan .fcard{width:36px;margin-left:-25px}
+  .ritual-arena{height:340px}
+  .hold-btn{width:104px;height:104px}
+  .hold-btn svg{width:116px;height:116px}
+  .reading-card{padding:20px 12px}
+  .synthesis{padding:24px 12px}
+  .btn{padding:11px 24px;font-size:14px;letter-spacing:.18em}
+  .modal{padding:20px 14px}
+  .cover-flow{gap:12px;font-size:12px}
 }
 @media (prefers-reduced-motion:reduce){
   *{animation-duration:.001s !important;transition-duration:.15s !important}
@@ -491,6 +530,9 @@ footer .gold{color:var(--gold)}
     牌面为 Rider-Waite-Smith（1909，公有领域）· 解读仅供自我觉察与娱乐参考，不构成医疗、法律或投资建议
   </footer>
 </div>
+
+<!-- 浮动设置入口（非封面页可见） -->
+<button class="float-settings" id="float-settings" type="button" aria-label="AI 解读设置">⚙</button>
 
 <!-- 深读弹窗 -->
 <div class="modal-mask" id="modal-mask">
@@ -1071,7 +1113,16 @@ CARDS.forEach((c, i) => { c.__idx = i; cardById[c.id] = c; });
 /* ---------- LLM 配置（用户自填，兼容所有 OpenAI 格式 API） ---------- */
 const LLM_KEY = "tata-llm-config";
 function loadLLMConfig() { try { return JSON.parse(localStorage.getItem(LLM_KEY) || "{}"); } catch (e) { return {}; } }
-function saveLLMConfig(cfg) { try { localStorage.setItem(LLM_KEY, JSON.stringify(cfg)); } catch (e) {} }
+function saveLLMConfig(cfg) {
+  try {
+    localStorage.setItem(LLM_KEY, JSON.stringify(cfg));
+    // 回读校验
+    const back = JSON.parse(localStorage.getItem(LLM_KEY) || "{}");
+    return back.apiKey === cfg.apiKey && back.baseURL === cfg.baseURL;
+  } catch (e) {
+    return false;
+  }
+}
 const LLM_SYSTEM_PROMPT = `你是塔塔🔮の心灵疗愈室的首席解牌师，同时持有精神分析流派心理咨询师与职业塔罗师双重身份。
 
 你的解牌视角：
@@ -1491,6 +1542,9 @@ function go(name) {
   Object.values(stages).forEach(s => s.classList.remove("active"));
   stages[name].classList.add("active");
   window.scrollTo({ top: 0, behavior: "instant" in document.documentElement ? "instant" : "auto" });
+  // 浮动设置按钮：非封面页显示
+  const floatBtn = $("#float-settings");
+  if (floatBtn) floatBtn.classList.toggle("show", name !== "cover");
 }
 
 /* ---------- 星轨背景 ---------- */
@@ -1592,22 +1646,40 @@ $("#btn-care-back").addEventListener("click", () => go("ask"));
 
 /* AI 设置弹窗 */
 const settingsMask = $("#settings-mask");
-$("#btn-settings").addEventListener("click", () => {
+let bodyOverflowSaved = "";
+let savedScrollY = 0;
+function openSettings() {
   const cfg = loadLLMConfig();
   $("#llm-baseurl").value = cfg.baseURL || "";
   $("#llm-apikey").value = cfg.apiKey || "";
   $("#llm-model").value = cfg.model || "";
+  savedScrollY = window.scrollY;
+  bodyOverflowSaved = document.body.style.cssText;
+  document.body.style.cssText = "position:fixed;top:0;left:0;right:0;bottom:0;overflow:hidden;width:100%";
+  document.body.style.top = `-${savedScrollY}px`;
   settingsMask.classList.add("show");
-  document.body.style.overflow = "hidden";
-});
-$("#settings-close").addEventListener("click", () => { settingsMask.classList.remove("show"); document.body.style.overflow = ""; });
-settingsMask.addEventListener("click", e => { if (e.target === settingsMask) { settingsMask.classList.remove("show"); document.body.style.overflow = ""; } });
-$("#llm-save").addEventListener("click", () => {
-  saveLLMConfig({ baseURL: $("#llm-baseurl").value.trim(), apiKey: $("#llm-apikey").value.trim(), model: $("#llm-model").value.trim() });
+}
+function closeSettings() {
   settingsMask.classList.remove("show");
-  document.body.style.overflow = "";
+  document.body.style.cssText = bodyOverflowSaved || "";
+  window.scrollTo(0, savedScrollY);
+}
+$("#btn-settings").addEventListener("click", openSettings);
+$("#settings-close").addEventListener("click", closeSettings);
+settingsMask.addEventListener("click", e => { if (e.target === settingsMask) closeSettings(); });
+$("#float-settings").addEventListener("click", openSettings);
+$("#llm-save").addEventListener("click", () => {
+  const cfg = { baseURL: $("#llm-baseurl").value.trim(), apiKey: $("#llm-apikey").value.trim(), model: $("#llm-model").value.trim() };
+  const ok = saveLLMConfig(cfg);
+  closeSettings();
   const b = $("#btn-settings"); const old = b.textContent;
-  b.textContent = "⚙ AI 已启用 ✓"; setTimeout(() => { b.textContent = old; }, 2000);
+  if (ok) {
+    b.textContent = "⚙ AI 已启用 ✓";
+  } else {
+    b.textContent = "⚙ 保存失败（无痕模式？）";
+    b.style.color = "#d98f7a";
+  }
+  setTimeout(() => { b.textContent = old; b.style.color = ""; }, 3000);
 });
 $("#llm-clear").addEventListener("click", () => {
   try { localStorage.removeItem(LLM_KEY); } catch (e) {}
@@ -2058,7 +2130,7 @@ function openDeep(i) {
 }
 function closeDeep() { mask.classList.remove("show"); document.body.style.overflow = ""; }
 mask.addEventListener("click", e => { if (e.target === mask) closeDeep(); });
-addEventListener("keydown", e => { if (e.key === "Escape") { closeDeep(); settingsMask.classList.remove("show"); document.body.style.overflow = ""; } });
+addEventListener("keydown", e => { if (e.key === "Escape") { closeDeep(); closeSettings(); } });
 
 /* 重新抽牌 */
 $("#btn-again").addEventListener("click", () => {
