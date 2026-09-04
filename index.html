@@ -346,12 +346,17 @@ footer .gold{color:var(--gold)}
 /* P1-5: 逆位科普注 */
 .rev-note{background:rgba(201,168,106,.06);border:1px solid var(--gold-faint);border-radius:10px;padding:12px 16px;margin-bottom:8px;font-size:13px;color:var(--ink-dim);line-height:1.9;letter-spacing:.04em}
 
-/* 浮动设置入口（所有舞台可见） */
+/* 浮动按钮（所有舞台可见） */
 .float-settings{position:fixed;right:16px;bottom:16px;z-index:20;width:40px;height:40px;border-radius:50%;
   background:rgba(18,16,28,.85);border:1px solid var(--gold-dim);color:var(--gold);font-size:16px;cursor:pointer;
   display:none;align-items:center;justify-content:center;backdrop-filter:blur(6px);transition:opacity .3s}
 .float-settings:hover{border-color:var(--gold);box-shadow:0 0 14px rgba(201,168,106,.2)}
 .float-settings.show{display:flex}
+.float-home{position:fixed;left:16px;top:16px;z-index:20;width:40px;height:40px;border-radius:50%;
+  background:rgba(18,16,28,.85);border:1px solid var(--gold-dim);color:var(--gold);font-size:14px;cursor:pointer;
+  display:none;align-items:center;justify-content:center;backdrop-filter:blur(6px);transition:opacity .3s}
+.float-home:hover{border-color:var(--gold);box-shadow:0 0 14px rgba(201,168,106,.2)}
+.float-home.show{display:flex}
 
 /* P1-6: 解读折叠 */
 .rc-collapse{font-size:13px;color:var(--gold);letter-spacing:.14em;cursor:pointer;background:none;border:none;font-family:var(--sans);margin-top:14px;padding:4px 0;border-bottom:1px solid transparent;transition:border-color .3s}
@@ -548,6 +553,7 @@ footer .gold{color:var(--gold)}
 </div>
 
 <!-- 浮动设置入口（非封面页可见） -->
+<button class="float-home" id="float-home" type="button" aria-label="返回首页">✦</button>
 <button class="float-settings" id="float-settings" type="button" aria-label="AI 解读设置">⚙</button>
 
 <!-- 深读弹窗 -->
@@ -1575,10 +1581,13 @@ function go(name) {
   Object.values(stages).forEach(s => s.classList.remove("active"));
   stages[name].classList.add("active");
   window.scrollTo({ top: 0, behavior: "instant" in document.documentElement ? "instant" : "auto" });
-  // 浮动设置按钮：非封面页显示
+  // 浮动按钮：非封面页显示
   const floatBtn = $("#float-settings");
   if (floatBtn) floatBtn.classList.toggle("show", name !== "cover");
+  const homeBtn = $("#float-home");
+  if (homeBtn) homeBtn.classList.toggle("show", name !== "cover");
 }
+$("#float-home").addEventListener("click", () => go("cover"));
 
 /* ---------- 星轨背景 ---------- */
 (function stars() {
