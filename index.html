@@ -2249,7 +2249,7 @@ function renderHistory() {
   window.scrollTo(0, 0);
 }
 function restoreReading(rec) {
-  if (!SPREADS[rec.sp] || !Array.isArray(rec.d])) {
+  if (!SPREADS[rec.sp] || !Array.isArray(rec.d)) {
     alert("这条记录的数据格式不兼容，无法回看。可能是旧版本数据。");
     return;
   }
