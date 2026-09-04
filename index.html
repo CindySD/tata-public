@@ -194,24 +194,31 @@ textarea{min-height:96px}
 .mini-revealed .tcard .back .sigil{font-size:11px}
 .mini-revealed .pos-name{font-size:10.5px;color:var(--ink-dim);letter-spacing:.1em;margin-top:6px;text-align:center}
 
-/* 凝神聚气按钮 */
-.hold-wrap{margin:30px auto 0;display:flex;flex-direction:column;align-items:center;gap:14px;opacity:0;pointer-events:none;transition:opacity .7s}
+/* 凝神聚气按钮（悬浮在视口底部，始终可见） */
+.hold-wrap{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);z-index:15;
+  display:flex;flex-direction:column;align-items:center;gap:8px;opacity:0;pointer-events:none;transition:opacity .7s;
+  background:rgba(7,7,14,.82);border-radius:16px;padding:8px 20px 6px;backdrop-filter:blur(6px)}
 .hold-wrap.show{opacity:1;pointer-events:auto}
 .hold-btn{
-  position:relative;width:118px;height:118px;border-radius:50%;cursor:pointer;border:none;outline:none;
-  background:radial-gradient(circle at 50% 40%, rgba(201,168,106,.2), rgba(201,168,106,.04) 72%);
+  position:relative;width:96px;height:96px;border-radius:50%;cursor:pointer;border:none;outline:none;
+  background:radial-gradient(circle at 50% 40%, rgba(201,168,106,.18), rgba(201,168,106,.03) 72%);
   display:flex;align-items:center;justify-content:center;flex-direction:column;gap:2px;
-  font-family:var(--serif);color:var(--gold-hi);letter-spacing:.16em;font-size:14px;
+  font-family:var(--serif);color:var(--gold-hi);letter-spacing:.14em;font-size:13px;
   border:1px solid var(--gold-dim);transition:transform .25s, box-shadow .25s;touch-action:none;user-select:none;
 }
-.hold-btn:hover{box-shadow:0 0 34px rgba(201,168,106,.2)}
-.hold-btn .hold-sub{font-size:9.5px;letter-spacing:.3em;color:var(--ink-dim);font-family:var(--sans)}
-.hold-btn svg{position:absolute;inset:-7px;width:132px;height:132px;transform:rotate(-90deg)}
+.hold-btn:hover{box-shadow:0 0 30px rgba(201,168,106,.18)}
+.hold-btn .hold-sub{font-size:8.5px;letter-spacing:.28em;color:var(--ink-dim);font-family:var(--sans)}
+.hold-btn svg{position:absolute;inset:-6px;width:108px;height:108px;transform:rotate(-90deg)}
 .hold-btn svg circle{fill:none;stroke:var(--gold);stroke-width:1.6;stroke-linecap:round;stroke-dasharray:392;stroke-dashoffset:392;opacity:.9}
-.hold-btn.holding{transform:scale(1.06);box-shadow:0 0 44px rgba(201,168,106,.32), inset 0 0 26px rgba(201,168,106,.14)}
-.hold-tip{font-size:12.5px;color:var(--ink-faint);letter-spacing:.2em;min-height:20px}
-.progress-line{font-size:12px;letter-spacing:.34em;color:var(--gold);margin-top:8px}
+.hold-btn.holding{transform:scale(1.06);box-shadow:0 0 40px rgba(201,168,106,.28), inset 0 0 22px rgba(201,168,106,.12)}
+.hold-tip{font-size:11px;color:var(--ink-faint);letter-spacing:.16em;min-height:16px;text-align:center}
+.progress-line{font-size:11px;letter-spacing:.3em;color:var(--gold);margin-top:4px}
 .next-cta{margin-top:22px;display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
+
+/* 凝神后牌背金光增强（可选体验，不影响功能） */
+.fan.blessed .fcard{box-shadow:0 0 8px rgba(201,168,106,.35);border-color:rgba(201,168,106,.5)}
+.fan.blessed .fcard.marked{box-shadow:0 0 14px rgba(201,168,106,.6)}
+.hold-btn.completed{opacity:.5;pointer-events:none}
 
 /* 飞牌 */
 .fly-card{position:absolute;z-index:6;transition:all .6s cubic-bezier(.3,.7,.3,1);will-change:transform}
@@ -340,10 +347,10 @@ footer .gold{color:var(--gold)}
 @media (max-width:600px){
   :root{--card-w:112px}
   .shell{padding:0 16px 70px}
-  .ritual-arena{height:380px}
+  .ritual-arena{height:320px}
   .fan{height:96px;padding:16px 10px 8px}
   .fan .fcard{width:40px;margin-left:-28px}
-  .hold-wrap.show{position:sticky;bottom:10px;z-index:10;background:rgba(7,7,14,.88);border-radius:14px;padding:10px 0 4px;backdrop-filter:blur(6px)}
+  /* hold-wrap 已全局 fixed，移动端不额外处理 */
   .ask-panel{padding:26px 18px}
   /* 解除 ask-row min-width 撑爆问题 */
   .ask-row > div[style*="min-width"]{min-width:unset !important;width:100% !important}
@@ -375,9 +382,9 @@ footer .gold{color:var(--gold)}
   .num-wrap{flex:0 0 110px}
   .num-input{height:46px;font-size:18px}
   .fan .fcard{width:36px;margin-left:-25px}
-  .ritual-arena{height:340px}
-  .hold-btn{width:104px;height:104px}
-  .hold-btn svg{width:116px;height:116px}
+  .ritual-arena{height:280px}
+  .hold-btn{width:84px;height:84px}
+  .hold-btn svg{width:96px;height:96px}
   .reading-card{padding:20px 12px}
   .synthesis{padding:24px 12px}
   .btn{padding:11px 24px;font-size:14px;letter-spacing:.18em}
@@ -1740,7 +1747,7 @@ function startRitual() {
   state.revealed = 0;
   fanArmed = false;
   revealedRow.innerHTML = ""; nextCta.innerHTML = ""; nextCta.style.display = "none";
-  holdWrap.classList.remove("show"); fanEl.classList.remove("show"); fanEl.classList.remove("armed"); fanEl.innerHTML = "";
+  holdWrap.classList.remove("show"); holdBtn.classList.remove("completed"); fanEl.classList.remove("show"); fanEl.classList.remove("armed"); fanEl.classList.remove("blessed"); fanEl.innerHTML = "";
   orbitLayer.classList.remove("show"); orbitLayer.innerHTML = "";
   progressLine.textContent = "";
   arenaHint.textContent = "";
@@ -1798,7 +1805,7 @@ function showSpread() {
   subEl.textContent = `你的数字 ${numsStr} 标记了 ${state.markedCards.length} 张牌。滑动牌桌找到它们，或凭直觉另选。`;
   arenaHint.textContent = "← 滑 动 牌 桌 →";
   holdLabel.textContent = "凝神聚气";
-  holdTip.textContent = "";
+  holdTip.textContent = "可选 · 也可直接选牌";
   holdWrap.classList.add("show");
   void holdWrap.offsetWidth; /* #10 强制重排 */
   updateProgress();
@@ -1808,14 +1815,6 @@ function updateProgress() {
   progressLine.textContent = `已翻 ${state.draws.length} / ${total}`;
 }
 function pickFromSpread(el) {
-  if (!fanArmed) {
-    /* P0-1: 唤醒前点牌背 → 提示先长按，按钮脉冲，滚动到按钮 */
-    holdTip.textContent = "先长按「凝神聚气」唤醒牌阵，才能选牌。";
-    holdBtn.classList.add("pulse-once");
-    setTimeout(() => holdBtn.classList.remove("pulse-once"), 600);
-    holdWrap.scrollIntoView({ behavior: "smooth", block: "center" });
-    return;
-  }
   if (ritualBusy || el.classList.contains("picked")) return;
   const idx = state.deck.indexOf(el.__card);
   if (idx < 0) return;
@@ -1874,11 +1873,12 @@ function cancelHold() {
 }
 function completeHold() {
   holdRing.style.strokeDashoffset = String(RING_LEN);
-  holdWrap.classList.remove("show");
-  fanArmed = true;
-  fanEl.classList.add("armed");
-  statusEl.textContent = "牌已苏醒。";
-  subEl.textContent = `可以翻带标记的牌（${state.markedCards.length} 张），也可以凭直觉另选。`;
+  holdBtn.classList.add("completed");
+  /* 视觉增强：牌背金光 */
+  fanEl.classList.add("blessed");
+  statusEl.textContent = "能量已汇聚。";
+  subEl.textContent = "凭直觉选牌——标记牌或任意一张都可以。";
+  holdTip.textContent = "✦ 凝神完成 · 牌已苏醒";
   /* 多定位按钮 */
   state.markedCards.forEach(mc => {
     const lb = document.createElement("button");
@@ -1895,6 +1895,8 @@ function completeHold() {
     holdWrap.parentNode.insertBefore(lb, holdWrap.nextSibling);
     lb.style.display = "inline-block";
   });
+  /* 3 秒后收起按钮，保留牌背金光 */
+  setTimeout(() => { holdWrap.classList.remove("show"); }, 3000);
 }
 holdBtn.addEventListener("pointerdown", startHold);
 /* #7 移动端长按容差：pointerleave 改为仅 pointerup/pointercancel，且加 40px 容差区域 */
@@ -1918,9 +1920,9 @@ skipBtn.addEventListener("click", () => {
   orbitLayer.classList.remove("show"); skipBtn.style.display = "none";
   showSpread();
   setTimeout(() => {
-    fanArmed = true; fanEl.classList.add("armed");
-    statusEl.textContent = "牌已苏醒。";
-    subEl.textContent = `可以翻带标记的牌（${state.markedCards.length} 张），也可以凭直觉另选。`;
+    fanEl.classList.add("blessed");
+    statusEl.textContent = "牌已就绪。";
+    subEl.textContent = `凭直觉选牌——标记牌或任意一张都可以。`;
     state.markedCards.forEach(mc => {
       const lb = document.createElement("button");
       lb.type = "button"; lb.id = "btn-locate-" + mc.order; lb.className = "btn-locate-multi";
