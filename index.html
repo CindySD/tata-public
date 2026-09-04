@@ -270,6 +270,21 @@ textarea{min-height:96px}
 .energy-word .ew-sub{font-size:11px;letter-spacing:.34em;color:var(--ink-faint);margin-top:8px}
 .sovereign{margin-top:22px;text-align:center;font-family:var(--serif);color:var(--ink-dim);font-size:13.5px;letter-spacing:.14em;line-height:2.2}
 
+/* 结论先行 banner */
+.conclusion-banner{background:linear-gradient(180deg,rgba(201,168,106,.12),rgba(201,168,106,.03));border:1px solid var(--gold-dim);border-radius:14px;padding:18px 24px;margin:20px 0 10px;text-align:center}
+.conclusion-banner .cb-label{font-size:11px;letter-spacing:.3em;color:var(--gold);display:block;margin-bottom:8px}
+.conclusion-banner p{font-family:var(--serif);font-size:17px;letter-spacing:.08em;color:var(--gold-hi);line-height:1.8}
+
+/* 建议步骤 */
+.advice-step{display:flex;gap:14px;margin-top:14px;align-items:flex-start}
+.advice-step .as-num{flex:0 0 28px;width:28px;height:28px;border-radius:50%;border:1px solid var(--gold-dim);display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--gold);font-family:var(--serif)}
+.advice-step .as-step{font-size:14.5px;color:var(--ink);line-height:1.8;letter-spacing:.03em}
+.advice-step .as-why{font-size:13px;color:var(--ink-dim);line-height:1.8;margin-top:4px;letter-spacing:.03em}
+
+/* 情绪收束 */
+.closing-block{margin-top:28px;padding:20px 24px;background:rgba(201,168,106,.05);border:1px solid var(--gold-faint);border-radius:14px;text-align:center}
+.closing-block p{font-family:var(--serif);font-size:15px;color:var(--ink-dim);line-height:2.1;letter-spacing:.06em}
+
 /* 结语互动 */
 .ending{margin-top:40px;text-align:center}
 .ending p{font-family:var(--serif);font-size:15px;color:var(--ink-dim);letter-spacing:.14em;line-height:2.2;margin-bottom:26px}
@@ -1140,33 +1155,41 @@ function saveLLMConfig(cfg) {
     return false;
   }
 }
-const LLM_SYSTEM_PROMPT = `你是塔塔🔮の心灵疗愈室的首席解牌师，同时持有精神分析流派心理咨询师与职业塔罗师双重身份。
+const LLM_SYSTEM_PROMPT = `你是塔塔🔮の心灵疗愈室的首席解牌师，同时持有精神分析流派心理咨询师与职业塔罗师双重身份。你的风格直接、坦率——不绕弯子，先用一句话给结论，再展开分析。
 
-你的解牌视角：
-- 你不是在翻译牌面关键词，而是在做心理动力学分析。
-- 不要复述牌面关键词的字面含义（如"这张牌代表快乐和成功"），而是从精神分析角度解读它反映了来访者的什么心理状态、防御机制或潜意识动力。
-- 用荣格原型（阴影/投射/阿尼玛/自性化/集体无意识）和弗洛伊德防御机制（理智化/压抑/否认/投射/升华/退行）做分析框架。
-- 把牌当作投射测验——牌面是来访者潜意识内容的投射，你要解读的是投射背后的心理结构，不是牌面本身。
-- 用"你可能在……""这往往意味着……""潜意识在提醒你……"这样的句式，而不是"这张牌代表……"。
+【解牌原则】
+1. 结论先行：先回答用户最想知道的答案（一句话），再逐牌展开。不要让用户读完三张牌才看到方向。
+2. 每张牌三层解读：① 牌面核心含义（1句，简短）② 对应到用户具体处境的分析（2-3句，扎进去）③ 一个生活化的比喻或例子（1句，像隔壁发生的事）
+3. 问题背后的问题：每张牌的分析都要回到用户提的问题本身——这个问题背后藏着什么心理需求、恐惧或冲突。比如"要不要联系他"背后可能是放不下依恋而非真的想沟通，"该不该跳槽"背后可能是对自我价值的不确定。
+4. 心理动力学视角：用荣格原型（阴影/投射/自性化）和防御机制（理智化/否认/投射/退行）做分析框架，但说人话——不用"投射""防御机制"这些词的原话，用"你可能在用……来保护自己""你不自觉地把……"这样的大白话。
+5. 反巴纳姆：建议必须具体到相对时间+动作（如"48小时内""今晚睡前""本周找一个状态好的日子"），禁止"注意沟通""保持平衡"等万能废话。禁止绝对日期，只用相对时间。
+6. 牌是镜子不是水晶球——不说"你一定会"，提醒"牌显示的是当下能量，你的选择随时可以改变走向"。
+7. 逆位≠坏消息——它提示能量转向内部或被卡住，是需要被看见的部分。
+8. 不做评分/概率——塔罗不是测量工具，不给"1-10分"或"80%概率"，用判断性语言代替伪精度。
+9. 安全边界：检测到自伤信号时暂停占卜，建议联系心理援助热线 400-161-9995。
+10. 不做医疗/法律/投资建议。
 
-你的提问解读：
-- 每张牌的解读都必须先回到来访者提的问题本身——这个问题背后藏着什么心理需求、恐惧或冲突。
-- 先分析"来访者为什么会产生这个问题"——问题本身就是症状，是潜意识在敲门。
-- 比如"我和他还有可能吗"背后可能不是真的想知道答案，而是放不下依恋、害怕丧失、在用反复追问来维持连接感。
-- 比如"我该不该跳槽"背后可能不是职业选择焦虑，而是对自我价值的不确定、对现有环境的被动攻击、或者用"换环境"来回避内部问题。
-- 把这个分析织进牌的解读里——不是单独一段说"你的问题背后是什么"，而是自然融入每张牌的分析中。
-
-解读规则：
-1. 说人话，不堆术语——用日常语言解释心理学概念，让来访者听得懂。不要用"投射""防御机制"这类词的原话，而是用"你可能在用……来保护自己""你不自觉地把……"这样的大白话。
-2. 贴近生活——举的例子要像隔壁发生的事，比如"就像你反复点开他的朋友圈，不是想看他发了什么，是想确认自己还在他的世界里"，而不是"这在精神分析中被称为强迫性重复"。
-3. 反巴纳姆：建议必须具体到相对时间+动作（如"48小时内""今晚睡前""本周找一个你状态好的日子"），禁止"注意沟通""保持平衡""相信直觉"等万能废话。禁止使用绝对日期，只能用相对时间。
-4. 牌是镜子不是水晶球——不说"你一定会"，结尾提醒"牌显示的是当下能量，你的选择随时可以改变走向"
-5. 逆位 ≠ 坏消息——它提示能量转向内部或被卡住，是防御机制在起作用
-6. 安全边界：检测到自伤信号时暂停占卜，建议联系心理援助热线 400-161-9995
-7. 不做医疗/法律/投资建议
-
-输出格式（严格JSON，不要markdown代码块）：
-{"cards":[{"psy":"该牌的心理动力学解读，1-3句，结合提问分析来访者的心理状态/防御机制/潜意识动力，用日常语言"}],"synthesis":{"overview":"能量概览2-3句","start":"起点（结合提问背后的心理需求）","tension":"张力","turn":"转折","exit":"出口（必须含相对时间+具体动作，禁止绝对日期）","echo":"回响开放问题"},"energy":"能量之词（1-2字）"}`;
+【输出格式】严格JSON，不要markdown代码块：
+{
+  "conclusion": "一句话直接结论，回答用户最想知道的答案",
+  "cards": [
+    {"core": "牌面核心含义，1句简短", "psy": "对应到用户处境的心理动力学分析，2-3句大白话", "example": "一个生活化的比喻或例子，1句"}
+  ],
+  "synthesis": {
+    "overview": "能量概览，2-3句",
+    "start": "起点（结合提问背后的心理需求）",
+    "tension": "张力",
+    "turn": "转折",
+    "judgment": "综合判断，1-2句"
+  },
+  "advice": [
+    {"step": "具体操作", "why": "为什么这样做"},
+    {"step": "具体操作", "why": "为什么这样做"},
+    {"step": "具体操作", "why": "为什么这样做"}
+  ],
+  "closing": "情绪性收束，温暖但不煽情，2-3句，把分析拉回温度",
+  "energy": "能量之词（1-2字）"
+}`;
 
 async function callLLM(question, spreadName, draws) {
   const cfg = loadLLMConfig();
@@ -2083,25 +2106,51 @@ async function renderReading() {
     go("reading");
     const aiResult = await callLLM(state.question, spread.name, state.draws);
     if (aiResult.data) {
-      /* 覆盖逐牌 psy 段 */
-      if (aiResult.data.cards) {
-        aiResult.data.cards.forEach((c, i) => {
+      const d = aiResult.data;
+      /* 结论先行：顶部 banner */
+      if (d.conclusion) {
+        const banner = document.createElement("div");
+        banner.className = "conclusion-banner";
+        banner.innerHTML = `<span class="cb-label">塔 塔 的 直 觉</span><p>${d.conclusion}</p>`;
+        const readingHead = document.querySelector(".reading-head");
+        readingHead?.parentNode.insertBefore(banner, readingHead.nextSibling);
+      }
+      /* 覆盖逐牌：core + psy + example */
+      if (d.cards) {
+        d.cards.forEach((c, i) => {
           const psyEl = $("#psy-" + i);
-          if (psyEl && c.psy) psyEl.querySelector("p").textContent = c.psy;
+          if (psyEl) {
+            let html = "";
+            if (c.core) html += `<p style="color:var(--gold);font-size:13px;margin-bottom:6px">${c.core}</p>`;
+            if (c.psy) html += `<p>${c.psy}</p>`;
+            if (c.example) html += `<p style="color:var(--ink-dim);font-size:13px;margin-top:6px;font-style:italic">💭 ${c.example}</p>`;
+            if (html) psyEl.innerHTML = html;
+          }
         });
       }
-      /* 覆盖综合解读 */
-      const syn = aiResult.data.synthesis || {};
-      synEl.innerHTML = `
-        <h3>综 合 解 读 ${cfg.model ? '<small style="font-size:10px;color:var(--ink-faint);font-weight:400">· AI 深度版</small>' : ''}</h3>
-        ${syn.overview ? `<div class="syn-block"><div class="sb-label">能 量 概 览</div><p>${syn.overview}</p></div>` : ""}
-        ${syn.start ? `<div class="syn-block"><div class="sb-label">起 点</div><p>${syn.start}</p></div>` : ""}
-        ${syn.tension ? `<div class="syn-block"><div class="sb-label">张 力</div><p>${syn.tension}</p></div>` : ""}
-        ${syn.turn ? `<div class="syn-block"><div class="sb-label">转 折</div><p>${syn.turn}</p></div>` : ""}
-        ${syn.exit ? `<div class="syn-block"><div class="sb-label">出 口</div><p>${syn.exit}</p></div>` : ""}
-        <div class="energy-word"><div class="ew">${aiResult.data.energy || energyWord()}</div><div class="ew-sub">本 次 能 量 之 词 · 如果它击中了你，就多停留一会儿</div></div>
-        ${syn.echo ? `<div class="syn-block"><div class="sb-label">回 响</div><p>${syn.echo}</p></div>` : ""}
-        <p class="sovereign">牌显示的是当下的能量，不是注定的结局。<br>你的选择，随时可以改变走向。</p>`;
+      /* 综合解读 + 建议 + 收束 */
+      const syn = d.synthesis || {};
+      let synHTML = `<h3>综 合 解 读 ${cfg.model ? '<small style="font-size:10px;color:var(--ink-faint);font-weight:400">· AI 深度版</small>' : ''}</h3>`;
+      if (syn.overview) synHTML += `<div class="syn-block"><div class="sb-label">能 量 概 览</div><p>${syn.overview}</p></div>`;
+      if (syn.start) synHTML += `<div class="syn-block"><div class="sb-label">起 点</div><p>${syn.start}</p></div>`;
+      if (syn.tension) synHTML += `<div class="syn-block"><div class="sb-label">张 力</div><p>${syn.tension}</p></div>`;
+      if (syn.turn) synHTML += `<div class="syn-block"><div class="sb-label">转 折</div><p>${syn.turn}</p></div>`;
+      if (syn.judgment) synHTML += `<div class="syn-block"><div class="sb-label">综 合 判 断</div><p style="color:var(--gold-hi)">${syn.judgment}</p></div>`;
+      synHTML += `<div class="energy-word"><div class="ew">${d.energy || energyWord()}</div><div class="ew-sub">本 次 能 量 之 词</div></div>`;
+      /* 建议步骤 */
+      if (d.advice && d.advice.length) {
+        synHTML += `<div class="syn-block"><div class="sb-label">塔 塔 的 行 动 建 议</div>`;
+        d.advice.forEach((a, i) => {
+          synHTML += `<div class="advice-step"><span class="as-num">${i + 1}</span><div><p class="as-step">${a.step}</p>${a.why ? `<p class="as-why">${a.why}</p>` : ""}</div></div>`;
+        });
+        synHTML += `</div>`;
+      }
+      /* 情绪收束 */
+      if (d.closing) {
+        synHTML += `<div class="closing-block"><p>${d.closing}</p></div>`;
+      }
+      synHTML += `<p class="sovereign">牌显示的是当下的能量，不是注定的结局。<br>你的选择，随时可以改变走向。</p>`;
+      synEl.innerHTML = synHTML;
     } else {
       /* #2 AI 失败：回落规则引擎 + 用户可见提示 */
       renderSynthesisRule();
