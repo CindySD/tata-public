@@ -73,11 +73,8 @@ textarea:focus-visible,.num-input:focus-visible{outline:2px solid var(--gold-dim
 @keyframes breathe{0%,100%{box-shadow:0 0 30px rgba(201,168,106,.10), inset 0 0 18px rgba(201,168,106,.06)}50%{box-shadow:0 0 52px rgba(201,168,106,.22), inset 0 0 26px rgba(201,168,106,.12)}}
 .cover-title{font-family:var(--serif);font-size:clamp(30px,6.4vw,46px);font-weight:600;letter-spacing:.14em;text-align:center;color:var(--ink)}
 .cover-sub{margin-top:20px;text-align:center;font-family:var(--serif);color:var(--ink-dim);font-size:15.5px;letter-spacing:.2em;line-height:2.1}
-.cover-flow{display:flex;justify-content:center;gap:26px;margin:44px 0 52px;flex-wrap:wrap}
-.cover-flow span{font-family:var(--serif);letter-spacing:.3em;color:var(--ink-dim);font-size:13.5px;position:relative}
-.cover-flow span:not(:last-child)::after{content:"✦";position:absolute;right:-19px;color:var(--gold-dim);font-size:9px;top:5px}
 .cover-cta{text-align:center}
-.cover-note{margin-top:46px}
+.cover-secondary{display:flex;justify-content:center;gap:12px;flex-wrap:wrap;margin-top:22px}
 
 /* ---------- S1 提问 ---------- */
 #stage-ask{padding-top:9vh}
@@ -165,7 +162,7 @@ textarea{min-height:96px}
 .fan::-webkit-scrollbar{height:4px}
 .fan::-webkit-scrollbar-track{background:transparent}
 .fan::-webkit-scrollbar-thumb{background:var(--gold-dim);border-radius:2px}
-.fan .fcard{flex:0 0 auto;width:54px;margin-left:-34px;aspect-ratio:3/5;border-radius:5px;position:relative;
+.fan .fcard{flex:0 0 auto;width:54px;margin-left:-34px;aspect-ratio:3/5;border-radius:10px;position:relative;
   background:
     radial-gradient(circle at 50% 50%, rgba(201,168,106,.14) 0%, transparent 62%),
     repeating-linear-gradient(45deg, rgba(201,168,106,.06) 0 1px, transparent 1px 5px),
@@ -197,7 +194,7 @@ textarea{min-height:96px}
 /* 凝神聚气按钮（叠加在 arena 底部，跟牌桌一起在视野内） */
 .hold-wrap{position:absolute;left:50%;bottom:6px;transform:translateX(-50%);z-index:15;
   display:flex;flex-direction:column;align-items:center;gap:6px;opacity:0;pointer-events:none;transition:opacity .7s;
-  background:rgba(7,7,14,.78);border-radius:14px;padding:6px 16px 4px;backdrop-filter:blur(6px)}
+  background:rgba(7,7,14,.78);border-radius:12px;padding:6px 16px 4px;backdrop-filter:blur(6px)}
 .hold-wrap.show{opacity:1;pointer-events:auto}
 .hold-btn{
   position:relative;width:96px;height:96px;border-radius:50%;cursor:pointer;border:none;outline:none;
@@ -258,7 +255,7 @@ textarea{min-height:96px}
 .rc-deep:hover{border-bottom-color:var(--gold-dim)}
 
 /* 综合解读 */
-.synthesis{margin-top:40px;border:1px solid var(--gold-dim);border-radius:18px;padding:36px 30px 32px;
+.synthesis{margin-top:40px;border:1px solid var(--gold-dim);border-radius:16px;padding:36px 30px 32px;
   background:linear-gradient(180deg,rgba(201,168,106,.07),rgba(201,168,106,.015));position:relative;overflow:hidden}
 .synthesis::before{content:"✦";position:absolute;top:-13px;left:50%;transform:translateX(-50%);background:var(--bg);padding:0 14px;color:var(--gold);font-size:15px}
 .synthesis h3{font-family:var(--serif);text-align:center;letter-spacing:.3em;font-size:18px;color:var(--gold-hi);margin-bottom:24px;font-weight:600}
@@ -271,7 +268,7 @@ textarea{min-height:96px}
 .sovereign{margin-top:22px;text-align:center;font-family:var(--serif);color:var(--ink-dim);font-size:13.5px;letter-spacing:.14em;line-height:2.2}
 
 /* 结论先行 banner */
-.conclusion-banner{background:linear-gradient(180deg,rgba(201,168,106,.12),rgba(201,168,106,.03));border:1px solid var(--gold-dim);border-radius:14px;padding:18px 24px;margin:20px 0 10px;text-align:center}
+.conclusion-banner{background:linear-gradient(180deg,rgba(201,168,106,.12),rgba(201,168,106,.03));border:1px solid var(--gold-dim);border-radius:12px;padding:18px 24px;margin:20px 0 10px;text-align:center}
 .conclusion-banner .cb-label{font-size:11px;letter-spacing:.3em;color:var(--gold);display:block;margin-bottom:8px}
 .conclusion-banner p{font-family:var(--serif);font-size:17px;letter-spacing:.08em;color:var(--gold-hi);line-height:1.8}
 
@@ -282,7 +279,7 @@ textarea{min-height:96px}
 .advice-step .as-why{font-size:13px;color:var(--ink-dim);line-height:1.8;margin-top:4px;letter-spacing:.03em}
 
 /* 情绪收束 */
-.closing-block{margin-top:28px;padding:20px 24px;background:rgba(201,168,106,.05);border:1px solid var(--gold-faint);border-radius:14px;text-align:center}
+.closing-block{margin-top:28px;padding:20px 24px;background:rgba(201,168,106,.05);border:1px solid var(--gold-faint);border-radius:12px;text-align:center}
 .closing-block p{font-family:var(--serif);font-size:15px;color:var(--ink-dim);line-height:2.1;letter-spacing:.06em}
 
 /* 结语互动 */
@@ -293,7 +290,7 @@ textarea{min-height:96px}
 /* 弹窗 */
 .modal-mask{position:fixed;inset:0;background:rgba(4,4,9,.82);backdrop-filter:blur(4px);z-index:50;display:none;align-items:flex-start;justify-content:center;padding:6vh 18px;overflow:auto}
 .modal-mask.show{display:flex}
-.modal{background:#100e1b;border:1px solid var(--gold-dim);border-radius:18px;max-width:640px;width:100%;padding:34px 30px;animation:fadeUp .5s ease both;position:relative}
+.modal{background:#100e1b;border:1px solid var(--gold-dim);border-radius:16px;max-width:640px;width:100%;padding:34px 30px;animation:fadeUp .5s ease both;position:relative}
 .modal-close{position:absolute;top:14px;right:18px;background:none;border:none;color:var(--ink-dim);font-size:20px;cursor:pointer;letter-spacing:0}
 .modal-close:hover{color:var(--gold)}
 .modal .m-img{width:150px;margin:0 auto 20px;border-radius:8px;overflow:hidden;border:1px solid var(--gold-dim)}
@@ -308,7 +305,7 @@ textarea{min-height:96px}
 .m-grid .m-cell .m-label{margin-bottom:4px}
 
 /* 安全关怀 */
-.care-panel{max-width:520px;margin:14vh auto 0;background:var(--panel);border:1px solid var(--gold-dim);border-radius:18px;padding:44px 34px;text-align:center}
+.care-panel{max-width:520px;margin:14vh auto 0;background:var(--panel);border:1px solid var(--gold-dim);border-radius:16px;padding:44px 34px;text-align:center}
 
 /* 占卜历史 */
 .hist-item{border:1px solid var(--panel-line);border-radius:12px;padding:16px 18px;margin-top:14px;cursor:pointer;transition:border .3s,background .3s;background:rgba(255,255,255,.02)}
@@ -374,8 +371,7 @@ footer .gold{color:var(--gold)}
   .synthesis{padding:30px 16px}
   .m-grid{grid-template-columns:1fr}
   .rc-lens{margin-left:0;width:100%}
-  .cover-flow{gap:18px}
-  .cover-flow span:not(:last-child)::after{right:-14px}
+  /* cover-flow removed, no override needed */
   /* 输入框 font-size≥16px 防 iOS 自动放大 */
   textarea,.num-input,textarea::placeholder,.num-input::placeholder{font-size:16px}
   #llm-baseurl,#llm-apikey,#llm-model{font-size:16px !important}
@@ -406,7 +402,7 @@ footer .gold{color:var(--gold)}
   .synthesis{padding:24px 12px}
   .btn{padding:11px 24px;font-size:14px;letter-spacing:.18em}
   .modal{padding:20px 14px}
-  .cover-flow{gap:12px;font-size:12px}
+  .cover-secondary{gap:10px}
 }
 @media (prefers-reduced-motion:reduce){
   *{animation-duration:.001s !important;transition-duration:.15s !important}
@@ -426,26 +422,21 @@ footer .gold{color:var(--gold)}
         <path d="M24 9 L27 21 L39 24 L27 27 L24 39 L21 27 L9 24 L21 21 Z" fill="#c9a86a" opacity=".85"/>
       </svg>
     </div>
-    <div class="kicker">TATA · TAROT SPACE</div>
     <h1 class="cover-title">塔塔🔮の心灵疗愈室</h1>
     <p class="cover-sub">牌不是水晶球，而是一面镜子。<br>在这里，安静地照见你自己的心。</p>
-    <div class="cover-flow">
-      <span>提问</span><span>凝神</span><span>抽牌</span><span>照见</span>
-    </div>
     <div class="cover-cta">
       <button class="btn" id="btn-start" type="button">开 启 占 卜</button>
     </div>
-    <div style="text-align:center;margin-top:18px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
-      <button class="btn ghost" id="btn-daily" type="button">✦ 今日一牌</button>
-      <button class="btn ghost" id="btn-hist" type="button">✦ 我的占卜记录</button>
-      <button class="btn ghost" id="btn-settings" type="button">⚙ AI 解读设置</button>
+    <div class="cover-secondary">
+      <button class="btn ghost" id="btn-daily" type="button">今日一牌</button>
+      <button class="btn ghost" id="btn-hist" type="button">占卜记录</button>
+      <button class="btn ghost" id="btn-settings" type="button">⚙ AI 设置</button>
     </div>
-    <p class="note cover-note">韦特塔罗 78 张 · 支持多人同时在线 · 每个人的牌阵都是私密的一次对话</p>
   </section>
 
   <!-- ===== S1 提问 ===== -->
   <section class="stage" id="stage-ask">
-    <div class="kicker">STEP 01 · 提问</div>
+    <div class="kicker">提 问</div>
     <div class="ask-panel">
       <p class="guide-words">欢迎来到塔塔🔮の心灵疗愈室。<br>请闭上眼睛，深呼吸三次，将你的问题在心中默念三遍。<br>然后，凭直觉告诉我你想的 <em>1 到 78</em> 之间的数字。</p>
 
@@ -475,7 +466,7 @@ footer .gold{color:var(--gold)}
 
   <!-- ===== S2 仪式 ===== -->
   <section class="stage" id="stage-ritual">
-    <div class="kicker">STEP 02 · 仪式</div>
+    <div class="kicker">仪 式</div>
     <div class="ritual-status" id="ritual-status">正在为你洗牌……</div>
     <div class="ritual-sub" id="ritual-sub">宇宙的能量正在汇聚……</div>
     <div class="ritual-spread" id="ritual-spread"></div>
@@ -503,7 +494,7 @@ footer .gold{color:var(--gold)}
 
   <!-- ===== S3 解读 ===== -->
   <section class="stage" id="stage-reading">
-    <div class="kicker">STEP 03 · 指引</div>
+    <div class="kicker">指 引</div>
     <div class="reading-head">
       <h2 class="h-serif" style="font-size:26px;letter-spacing:.2em" id="reading-spread-name"></h2>
       <p class="reading-q" id="reading-q"></p>
