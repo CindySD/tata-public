@@ -116,8 +116,8 @@ textarea{min-height:96px}
 .ritual-status{font-family:var(--serif);font-size:16.5px;letter-spacing:.18em;color:var(--gold-hi);min-height:56px;line-height:2;margin-bottom:6px}
 .ritual-sub{font-size:13px;color:var(--ink-dim);letter-spacing:.14em;min-height:22px}
 .ritual-spread{margin:14px auto 0;font-size:12.5px;color:var(--ink-faint);letter-spacing:.2em}
-.ritual-arena{position:relative;height:430px;margin:26px auto 0;max-width:560px}
-.pedestal{position:absolute;left:50%;top:60%;transform:translate(-50%,-50%);width:calc(var(--card-w)*1.16);aspect-ratio:3/5;
+.ritual-arena{position:relative;height:420px;margin:26px auto 0;max-width:560px}
+.pedestal{position:absolute;left:50%;top:48%;transform:translate(-50%,-50%);width:calc(var(--card-w)*1.16);aspect-ratio:3/5;
   border:1px dashed rgba(201,168,106,.28);border-radius:var(--card-r);z-index:5;
   box-shadow:inset 0 0 30px rgba(201,168,106,.05)}
 .pedestal::after{content:"✦";position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);color:var(--gold-dim);font-size:18px;animation:breathe-txt 3.4s ease-in-out infinite}
@@ -157,7 +157,7 @@ textarea{min-height:96px}
 .orbiter:nth-child(odd) .tcard{filter:brightness(.8)}
 
 /* 牌桌：78 张牌背单排缎带式铺开，横向滑动（竞品主流 ribbon spread） */
-.fan{position:absolute;left:0;right:0;top:0;height:108px;display:flex;flex-wrap:nowrap;align-items:flex-start;
+.fan{position:absolute;left:0;right:0;top:0;height:116px;display:flex;flex-wrap:nowrap;align-items:flex-start;
   overflow-x:auto;overflow-y:hidden;padding:18px 12px 10px;opacity:0;transition:opacity .6s;
   touch-action:pan-x;cursor:grab;scrollbar-width:thin;scrollbar-color:var(--gold-dim) transparent}
 .fan:active{cursor:grabbing}
@@ -165,7 +165,7 @@ textarea{min-height:96px}
 .fan::-webkit-scrollbar{height:4px}
 .fan::-webkit-scrollbar-track{background:transparent}
 .fan::-webkit-scrollbar-thumb{background:var(--gold-dim);border-radius:2px}
-.fan .fcard{flex:0 0 auto;width:46px;margin-left:-30px;aspect-ratio:3/5;border-radius:4px;position:relative;
+.fan .fcard{flex:0 0 auto;width:54px;margin-left:-34px;aspect-ratio:3/5;border-radius:5px;position:relative;
   background:
     radial-gradient(circle at 50% 50%, rgba(201,168,106,.14) 0%, transparent 62%),
     repeating-linear-gradient(45deg, rgba(201,168,106,.06) 0 1px, transparent 1px 5px),
@@ -187,17 +187,17 @@ textarea{min-height:96px}
 @keyframes fanIn{from{opacity:0;transform:rotate(var(--tilt,0deg)) scale(.6)}to{opacity:1;transform:rotate(var(--tilt,0deg)) scale(1)}}
 
 /* 已翻开的小牌行 */
-.revealed-row{display:flex;justify-content:center;gap:14px;margin-top:20px;min-height:76px;flex-wrap:wrap}
-.mini-revealed{width:52px;animation:fadeUp .8s ease both}
-.mini-revealed .tcard{width:52px}
-.mini-revealed .tcard .back::before{inset:3px}
-.mini-revealed .tcard .back .sigil{font-size:11px}
-.mini-revealed .pos-name{font-size:10.5px;color:var(--ink-dim);letter-spacing:.1em;margin-top:6px;text-align:center}
+.revealed-row{display:flex;justify-content:center;gap:16px;margin-top:24px;min-height:100px;flex-wrap:wrap}
+.mini-revealed{width:72px;animation:fadeUp .8s ease both}
+.mini-revealed .tcard{width:72px}
+.mini-revealed .tcard .back::before{inset:4px}
+.mini-revealed .tcard .back .sigil{font-size:14px}
+.mini-revealed .pos-name{font-size:11px;color:var(--ink-dim);letter-spacing:.1em;margin-top:8px;text-align:center}
 
-/* 凝神聚气按钮（悬浮在视口底部，始终可见） */
-.hold-wrap{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);z-index:15;
-  display:flex;flex-direction:column;align-items:center;gap:8px;opacity:0;pointer-events:none;transition:opacity .7s;
-  background:rgba(7,7,14,.82);border-radius:16px;padding:8px 20px 6px;backdrop-filter:blur(6px)}
+/* 凝神聚气按钮（叠加在 arena 底部，跟牌桌一起在视野内） */
+.hold-wrap{position:absolute;left:50%;bottom:6px;transform:translateX(-50%);z-index:15;
+  display:flex;flex-direction:column;align-items:center;gap:6px;opacity:0;pointer-events:none;transition:opacity .7s;
+  background:rgba(7,7,14,.78);border-radius:14px;padding:6px 16px 4px;backdrop-filter:blur(6px)}
 .hold-wrap.show{opacity:1;pointer-events:auto}
 .hold-btn{
   position:relative;width:96px;height:96px;border-radius:50%;cursor:pointer;border:none;outline:none;
@@ -232,9 +232,9 @@ textarea{min-height:96px}
 .spread-strip{display:flex;justify-content:center;gap:16px;flex-wrap:wrap;margin:30px 0 8px}
 .spread-strip .mini{cursor:pointer;text-align:center;transition:transform .3s}
 .spread-strip .mini:hover{transform:translateY(-4px)}
-.spread-strip .mini .tcard{width:58px;margin:0 auto}
-.spread-strip .mini .tcard .back::before{inset:3px}
-.spread-strip .mini .tcard .back .sigil{font-size:12px}
+.spread-strip .mini .tcard{width:76px;margin:0 auto}
+.spread-strip .mini .tcard .back::before{inset:4px}
+.spread-strip .mini .tcard .back .sigil{font-size:14px}
 .spread-strip .mini .pos{font-size:10.5px;color:var(--ink-dim);letter-spacing:.14em;margin-top:7px}
 .reading-card{
   background:var(--panel);border:1px solid var(--panel-line);border-radius:16px;
@@ -347,10 +347,10 @@ footer .gold{color:var(--gold)}
 @media (max-width:600px){
   :root{--card-w:112px}
   .shell{padding:0 16px 70px}
-  .ritual-arena{height:320px}
-  .fan{height:96px;padding:16px 10px 8px}
-  .fan .fcard{width:40px;margin-left:-28px}
-  /* hold-wrap 已全局 fixed，移动端不额外处理 */
+  .ritual-arena{height:340px}
+  .fan{height:104px;padding:16px 10px 8px}
+  .fan .fcard{width:48px;margin-left:-32px}
+  /* hold-wrap 已在 arena 内 absolute，移动端不额外处理 */
   .ask-panel{padding:26px 18px}
   /* 解除 ask-row min-width 撑爆问题 */
   .ask-row > div[style*="min-width"]{min-width:unset !important;width:100% !important}
@@ -381,10 +381,12 @@ footer .gold{color:var(--gold)}
   .cover-title{font-size:26px}
   .num-wrap{flex:0 0 110px}
   .num-input{height:46px;font-size:18px}
-  .fan .fcard{width:36px;margin-left:-25px}
-  .ritual-arena{height:280px}
+  .fan .fcard{width:42px;margin-left:-28px}
+  .ritual-arena{height:300px}
   .hold-btn{width:84px;height:84px}
   .hold-btn svg{width:96px;height:96px}
+  .mini-revealed{width:60px}
+  .mini-revealed .tcard{width:60px}
   .reading-card{padding:20px 12px}
   .synthesis{padding:24px 12px}
   .btn{padding:11px 24px;font-size:14px;letter-spacing:.18em}
@@ -468,19 +470,18 @@ footer .gold{color:var(--gold)}
       <div class="fan" id="fan"></div>
       <div class="pedestal" id="pedestal"></div>
       <div class="arena-hint" id="arena-hint"></div>
+      <div class="hold-wrap" id="hold-wrap">
+        <button class="hold-btn" id="hold-btn" type="button" aria-label="凝神聚气（可选）">
+          <svg viewBox="0 0 132 132"><circle id="hold-ring" cx="66" cy="66" r="62.5"/></svg>
+          <span id="hold-label">凝神聚气</span>
+          <span class="hold-sub">可选</span>
+        </button>
+        <div class="hold-tip" id="hold-tip"></div>
+        <div class="progress-line" id="progress-line"></div>
+      </div>
     </div>
 
     <div class="revealed-row" id="revealed-row"></div>
-
-    <div class="hold-wrap" id="hold-wrap">
-      <button class="hold-btn" id="hold-btn" type="button" aria-label="长按凝神聚气">
-        <svg viewBox="0 0 132 132"><circle id="hold-ring" cx="66" cy="66" r="62.5"/></svg>
-        <span id="hold-label">凝神聚气</span>
-        <span class="hold-sub">长按不放</span>
-      </button>
-      <div class="hold-tip" id="hold-tip"></div>
-      <div class="progress-line" id="progress-line"></div>
-    </div>
 
     <div class="next-cta" id="next-cta" style="display:none"></div>
   </section>
