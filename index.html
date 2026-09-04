@@ -1680,6 +1680,13 @@ qEl.addEventListener("input", () => {
   refreshChips();
   reasonEl.textContent = qEl.value.trim().length >= 4 ? "我为你选了「" + SPREADS[state.spreadKey].name + "」——" + SPREADS[state.spreadKey].reason : "";
 });
+/* 用户输入数字后，如果问题也填了，自动滚动到提交按钮 */
+numEl.addEventListener("input", () => {
+  if (qEl.value.trim().length >= 4 && numEl.value.trim().length > 0) {
+    const submit = document.querySelector(".ask-submit");
+    if (submit) setTimeout(() => submit.scrollIntoView({ behavior: "smooth", block: "center" }), 300);
+  }
+});
 refreshChips();
 reasonEl.textContent = "";
 
@@ -2023,6 +2030,8 @@ function revealChosen(card, reversed) {
             b.addEventListener("click", renderReading);
             nextCta.appendChild(b);
             nextCta.style.display = "flex";
+            /* 自动滚动到"查看指引"按钮，防止用户翻完牌后找不到入口 */
+            setTimeout(() => nextCta.scrollIntoView({ behavior: "smooth", block: "center" }), 200);
           }
         }, 480);
       }, 1500);
