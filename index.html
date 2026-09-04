@@ -18,6 +18,8 @@
   --panel:rgba(18,16,28,.62); --panel-line:rgba(201,168,106,.16);
   --card-w:142px; --card-r:10px;
   --ease-out:cubic-bezier(.16,1,.3,1);
+  /* spacing scale (8pt grid) */
+  --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px; --sp-5:24px; --sp-6:32px; --sp-7:48px; --sp-8:64px; --sp-9:96px;
   --serif:"Cormorant Garamond","Songti SC","STSong","NSimSun","SimSun","Noto Serif CJK SC",Georgia,"Times New Roman",serif;
   --sans:"PingFang SC","Microsoft YaHei","Noto Sans CJK SC",-apple-system,"Segoe UI",sans-serif;
 }
@@ -25,12 +27,12 @@
 html{scroll-behavior:smooth}
 body{
   background:radial-gradient(120% 90% at 50% 0%, var(--bg2) 0%, var(--bg) 58%) fixed;
-  color:var(--ink); font-family:var(--sans); font-size:15px; line-height:1.75;
+  color:var(--ink); font-family:var(--sans); font-size:16px; line-height:1.75;
   min-height:100vh; overflow-x:hidden;
 }
 ::selection{background:rgba(201,168,106,.28)}
 #stars{position:fixed;inset:0;z-index:0;pointer-events:none}
-.shell{position:relative;z-index:1;max-width:760px;margin:0 auto;padding:0 22px 90px}
+.shell{position:relative;z-index:1;max-width:760px;margin:0 auto;padding:0 24px 96px}
 
 /* ---------- 通用 ---------- */
 .kicker{font-family:var(--sans);font-size:11px;letter-spacing:.42em;color:var(--gold);text-transform:uppercase;margin-bottom:18px;text-align:center}
@@ -47,12 +49,12 @@ body{
 }
 .btn:hover{border-color:var(--gold);background:linear-gradient(180deg,rgba(201,168,106,.26),rgba(201,168,106,.08));box-shadow:0 0 26px rgba(201,168,106,.16)}
 .btn:active{transform:scale(.97)}
-.btn.ghost{background:transparent;border-color:var(--panel-line);color:var(--ink-dim);font-size:14px;padding:11px 30px}
+.btn.ghost{background:transparent;border-color:var(--panel-line);color:var(--ink-dim);font-size:14px;padding:12px 30px}
 .btn.ghost:hover{color:var(--gold-hi);border-color:var(--gold-dim)}
 .btn[disabled]{opacity:.35;pointer-events:none}
 .btn:focus-visible,.chip:focus-visible,.hold-btn:focus-visible{outline:2px solid var(--gold);outline-offset:3px}
 textarea:focus-visible,.num-input:focus-visible{outline:2px solid var(--gold-dim);outline-offset:2px}
-.note{color:var(--ink-faint);font-size:12.5px;letter-spacing:.08em;text-align:center}
+.note{color:var(--ink-faint);font-size:13px;letter-spacing:.08em;text-align:center}
 .gold{color:var(--gold)}
 .center{text-align:center}
 
@@ -72,14 +74,14 @@ textarea:focus-visible,.num-input:focus-visible{outline:2px solid var(--gold-dim
 .brand-mark svg{width:44px;height:44px}
 @keyframes breathe{0%,100%{box-shadow:0 0 30px rgba(201,168,106,.10), inset 0 0 18px rgba(201,168,106,.06)}50%{box-shadow:0 0 52px rgba(201,168,106,.22), inset 0 0 26px rgba(201,168,106,.12)}}
 .cover-title{font-family:var(--serif);font-size:clamp(30px,6.4vw,46px);font-weight:600;letter-spacing:.14em;text-align:center;color:var(--ink)}
-.cover-sub{margin-top:20px;text-align:center;font-family:var(--serif);color:var(--ink-dim);font-size:15.5px;letter-spacing:.2em;line-height:2.1}
+.cover-sub{margin-top:20px;text-align:center;font-family:var(--serif);color:var(--ink-dim);font-size:16px;letter-spacing:.2em;line-height:2.1}
 .cover-cta{text-align:center}
 .cover-secondary{display:flex;justify-content:center;gap:12px;flex-wrap:wrap;margin-top:22px}
 
 /* ---------- S1 提问 ---------- */
 #stage-ask{padding-top:9vh}
 .ask-panel{background:var(--panel);border:1px solid var(--panel-line);border-radius:16px;padding:34px 28px;backdrop-filter:blur(6px)}
-.guide-words{font-family:var(--serif);font-size:15.5px;line-height:2.2;color:var(--ink);letter-spacing:.1em;text-align:center;margin-bottom:30px}
+.guide-words{font-family:var(--serif);font-size:16px;line-height:2.2;color:var(--ink);letter-spacing:.1em;text-align:center;margin-bottom:30px}
 .guide-words em{font-style:normal;color:var(--gold-hi)}
 .field-label{font-size:12px;letter-spacing:.3em;color:var(--gold);margin:26px 0 10px;display:flex;align-items:center;gap:10px}
 .field-label::after{content:"";height:1px;flex:1;background:linear-gradient(90deg,var(--gold-faint),transparent)}
@@ -93,16 +95,16 @@ textarea{min-height:96px}
 .ask-row{display:flex;gap:14px;align-items:stretch;flex-wrap:wrap}
 .num-wrap{flex:0 0 150px}
 .num-input{height:52px;text-align:center;font-family:var(--serif);font-size:20px;letter-spacing:.1em}
-.ask-hint{margin-top:12px;font-size:12.5px;color:var(--ink-faint);letter-spacing:.05em}
+.ask-hint{margin-top:12px;font-size:13px;color:var(--ink-faint);letter-spacing:.05em}
 /* 牌阵 chips */
 .spread-chips{display:flex;flex-wrap:wrap;gap:10px;margin-top:4px}
 .chip{
-  font-size:12.5px;letter-spacing:.14em;color:var(--ink-dim);padding:8px 16px;border-radius:999px;
+  font-size:13px;letter-spacing:.14em;color:var(--ink-dim);padding:8px 16px;border-radius:999px;
   border:1px solid var(--panel-line);cursor:pointer;transition:all .3s;background:transparent;font-family:var(--sans);
 }
 .chip:hover{border-color:var(--gold-dim);color:var(--gold-hi)}
 .chip.on{border-color:var(--gold);color:var(--gold-hi);background:rgba(201,168,106,.1)}
-.chip small{display:block;font-size:10.5px;color:var(--ink-faint);letter-spacing:.05em;margin-top:2px}
+.chip small{display:block;font-size:11px;color:var(--ink-faint);letter-spacing:.05em;margin-top:2px}
 .chip.on small{color:rgba(238,224,178,.75)}
 .spread-reason{margin-top:16px;font-size:13px;color:var(--gold);letter-spacing:.08em;min-height:22px;font-family:var(--serif)}
 .ask-submit{margin-top:32px;text-align:center}
@@ -110,9 +112,9 @@ textarea{min-height:96px}
 
 /* ---------- S2 仪式 ---------- */
 #stage-ritual{padding-top:7vh;text-align:center}
-.ritual-status{font-family:var(--serif);font-size:16.5px;letter-spacing:.18em;color:var(--gold-hi);min-height:56px;line-height:2;margin-bottom:6px}
+.ritual-status{font-family:var(--serif);font-size:16px;letter-spacing:.18em;color:var(--gold-hi);min-height:56px;line-height:2;margin-bottom:6px}
 .ritual-sub{font-size:13px;color:var(--ink-dim);letter-spacing:.14em;min-height:22px}
-.ritual-spread{margin:14px auto 0;font-size:12.5px;color:var(--ink-faint);letter-spacing:.2em}
+.ritual-spread{margin:14px auto 0;font-size:13px;color:var(--ink-faint);letter-spacing:.2em}
 .ritual-arena{position:relative;height:420px;margin:26px auto 0;max-width:560px}
 .pedestal{position:absolute;left:50%;top:48%;transform:translate(-50%,-50%);width:calc(var(--card-w)*1.16);aspect-ratio:3/5;
   border:1px dashed rgba(201,168,106,.28);border-radius:var(--card-r);z-index:5;
@@ -204,7 +206,7 @@ textarea{min-height:96px}
   border:1px solid var(--gold-dim);transition:transform .25s, box-shadow .25s;touch-action:none;user-select:none;
 }
 .hold-btn:hover{box-shadow:0 0 30px rgba(201,168,106,.18)}
-.hold-btn .hold-sub{font-size:8.5px;letter-spacing:.28em;color:var(--ink-dim);font-family:var(--sans)}
+.hold-btn .hold-sub{font-size:10px;letter-spacing:.28em;color:var(--ink-dim);font-family:var(--sans)}
 .hold-btn svg{position:absolute;inset:-6px;width:108px;height:108px;transform:rotate(-90deg)}
 .hold-btn svg circle{fill:none;stroke:var(--gold);stroke-width:1.6;stroke-linecap:round;stroke-dasharray:392;stroke-dashoffset:392;opacity:.9}
 .hold-btn.holding{transform:scale(1.06);box-shadow:0 0 40px rgba(201,168,106,.28), inset 0 0 22px rgba(201,168,106,.12)}
@@ -232,7 +234,7 @@ textarea{min-height:96px}
 .spread-strip .mini .tcard{width:76px;margin:0 auto}
 .spread-strip .mini .tcard .back::before{inset:4px}
 .spread-strip .mini .tcard .back .sigil{font-size:14px}
-.spread-strip .mini .pos{font-size:10.5px;color:var(--ink-dim);letter-spacing:.14em;margin-top:7px}
+.spread-strip .mini .pos{font-size:11px;color:var(--ink-dim);letter-spacing:.14em;margin-top:7px}
 .reading-card{
   background:var(--panel);border:1px solid var(--panel-line);border-radius:16px;
   padding:30px 28px;margin-top:26px;backdrop-filter:blur(6px);animation:fadeUp .8s ease both;
@@ -248,7 +250,7 @@ textarea{min-height:96px}
 .rc-block{margin-top:18px}
 .rc-block .bk-label{display:flex;align-items:center;gap:10px;font-size:11.5px;letter-spacing:.3em;color:var(--gold);margin-bottom:8px}
 .rc-block .bk-label::after{content:"";height:1px;flex:1;background:linear-gradient(90deg,var(--gold-faint),transparent)}
-.rc-block p{color:var(--ink);font-size:14.5px;line-height:2;letter-spacing:.03em}
+.rc-block p{color:var(--ink);font-size:14px;line-height:2;letter-spacing:.03em}
 .rc-block.psy p{color:#cfc4e6}
 .rc-block.example p{color:var(--ink-dim)}
 .rc-deep{margin-top:20px;display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--gold);letter-spacing:.18em;cursor:pointer;background:none;border:none;font-family:var(--serif);padding:6px 0;border-bottom:1px solid transparent;transition:border .3s}
@@ -261,7 +263,7 @@ textarea{min-height:96px}
 .synthesis h3{font-family:var(--serif);text-align:center;letter-spacing:.3em;font-size:18px;color:var(--gold-hi);margin-bottom:24px;font-weight:600}
 .syn-block{margin-top:18px}
 .syn-block .sb-label{font-size:11.5px;letter-spacing:.3em;color:var(--gold);margin-bottom:6px}
-.syn-block p{font-size:14.5px;line-height:2.05;color:var(--ink);letter-spacing:.03em}
+.syn-block p{font-size:14px;line-height:2.05;color:var(--ink);letter-spacing:.03em}
 .energy-word{text-align:center;margin:30px 0 6px}
 .energy-word .ew{font-family:var(--serif);font-size:30px;letter-spacing:.5em;color:var(--gold-hi);text-indent:.5em}
 .energy-word .ew-sub{font-size:11px;letter-spacing:.34em;color:var(--ink-faint);margin-top:8px}
@@ -275,7 +277,7 @@ textarea{min-height:96px}
 /* 建议步骤 */
 .advice-step{display:flex;gap:14px;margin-top:14px;align-items:flex-start}
 .advice-step .as-num{flex:0 0 28px;width:28px;height:28px;border-radius:50%;border:1px solid var(--gold-dim);display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--gold);font-family:var(--serif)}
-.advice-step .as-step{font-size:14.5px;color:var(--ink);line-height:1.8;letter-spacing:.03em}
+.advice-step .as-step{font-size:14px;color:var(--ink);line-height:1.8;letter-spacing:.03em}
 .advice-step .as-why{font-size:13px;color:var(--ink-dim);line-height:1.8;margin-top:4px;letter-spacing:.03em}
 
 /* 情绪收束 */
@@ -311,11 +313,11 @@ textarea{min-height:96px}
 .hist-item{border:1px solid var(--panel-line);border-radius:12px;padding:16px 18px;margin-top:14px;cursor:pointer;transition:border .3s,background .3s;background:rgba(255,255,255,.02)}
 .hist-item:hover{border-color:var(--gold-dim);background:rgba(201,168,106,.05)}
 .hist-meta{font-size:11.5px;letter-spacing:.14em;color:var(--ink-faint)}
-.hist-q{font-family:var(--serif);font-size:15.5px;color:var(--ink);margin-top:8px;letter-spacing:.06em;line-height:1.9}
+.hist-q{font-family:var(--serif);font-size:16px;color:var(--ink);margin-top:8px;letter-spacing:.06em;line-height:1.9}
 .hist-cards{font-size:13px;color:var(--ink-dim);margin-top:8px;letter-spacing:.04em}
 .hist-open{color:var(--gold);margin-left:12px;letter-spacing:.1em;white-space:nowrap}
 .care-panel h3{font-family:var(--serif);letter-spacing:.2em;color:var(--gold-hi);font-size:20px;margin-bottom:20px}
-.care-panel p{color:var(--ink-dim);font-size:14.5px;line-height:2.1;letter-spacing:.05em}
+.care-panel p{color:var(--ink-dim);font-size:14px;line-height:2.1;letter-spacing:.05em}
 .care-panel .hotline{margin:20px 0;font-family:var(--serif);color:var(--gold-hi);font-size:18px;letter-spacing:.12em}
 
 footer{margin-top:90px;text-align:center;color:var(--ink-faint);font-size:11.5px;letter-spacing:.14em;line-height:2.2}
@@ -352,7 +354,7 @@ footer .gold{color:var(--gold)}
 .float-settings.show{display:flex}
 
 /* P1-6: 解读折叠 */
-.rc-collapse{font-size:12.5px;color:var(--gold);letter-spacing:.14em;cursor:pointer;background:none;border:none;font-family:var(--sans);margin-top:14px;padding:4px 0;border-bottom:1px solid transparent;transition:border-color .3s}
+.rc-collapse{font-size:13px;color:var(--gold);letter-spacing:.14em;cursor:pointer;background:none;border:none;font-family:var(--sans);margin-top:14px;padding:4px 0;border-bottom:1px solid transparent;transition:border-color .3s}
 .rc-collapse:hover{border-bottom-color:var(--gold-dim)}
 .reading-card.collapsed .rc-block.psy,.reading-card.collapsed .rc-block.example{display:none}
 
