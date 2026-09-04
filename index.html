@@ -62,7 +62,7 @@ textarea:focus-visible,.num-input:focus-visible{outline:2px solid var(--gold-dim
 @keyframes fadeUp{from{opacity:0;transform:translateY(26px)}to{opacity:1;transform:none}}
 
 /* ---------- S0 封面 ---------- */
-#stage-cover{padding-top:16vh;min-height:96vh}
+#stage-cover{padding-top:7vh;min-height:auto;padding-bottom:6vh}
 .brand-mark{width:86px;height:86px;margin:0 auto 30px;border-radius:50%;
   border:1px solid var(--gold-dim);display:flex;align-items:center;justify-content:center;
   background:radial-gradient(circle at 50% 42%,rgba(201,168,106,.14),transparent 70%);
@@ -391,7 +391,7 @@ footer .gold{color:var(--gold)}
 </style>
 </head>
 <body>
-<canvas id="stars"></canvas>
+<canvas id="stars" aria-hidden="true"></canvas>
 <div class="shell">
 
   <!-- ===== S0 封面 ===== -->
@@ -1109,6 +1109,15 @@ const IMG_BASE = "";
 const CARDS = window.tarotCards || [];
 const cardById = {};
 CARDS.forEach((c, i) => { c.__idx = i; cardById[c.id] = c; });
+/* #1 空牌库校验：数据加载失败时阻止流程并提示用户 */
+if (CARDS.length < 78) {
+  document.addEventListener("DOMContentLoaded", () => {
+    const ov = document.createElement("div");
+    ov.style.cssText = "position:fixed;inset:0;z-index:999;background:#07070e;display:flex;align-items:center;justify-content:center;text-align:center;padding:40px;flex-direction:column;gap:20px";
+    ov.innerHTML = `<div style="font-size:48px">🔮</div><p style="color:#c9a86a;font-size:18px;letter-spacing:.1em">牌库数据加载失败（${CARDS.length}/78）</p><p style="color:#847c6a;font-size:13px">请检查网络连接后刷新页面。<br>若问题持续，请稍后再试。</p>`;
+    document.body.appendChild(ov);
+  });
+}
 
 /* ---------- LLM 配置（用户自填，兼容所有 OpenAI 格式 API） ---------- */
 const LLM_KEY = "tata-llm-config";
@@ -1167,13 +1176,13 @@ async function callLLM(question, spreadName, draws) {
         temperature: 0.8, max_tokens: 2000
       })
     });
-    if (!resp.ok) { console.warn("LLM API error:", resp.status); return null; }
+    if (!resp.ok) { return { error: `API 返回 ${resp.status}` }; }
     const data = await resp.json();
     const text = data.choices?.[0]?.message?.content || "";
     const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) return null;
-    return JSON.parse(jsonMatch[0]);
-  } catch (e) { console.warn("LLM call failed:", e.message); return null; }
+    if (!jsonMatch) return { error: "AI 返回格式异常" };
+    return { data: JSON.parse(jsonMatch[0]) };
+  } catch (e) { return { error: e.message || "网络请求失败" }; }
 }
 
 /* ---------- 精神分析解读层（原创撰写） ---------- */
@@ -1646,6 +1655,17 @@ $("#btn-care-back").addEventListener("click", () => go("ask"));
 
 /* AI 设置弹窗 */
 const settingsMask = $("#settings-mask");
+/* #8 弹窗焦点陷阱：Tab 键不跳出弹窗 */
+function trapFocus(container) {
+  container.addEventListener("keydown", e => {
+    if (e.key !== "Tab") return;
+    const focusable = container.querySelectorAll('button, input, textarea, [tabindex]:not([tabindex="-1"])');
+    if (!focusable.length) return;
+    const first = focusable[0], last = focusable[focusable.length - 1];
+    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+  });
+}
 let bodyOverflowSaved = "";
 let savedScrollY = 0;
 function openSettings() {
@@ -1658,6 +1678,7 @@ function openSettings() {
   document.body.style.cssText = "position:fixed;top:0;left:0;right:0;bottom:0;overflow:hidden;width:100%";
   document.body.style.top = `-${savedScrollY}px`;
   settingsMask.classList.add("show");
+  trapFocus(settingsMask);
 }
 function closeSettings() {
   settingsMask.classList.remove("show");
@@ -1689,6 +1710,7 @@ $("#llm-clear").addEventListener("click", () => {
 $("#btn-ask").addEventListener("click", () => {
   errEl.textContent = "";
   const q = qEl.value.trim();
+  if (!q) { errEl.textContent = "请先写下你的问题，再开启仪式。"; qEl.focus(); return; }
   const numsRaw = numEl.value.trim().split(/[\s,，]+/).filter(s => s.length > 0);
   const nums = numsRaw.map(s => parseInt(s, 10)).filter(n => Number.isFinite(n) && n >= 1 && n <= 78);
   const total = SPREADS[state.spreadKey || pickSpread(q)].positions.length;
@@ -1698,7 +1720,7 @@ $("#btn-ask").addEventListener("click", () => {
     errEl.textContent = `你输入了 ${numsRaw.length} 个数字，剩余 ${total - numsRaw.length} 个已凭天意补齐：${nums.join(" ")}`;
     setTimeout(() => { errEl.textContent = ""; }, 4000);
   }
-  if (SAFETY_RE.test(q)) { go("care"); return; }
+  if (SAFETY_RE.test(q)) { qEl.value = ""; go("care"); return; }
   state.question = q; state.numbers = nums; state.number = nums[0];
   state.domain = detectDomain(q);
   if (!state.spreadManual) state.spreadKey = pickSpread(q);
@@ -1725,7 +1747,7 @@ function startRitual() {
   spreadTagEl.textContent = `「${SPREADS[state.spreadKey].name}」 · 共 ${SPREADS[state.spreadKey].positions.length} 张`;
   /* P1-4: 回头用户（有占卜记录）显示跳过 */
   skipBtn.style.display = (loadHistory().length > 0) ? "inline-block" : "none";
-  document.querySelectorAll(".btn-locate-multi, #btn-locate").forEach(b => b.style.display = "none");
+  document.querySelectorAll(".btn-locate-multi").forEach(b => b.style.display = "none");
   go("ritual");
   statusEl.textContent = "正在为你洗牌……";
   subEl.textContent = "宇宙的能量正在汇聚……";
@@ -1769,6 +1791,8 @@ function showSpread() {
     fanEl.appendChild(f);
   });
   fanEl.classList.add("show");
+  /* #10 强制重排，确保 opacity 过渡从 0→1 生效（浏览器优化可能导致 class 变更被合并、跳过过渡） */
+  void fanEl.offsetWidth;
   const numsStr = state.numbers.join(" ");
   statusEl.textContent = "78 张牌已铺成一排。";
   subEl.textContent = `你的数字 ${numsStr} 标记了 ${state.markedCards.length} 张牌。滑动牌桌找到它们，或凭直觉另选。`;
@@ -1776,6 +1800,7 @@ function showSpread() {
   holdLabel.textContent = "凝神聚气";
   holdTip.textContent = "";
   holdWrap.classList.add("show");
+  void holdWrap.offsetWidth; /* #10 强制重排 */
   updateProgress();
 }
 function updateProgress() {
@@ -1872,20 +1897,18 @@ function completeHold() {
   });
 }
 holdBtn.addEventListener("pointerdown", startHold);
-["pointerup", "pointerleave", "pointercancel"].forEach(ev => holdBtn.addEventListener(ev, cancelHold));
+/* #7 移动端长按容差：pointerleave 改为仅 pointerup/pointercancel，且加 40px 容差区域 */
+["pointerup", "pointercancel"].forEach(ev => holdBtn.addEventListener(ev, cancelHold));
+holdBtn.addEventListener("pointermove", e => {
+  if (!holding) return;
+  /* 手指微移不取消，只有离开按钮太远才取消 */
+  const r = holdBtn.getBoundingClientRect();
+  const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+  if (Math.hypot(e.clientX - cx, e.clientY - cy) > r.width / 2 + 40) cancelHold();
+});
 holdBtn.addEventListener("contextmenu", e => e.preventDefault());
 
-/* P1-3: 定位标记牌按钮 */
-const locateBtn = document.createElement("button");
-locateBtn.type = "button"; locateBtn.id = "btn-locate"; locateBtn.textContent = "定位标记牌 ✦";
-locateBtn.addEventListener("click", () => {
-  const marked = fanEl.querySelector(".fcard.marked");
-  if (marked) {
-    const target = Math.max(0, marked.offsetLeft - fanEl.clientWidth / 2 + marked.offsetWidth / 2);
-    fanEl.scrollTo({ left: target });
-  }
-});
-holdWrap.parentNode.insertBefore(locateBtn, holdWrap.nextSibling);
+/* #12 死代码清理：旧版 #btn-locate 已被逐数字 btn-locate-multi 取代，移除 */
 
 /* P1-4: 回头用户跳过仪式 */
 const skipBtn = document.createElement("button");
@@ -1994,13 +2017,15 @@ async function renderReading() {
   const strip = $("#spread-strip"); strip.innerHTML = "";
   state.draws.forEach((d, i) => {
     const m = document.createElement("div");
-    m.className = "mini";
+    m.className = "mini"; m.setAttribute("role", "button"); m.setAttribute("tabindex", "0");
     const mc = makeCardEl(d.card, d.reversed);
     mc.classList.add("flipped");
     const p = document.createElement("div");
     p.className = "pos"; p.textContent = d.pos.n;
     m.appendChild(mc); m.appendChild(p);
-    m.addEventListener("click", () => document.getElementById("rc-" + i)?.scrollIntoView({ behavior: "smooth", block: "center" }));
+    const scrollTo = () => document.getElementById("rc-" + i)?.scrollIntoView({ behavior: "smooth", block: "center" });
+    m.addEventListener("click", scrollTo);
+    m.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); scrollTo(); } });
     strip.appendChild(m);
   });
   /* 逐牌先用规则引擎渲染（AI 会覆盖 psy 段） */
@@ -2054,16 +2079,16 @@ async function renderReading() {
     synEl.innerHTML = `<h3>综 合 解 读</h3><div style="text-align:center;padding:30px;color:var(--gold);font-size:14px;letter-spacing:.2em">塔塔正在凝神解读中……<br><span style="font-size:11px;color:var(--ink-faint);margin-top:8px;display:block">AI 深度解读 · 约 5-15 秒</span></div>`;
     go("reading");
     const aiResult = await callLLM(state.question, spread.name, state.draws);
-    if (aiResult) {
+    if (aiResult.data) {
       /* 覆盖逐牌 psy 段 */
-      if (aiResult.cards) {
-        aiResult.cards.forEach((c, i) => {
+      if (aiResult.data.cards) {
+        aiResult.data.cards.forEach((c, i) => {
           const psyEl = $("#psy-" + i);
           if (psyEl && c.psy) psyEl.querySelector("p").textContent = c.psy;
         });
       }
       /* 覆盖综合解读 */
-      const syn = aiResult.synthesis || {};
+      const syn = aiResult.data.synthesis || {};
       synEl.innerHTML = `
         <h3>综 合 解 读 ${cfg.model ? '<small style="font-size:10px;color:var(--ink-faint);font-weight:400">· AI 深度版</small>' : ''}</h3>
         ${syn.overview ? `<div class="syn-block"><div class="sb-label">能 量 概 览</div><p>${syn.overview}</p></div>` : ""}
@@ -2071,12 +2096,16 @@ async function renderReading() {
         ${syn.tension ? `<div class="syn-block"><div class="sb-label">张 力</div><p>${syn.tension}</p></div>` : ""}
         ${syn.turn ? `<div class="syn-block"><div class="sb-label">转 折</div><p>${syn.turn}</p></div>` : ""}
         ${syn.exit ? `<div class="syn-block"><div class="sb-label">出 口</div><p>${syn.exit}</p></div>` : ""}
-        <div class="energy-word"><div class="ew">${aiResult.energy || energyWord()}</div><div class="ew-sub">本 次 能 量 之 词 · 如果它击中了你，就多停留一会儿</div></div>
+        <div class="energy-word"><div class="ew">${aiResult.data.energy || energyWord()}</div><div class="ew-sub">本 次 能 量 之 词 · 如果它击中了你，就多停留一会儿</div></div>
         ${syn.echo ? `<div class="syn-block"><div class="sb-label">回 响</div><p>${syn.echo}</p></div>` : ""}
         <p class="sovereign">牌显示的是当下的能量，不是注定的结局。<br>你的选择，随时可以改变走向。</p>`;
     } else {
-      /* AI 失败，回落规则引擎综合解读 */
+      /* #2 AI 失败：回落规则引擎 + 用户可见提示 */
       renderSynthesisRule();
+      const notice = document.createElement("div");
+      notice.style.cssText = "text-align:center;padding:10px 16px;margin:12px auto;max-width:420px;font-size:12.5px;color:#d98f7a;border:1px solid rgba(217,143,122,.3);border-radius:10px;letter-spacing:.06em";
+      notice.textContent = `AI 连接失败（${aiResult.error}）· 已使用内置解读。可点 ⚙ 检查 API 设置。`;
+      synEl.parentNode.insertBefore(notice, synEl);
     }
   } else {
     renderSynthesisRule();
@@ -2126,9 +2155,13 @@ function openDeep(i) {
     <div class="m-row"><div class="m-label">学 习 提 示</div><p>${c.learningTip || ""}</p></div>`;
   modalBody.querySelector(".modal-close").addEventListener("click", closeDeep);
   mask.classList.add("show");
-  document.body.style.overflow = "hidden";
+  savedScrollY = window.scrollY;
+  bodyOverflowSaved = document.body.style.cssText;
+  document.body.style.cssText = "position:fixed;top:0;left:0;right:0;bottom:0;overflow:hidden;width:100%";
+  document.body.style.top = `-${savedScrollY}px`;
+  trapFocus(mask);
 }
-function closeDeep() { mask.classList.remove("show"); document.body.style.overflow = ""; }
+function closeDeep() { mask.classList.remove("show"); document.body.style.cssText = bodyOverflowSaved || ""; window.scrollTo(0, savedScrollY); }
 mask.addEventListener("click", e => { if (e.target === mask) closeDeep(); });
 addEventListener("keydown", e => { if (e.key === "Escape") { closeDeep(); closeSettings(); } });
 
@@ -2216,12 +2249,18 @@ function renderHistory() {
   window.scrollTo(0, 0);
 }
 function restoreReading(rec) {
-  if (!SPREADS[rec.sp] || !Array.isArray(rec.d)) return;
+  if (!SPREADS[rec.sp] || !Array.isArray(rec.d])) {
+    alert("这条记录的数据格式不兼容，无法回看。可能是旧版本数据。");
+    return;
+  }
   state.question = rec.q; state.number = rec.n; state.spreadKey = rec.sp;
   state.domain = detectDomain(rec.q); state.seed = rec.seed || 0; state.spreadManual = true;
   const positions = SPREADS[rec.sp].positions;
   state.draws = rec.d.map((x, i) => ({ pos: positions[i] || positions[positions.length - 1], card: cardById[x.id], reversed: !!x.r })).filter(d => d.card);
-  if (!state.draws.length) return;
+  if (!state.draws.length) {
+    alert("这条记录中的牌数据缺失，无法回看。");
+    return;
+  }
   __restoreMode = true;
   renderReading();
 }
