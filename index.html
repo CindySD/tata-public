@@ -23,7 +23,7 @@
 :root{
   --bg:#07070e; --bg2:#0d0b16;
   --gold:#c9a86a; --gold-hi:#eee0b2; --gold-dim:rgba(201,168,106,.4); --gold-faint:rgba(201,168,106,.13);
-  --ink:#eae4d3; --ink-dim:#b3a992; --ink-faint:#847c6a;
+  --ink:#eae4d3; --ink-dim:#b3a992; --ink-faint:#9a927e;
   --panel:rgba(18,16,28,.62); --panel-line:rgba(201,168,106,.16);
   --card-w:142px; --card-r:10px;
   --ease-out:cubic-bezier(.16,1,.3,1);
@@ -98,9 +98,9 @@ textarea:focus-visible,.num-input:focus-visible{outline:2px solid var(--gold-dim
 .example-chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
 .ex-chip{font-size:12.5px;font-family:var(--sans);color:var(--ink-dim);background:rgba(201,168,106,.06);border:1px solid var(--gold-faint);border-radius:999px;padding:6px 14px;cursor:pointer;letter-spacing:.03em;transition:border-color .25s,color .25s}
 .ex-chip:hover,.ex-chip:focus-visible{border-color:var(--gold);color:var(--gold)}
-.help-dot{background:none;border:1px solid var(--gold-faint);color:var(--gold);border-radius:50%;width:20px;height:20px;line-height:1;font-size:12px;cursor:pointer;margin-left:2px;padding:0;font-family:var(--sans);flex:none}
+.help-dot{background:none;border:1px solid var(--gold-faint);color:var(--gold);border-radius:50%;width:24px;height:24px;line-height:22px;font-size:13px;cursor:pointer;margin-left:2px;padding:0;font-family:var(--sans);flex:none}
 .help-dot:hover,.help-dot:focus-visible{border-color:var(--gold)}
-.demo-entry{margin-top:14px;font-size:12.5px;letter-spacing:.08em;opacity:.8}
+.demo-entry{display:block;margin:14px auto 0;font-size:12.5px;letter-spacing:.08em;opacity:.8}
 .demo-entry:hover{opacity:1}
 textarea,.num-input{
   width:100%;background:rgba(255,255,255,.035);border:1px solid var(--panel-line);border-radius:12px;
@@ -189,7 +189,7 @@ textarea{min-height:96px}
   border:1px solid rgba(201,168,106,.32);
   padding:0;appearance:none;-webkit-appearance:none;cursor:default;
   transform:rotate(var(--tilt,0deg));
-  opacity:0;animation:fanIn .4s var(--ease-out) forwards;animation-delay:var(--fd);
+  opacity:1;animation:fanIn .4s var(--ease-out) backwards;animation-delay:var(--fd);
   transition:border-color .2s,box-shadow .2s,filter .2s,transform .2s;
 }
 .fan.armed .fcard{cursor:pointer;border-color:rgba(201,168,106,.55)}
@@ -197,7 +197,7 @@ textarea{min-height:96px}
 .fan .fcard:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 .fan .fcard.picked{opacity:.14;pointer-events:none;border-style:dashed;filter:none;box-shadow:none;transform:rotate(var(--tilt,0deg))}
 .fan .fcard:first-child{margin-left:0}
-.fan .fcard.marked{border-color:var(--gold);transform:rotate(var(--tilt,0deg)) translateY(-6px);z-index:6;animation:fanIn .4s var(--ease-out) var(--fd) forwards,markPulse 2.6s ease-in-out 1s infinite}
+.fan .fcard.marked{border-color:var(--gold);transform:rotate(var(--tilt,0deg)) translateY(-6px);z-index:6;animation:fanIn .4s var(--ease-out) var(--fd) backwards,markPulse 2.6s ease-in-out 1s infinite}
 /* 标记徽章：深底圆片+同色描边，叠在重叠牌面上依然清晰（z-index 高于相邻牌） */
 .fan .fcard.marked::after{content:"✦";position:absolute;top:-11px;left:50%;transform:translateX(-50%);width:21px;height:21px;line-height:19px;border-radius:50%;background:#0b0917;border:1px solid var(--gold-hi);color:var(--gold-hi);font-size:11px;text-align:center;text-shadow:none;z-index:7}
 @keyframes markPulse{0%,100%{box-shadow:0 0 5px rgba(201,168,106,.25)}50%{box-shadow:0 0 14px rgba(201,168,106,.6)}}
@@ -276,7 +276,7 @@ textarea{min-height:96px}
 
 /* 综合解读 */
 .synthesis{margin-top:40px;border:1px solid var(--gold-dim);border-radius:16px;padding:36px 30px 32px;
-  background:linear-gradient(180deg,rgba(201,168,106,.07),rgba(201,168,106,.015));position:relative;overflow:hidden}
+  background:linear-gradient(180deg,rgba(201,168,106,.07),rgba(201,168,106,.015));position:relative}
 .synthesis::before{content:"✦";position:absolute;top:-13px;left:50%;transform:translateX(-50%);background:var(--bg);padding:0 14px;color:var(--gold);font-size:15px}
 .synthesis h3{font-family:var(--serif);text-align:center;letter-spacing:.3em;font-size:18px;color:var(--gold-hi);margin-bottom:24px;font-weight:600}
 .syn-block{margin-top:18px}
@@ -311,8 +311,9 @@ textarea{min-height:96px}
 .modal-mask{position:fixed;inset:0;background:rgba(4,4,9,.82);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);z-index:50;display:none;align-items:flex-start;justify-content:center;padding:6vh 18px;overflow:auto}
 .modal-mask.show{display:flex}
 .modal{background:#100e1b;border:1px solid var(--gold-dim);border-radius:16px;max-width:640px;width:100%;padding:34px 30px;animation:fadeUp .5s ease both;position:relative}
-.modal-close{position:absolute;top:14px;right:18px;background:none;border:none;color:var(--ink-dim);font-size:20px;cursor:pointer;letter-spacing:0}
+.modal-close{position:absolute;top:10px;right:12px;background:none;border:none;color:var(--ink-dim);font-size:20px;cursor:pointer;letter-spacing:0;padding:8px 10px}
 .modal-close:hover{color:var(--gold)}
+.modal-close:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 .modal .m-img{width:150px;margin:0 auto 20px;border-radius:8px;overflow:hidden;border:1px solid var(--gold-dim)}
 .modal .m-img img{width:100%;display:block}
 .modal h4{font-family:var(--serif);text-align:center;font-size:22px;letter-spacing:.16em;color:var(--gold-hi)}
@@ -330,8 +331,10 @@ textarea{min-height:96px}
 /* 占卜历史 */
 .hist-item{border:1px solid var(--panel-line);border-radius:12px;padding:16px 18px;margin-top:14px;cursor:pointer;transition:border .3s,background .3s;background:rgba(255,255,255,.02)}
 .hist-item:hover{border-color:var(--gold-dim);background:rgba(201,168,106,.05)}
+.hist-item:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 .hist-meta{font-size:11.5px;letter-spacing:.14em;color:var(--ink-faint)}
 .hist-q{font-family:var(--serif);font-size:16px;color:var(--ink);margin-top:8px;letter-spacing:.06em;line-height:1.9}
+.reading-q,.hist-q,.modal .m-row p{overflow-wrap:anywhere}
 .hist-cards{font-size:13px;color:var(--ink-dim);margin-top:8px;letter-spacing:.04em}
 .hist-open{color:var(--gold);margin-left:12px;letter-spacing:.1em;white-space:nowrap}
 .care-panel h3{font-family:var(--serif);letter-spacing:.2em;color:var(--gold-hi);font-size:20px;margin-bottom:20px}
@@ -368,14 +371,16 @@ footer .gold{color:var(--gold)}
 /* 浮动按钮（所有舞台可见） */
 .float-settings{position:fixed;right:16px;bottom:16px;z-index:20;width:40px;height:40px;border-radius:50%;
   background:rgba(18,16,28,.85);border:1px solid var(--gold-dim);color:var(--gold);font-size:16px;cursor:pointer;
-  display:none;align-items:center;justify-content:center;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);transition:opacity .3s}
+  display:flex;align-items:center;justify-content:center;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);
+  opacity:0;visibility:hidden;pointer-events:none;transition:opacity .3s,visibility .3s}
 .float-settings:hover{border-color:var(--gold);box-shadow:0 0 14px rgba(201,168,106,.2)}
-.float-settings.show{display:flex}
+.float-settings.show{opacity:1;visibility:visible;pointer-events:auto}
 .float-home{position:fixed;left:16px;top:16px;z-index:20;width:40px;height:40px;border-radius:50%;
   background:rgba(18,16,28,.85);border:1px solid var(--gold-dim);color:var(--gold);font-size:14px;cursor:pointer;
-  display:none;align-items:center;justify-content:center;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);transition:opacity .3s}
+  display:flex;align-items:center;justify-content:center;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);
+  opacity:0;visibility:hidden;pointer-events:none;transition:opacity .3s,visibility .3s}
 .float-home:hover{border-color:var(--gold);box-shadow:0 0 14px rgba(201,168,106,.2)}
-.float-home.show{display:flex}
+.float-home.show{opacity:1;visibility:visible;pointer-events:auto}
 
 /* P1-6: 解读折叠 */
 .rc-collapse{font-size:13px;color:var(--gold);letter-spacing:.14em;cursor:pointer;background:none;border:none;font-family:var(--sans);margin-top:14px;padding:4px 0;border-bottom:1px solid transparent;transition:border-color .3s}
@@ -431,7 +436,7 @@ footer .gold{color:var(--gold)}
   .cover-secondary{gap:10px}
 }
 @media (prefers-reduced-motion:reduce){
-  *{animation-duration:.001s !important;transition-duration:.15s !important}
+  *{animation-duration:.001s !important;animation-iteration-count:1 !important;animation-delay:0s !important;transition-duration:.15s !important}
 }
 
 </style>
@@ -2147,7 +2152,8 @@ function addLocateButtons() {
         fanEl.scrollTo({ left: target });
       }
     });
-    holdWrap.parentNode.insertBefore(lb, holdWrap.nextSibling);
+    /* 插到牌阵名下方（skip 按钮之前），避免落在 arena 内被牌背压住 */
+    skipBtn.parentNode.insertBefore(lb, skipBtn);
     lb.style.display = "inline-block";
   });
 }
@@ -2470,7 +2476,7 @@ function openDeep(i) {
   const alt = d.reversed ? c.upright : c.reversed;
   modalBody.innerHTML = `
     <button class="modal-close" type="button" aria-label="关闭">✕</button>
-    <div class="m-img"><img src="${IMG_BASE + c.image}" data-fallback="${CDN_BASE + c.image}" alt="${c.name}" referrerpolicy="no-referrer" onerror="if(!this.dataset.fb){this.dataset.fb=1;this.src=this.dataset.fallback}"></div>
+    <div class="m-img"><img src="${IMG_BASE + c.image}" data-fallback="${CDN_BASE + c.image}" alt="${c.name}" referrerpolicy="no-referrer" ${d.reversed ? 'style="transform:rotate(180deg)"' : ""} onerror="if(!this.dataset.fb){this.dataset.fb=1;this.src=this.dataset.fallback}"></div>
     <h4>${c.name}${d.reversed ? "（逆位）" : ""}</h4>
     <div class="m-en">${c.englishName} · ${c.group === "major" ? "大阿卡纳" : c.suitName}</div>
     <div class="m-row"><div class="m-label">本 位 解 读 · ${cur.keywords.join(" / ")}</div><p>${cur.meaning}</p></div>
@@ -2523,7 +2529,7 @@ const EXAMPLE_QS = ["我和他之间还有可能吗？", "我该不该接受这�
   $("#num-help").addEventListener("click", () => {
     openInfoModal(`
       <h4>什么是「直觉数字」？</h4>
-      <div class="m-row"><p>塔罗牌共 <b>78 张</b>。在传统仪式里，解牌师不会让你"挑牌"，而是让你凭第一直觉说出几个数字——数字替你定位牌，你的潜意识会替你做选择。</div>
+      <div class="m-row"><p>塔罗牌共 <b>78 张</b>。在传统仪式里，解牌师不会让你「挑牌」，而是让你凭第一直觉说出几个数字——数字替你定位牌，你的潜意识会替你做选择。</div>
       <div class="m-row"><p>所以：<b>没有对错，也不用想太多</b>。心里冒出什么数字，就写什么。想抽几张牌的牌阵，就写几个数字（空格分隔）；少写了也没关系，塔塔会凭天意替你补齐。</div>
       <div class="m-row"><p class="note" style="margin:0">试着把注意力放在你的问题上，深呼吸一次，然后写下浮现的数字。</p></div>`);
   });
