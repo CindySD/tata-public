@@ -2261,6 +2261,8 @@ async function renderReading() {
   if (!__restoreMode) saveHistory();
   __restoreMode = false;
   const spread = SPREADS[state.spreadKey];
+  /* 新一轮解读开始：无条件清除上一轮可能残留的直觉横幅与 AI 失败提示（规则引擎路径也要清） */
+  document.querySelectorAll(".conclusion-banner,.ai-fail-notice").forEach(b => b.remove());
   $("#reading-spread-name").textContent = spread.name;
   $("#reading-q").innerHTML = `你问：「<b>${escapeHtml(state.question)}</b>」`;
   const h = new Date().getHours();
@@ -2440,6 +2442,7 @@ async function renderReading() {
       /* #2 AI 失败：回落规则引擎 + 用户可见提示 */
       renderSynthesisRule();
       const notice = document.createElement("div");
+      notice.className = "ai-fail-notice";
       notice.style.cssText = "text-align:center;padding:10px 16px;margin:12px auto;max-width:420px;font-size:12.5px;color:#d98f7a;border:1px solid rgba(217,143,122,.3);border-radius:10px;letter-spacing:.06em";
       notice.textContent = `AI 连接失败（${aiResult.error}）· 已使用内置解读。可点 ⚙ 检查 API 设置。`;
       synEl.parentNode.insertBefore(notice, synEl);
