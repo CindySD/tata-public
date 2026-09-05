@@ -7,6 +7,14 @@
 <title>塔塔🔮の心灵疗愈室 · 塔罗空间</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Crect width='48' height='48' rx='10' fill='%2307070e'/%3E%3Cpath d='M24 8 L27.5 20.5 L40 24 L27.5 27.5 L24 40 L20.5 27.5 L8 24 L20.5 20.5 Z' fill='%23c9a86a'/%3E%3C/svg%3E">
 <meta name="description" content="塔塔🔮の心灵疗愈室：韦特塔罗 78 张，仪式化盲抽，结合精神分析视角的温柔解读。多人在线，每个人的牌阵都是私密的一次对话。">
+<link rel="canonical" href="https://cindysd.github.io/tata-public/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="塔塔🔮の心灵疗愈室">
+<meta property="og:title" content="塔塔🔮の心灵疗愈室 · 塔罗空间">
+<meta property="og:description" content="韦特塔罗 78 张，仪式化盲抽，结合精神分析视角的温柔解读。牌不是水晶球，而是一面镜子。">
+<meta property="og:url" content="https://cindysd.github.io/tata-public/">
+<meta property="og:image" content="https://cindysd.github.io/tata-public/assets/cards/ar17.jpg">
+<meta name="twitter:card" content="summary_large_image">
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/cormorant-garamond@5/400.css" integrity="sha384-TywduNeFb4/y4TBfpm7v7fhzo7/g2GwkW7pU0tvZVULYmPq5Vb8Dq6s6oFthQeEY" crossorigin="anonymous">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/cormorant-garamond@5/600.css" integrity="sha384-ZNeoKX2Q6iDYYsJuXi1+PdXiBX+OFdPXAPlHPQTHtw93snCl4Jg+W+jCrjfGAewa" crossorigin="anonymous">
@@ -81,7 +89,7 @@ textarea:focus-visible,.num-input:focus-visible{outline:2px solid var(--gold-dim
 
 /* ---------- S1 提问 ---------- */
 #stage-ask{padding-top:9vh}
-.ask-panel{background:var(--panel);border:1px solid var(--panel-line);border-radius:16px;padding:34px 28px;backdrop-filter:blur(6px)}
+.ask-panel{background:var(--panel);border:1px solid var(--panel-line);border-radius:16px;padding:34px 28px;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
 .guide-words{font-family:var(--serif);font-size:16px;line-height:2.2;color:var(--ink);letter-spacing:.1em;text-align:center;margin-bottom:30px}
 .guide-words em{font-style:normal;color:var(--gold-hi)}
 .field-label{font-size:12px;letter-spacing:.3em;color:var(--gold);margin:26px 0 10px;display:flex;align-items:center;gap:10px}
@@ -197,7 +205,7 @@ textarea{min-height:96px}
 /* 凝神聚气按钮（叠加在 arena 底部，跟牌桌一起在视野内） */
 .hold-wrap{position:absolute;left:50%;bottom:6px;transform:translateX(-50%);z-index:15;
   display:flex;flex-direction:column;align-items:center;gap:6px;opacity:0;pointer-events:none;transition:opacity .7s;
-  background:rgba(7,7,14,.78);border-radius:12px;padding:6px 16px 4px;backdrop-filter:blur(6px)}
+  background:rgba(7,7,14,.78);border-radius:12px;padding:6px 16px 4px;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
 .hold-wrap.show{opacity:1;pointer-events:auto}
 .hold-btn{
   position:relative;width:96px;height:96px;border-radius:50%;cursor:pointer;border:none;outline:none;
@@ -238,7 +246,7 @@ textarea{min-height:96px}
 .spread-strip .mini .pos{font-size:11px;color:var(--ink-dim);letter-spacing:.14em;margin-top:7px}
 .reading-card{
   background:var(--panel);border:1px solid var(--panel-line);border-radius:16px;
-  padding:30px 28px;margin-top:26px;backdrop-filter:blur(6px);animation:fadeUp .8s ease both;
+  padding:30px 28px;margin-top:26px;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);animation:fadeUp .8s ease both;
 }
 .reading-card .rc-head{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;border-bottom:1px solid var(--panel-line);padding-bottom:16px}
 .rc-pos{font-size:12px;letter-spacing:.34em;color:var(--gold)}
@@ -291,7 +299,7 @@ textarea{min-height:96px}
 .ending-actions{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
 
 /* 弹窗 */
-.modal-mask{position:fixed;inset:0;background:rgba(4,4,9,.82);backdrop-filter:blur(4px);z-index:50;display:none;align-items:flex-start;justify-content:center;padding:6vh 18px;overflow:auto}
+.modal-mask{position:fixed;inset:0;background:rgba(4,4,9,.82);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);z-index:50;display:none;align-items:flex-start;justify-content:center;padding:6vh 18px;overflow:auto}
 .modal-mask.show{display:flex}
 .modal{background:#100e1b;border:1px solid var(--gold-dim);border-radius:16px;max-width:640px;width:100%;padding:34px 30px;animation:fadeUp .5s ease both;position:relative}
 .modal-close{position:absolute;top:14px;right:18px;background:none;border:none;color:var(--ink-dim);font-size:20px;cursor:pointer;letter-spacing:0}
@@ -350,12 +358,12 @@ footer .gold{color:var(--gold)}
 /* 浮动按钮（所有舞台可见） */
 .float-settings{position:fixed;right:16px;bottom:16px;z-index:20;width:40px;height:40px;border-radius:50%;
   background:rgba(18,16,28,.85);border:1px solid var(--gold-dim);color:var(--gold);font-size:16px;cursor:pointer;
-  display:none;align-items:center;justify-content:center;backdrop-filter:blur(6px);transition:opacity .3s}
+  display:none;align-items:center;justify-content:center;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);transition:opacity .3s}
 .float-settings:hover{border-color:var(--gold);box-shadow:0 0 14px rgba(201,168,106,.2)}
 .float-settings.show{display:flex}
 .float-home{position:fixed;left:16px;top:16px;z-index:20;width:40px;height:40px;border-radius:50%;
   background:rgba(18,16,28,.85);border:1px solid var(--gold-dim);color:var(--gold);font-size:14px;cursor:pointer;
-  display:none;align-items:center;justify-content:center;backdrop-filter:blur(6px);transition:opacity .3s}
+  display:none;align-items:center;justify-content:center;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);transition:opacity .3s}
 .float-home:hover{border-color:var(--gold);box-shadow:0 0 14px rgba(201,168,106,.2)}
 .float-home.show{display:flex}
 
@@ -1507,8 +1515,19 @@ function buildDraws() {
   }
   state.draws = [];
   state.seed = ((state.numbers[0] * 2654435761) ^ hashStr(state.question) ^ (Date.now() & 0xFFFFF)) >>> 0;
-  // 预热全部牌图（本地 assets，一次加载后续零等待）
-  CARDS.forEach(c => { const im = new Image(); im.src = IMG_BASE + c.image; });
+  // 预热牌图：标记牌优先，其余按每批 8 张在空闲时段加载（避免 78 张并发挤占移动端带宽）
+  const markedSet = new Set(state.markedCards.map(m => m.card));
+  const preheatList = [...markedSet, ...CARDS.filter(c => !markedSet.has(c))];
+  const PREHEAT_CHUNK = 8;
+  const idle = (typeof requestIdleCallback === "function") ? requestIdleCallback : (fn => setTimeout(fn, 120));
+  const loadChunk = (k) => {
+    if (k >= preheatList.length) return;
+    for (let j = k; j < Math.min(k + PREHEAT_CHUNK, preheatList.length); j++) {
+      const im = new Image(); im.src = IMG_BASE + preheatList[j].image;
+    }
+    idle(() => loadChunk(k + PREHEAT_CHUNK));
+  };
+  loadChunk(0);
 }
 
 /* ---------- 解读合成 ---------- */
@@ -1807,6 +1826,11 @@ const holdWrap = $("#hold-wrap"), holdBtn = $("#hold-btn"), holdRing = $("#hold-
 const progressLine = $("#progress-line"), revealedRow = $("#revealed-row"), nextCta = $("#next-cta"), arenaHint = $("#arena-hint");
 const RING_LEN = 392;
 let holdTimer = null, holdStart = 0, holdNeed = 1500, holding = false, ritualBusy = false, fanArmed = false;
+/* 仪式相关时序常量（集中管理，避免散落的魔法数字） */
+const SHUFFLE_MS = 2700;      /* 洗牌轨道动画时长 */
+const SHUFFLE_GAP_MS = 500;   /* 洗牌结束到铺牌的间隔 */
+const HOLD_HIDE_MS = 3000;    /* 凝神完成后定位按钮收起的延时 */
+const REVERSED_CHANCE = 0.34; /* 逆位概率（约三分之一，对应传统韦特逆位习惯） */
 
 function startRitual() {
   state.revealed = 0;
@@ -1839,8 +1863,8 @@ function startRitual() {
   orbitLayer.classList.add("show");
   setTimeout(() => {
     orbitLayer.classList.remove("show");
-    setTimeout(showSpread, 500);
-  }, 2700);
+    setTimeout(showSpread, SHUFFLE_GAP_MS);
+  }, SHUFFLE_MS);
 }
 function showSpread() {
   /* 全副 78 张牌背铺成牌桌，每个数字标记一张牌（不同序号颜色） */
@@ -1891,7 +1915,7 @@ function pickFromSpread(el) {
   /* 隐藏定位按钮 */
   const locBtns = document.querySelectorAll("[id^='btn-locate-']");
   locBtns.forEach(b => b.style.display = "none");
-  revealChosen(card, Math.random() < 0.34);
+  revealChosen(card, Math.random() < REVERSED_CHANCE);
 }
 /* 牌桌横向滑动：桌面鼠标拖拽 + 滚轮转横向，触摸走原生 pan-x；拖拽后抑制误触点击 */
 let dragState = null, justDragged = false;
@@ -1944,8 +1968,15 @@ function completeHold() {
   statusEl.textContent = "能量已汇聚。";
   subEl.textContent = "凭直觉选牌——标记牌或任意一张都可以。";
   holdTip.textContent = "✦ 凝神完成 · 牌已苏醒";
-  /* 多定位按钮 */
+  /* 多定位按钮（与跳过仪式路径共用 addLocateButtons，防止重复创建） */
+  addLocateButtons();
+  /* 3 秒后收起按钮，保留牌背金光 */
+  setTimeout(() => { holdWrap.classList.remove("show"); }, HOLD_HIDE_MS);
+}
+/* 多数字标记牌的定位按钮：completeHold 与跳过仪式两处共用 */
+function addLocateButtons() {
   state.markedCards.forEach(mc => {
+    if (document.getElementById("btn-locate-" + mc.order)) return;
     const lb = document.createElement("button");
     lb.type = "button"; lb.id = "btn-locate-" + mc.order; lb.className = "btn-locate-multi";
     lb.textContent = `定位①${mc.order + 1} `;
@@ -1960,8 +1991,6 @@ function completeHold() {
     holdWrap.parentNode.insertBefore(lb, holdWrap.nextSibling);
     lb.style.display = "inline-block";
   });
-  /* 3 秒后收起按钮，保留牌背金光 */
-  setTimeout(() => { holdWrap.classList.remove("show"); }, 3000);
 }
 holdBtn.addEventListener("pointerdown", startHold);
 /* #7 移动端长按容差：pointerleave 改为仅 pointerup/pointercancel，且加 40px 容差区域 */
@@ -1988,17 +2017,7 @@ skipBtn.addEventListener("click", () => {
     fanEl.classList.add("blessed");
     statusEl.textContent = "牌已就绪。";
     subEl.textContent = `凭直觉选牌——标记牌或任意一张都可以。`;
-    state.markedCards.forEach(mc => {
-      const lb = document.createElement("button");
-      lb.type = "button"; lb.id = "btn-locate-" + mc.order; lb.className = "btn-locate-multi";
-      lb.textContent = `定位①${mc.order + 1} `;
-      lb.style.cssText = "font-size:12px;color:var(--gold);border:1px solid var(--gold-faint);border-radius:999px;padding:5px 14px;cursor:pointer;background:none;font-family:var(--sans);margin-top:6px";
-      lb.addEventListener("click", () => {
-        const markedEl = [...fanEl.querySelectorAll(".fcard")].find(f => f.__card === mc.card && !f.classList.contains("picked"));
-        if (markedEl) { const target = Math.max(0, markedEl.offsetLeft - fanEl.clientWidth / 2 + markedEl.offsetWidth / 2); fanEl.scrollTo({ left: target }); }
-      });
-      holdWrap.parentNode.insertBefore(lb, holdWrap.nextSibling);
-    });
+    addLocateButtons();
   }, 800);
 });
 spreadTagEl.parentNode.insertBefore(skipBtn, spreadTagEl.nextSibling);
@@ -2332,12 +2351,16 @@ function renderHistory() {
   h.forEach(rec => {
     const it = document.createElement("div");
     it.className = "hist-item";
+    it.tabIndex = 0; it.setAttribute("role", "button"); it.setAttribute("aria-label", `回看 ${fmtTime(rec.t)} 的占卜记录`);
     const cards = rec.d.map(x => { const c = cardById[x.id]; return c ? `${c.name}${x.r ? "·逆" : ""}` : "？"; }).join(" / ");
     it.innerHTML = `
       <div class="hist-meta">${fmtTime(rec.t)} · ${SPREADS[rec.sp] ? SPREADS[rec.sp].name : rec.sp} · 数字 ${rec.n}${rec.e ? ` · <span class="gold">${escapeHtml(rec.e)}</span>` : ""}</div>
       <div class="hist-q">「${escapeHtml(rec.q)}」</div>
       <div class="hist-cards">${cards}<span class="hist-open">回看 →</span></div>`;
     it.addEventListener("click", () => restoreReading(rec));
+    it.addEventListener("keydown", e => {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); restoreReading(rec); }
+    });
     box.appendChild(it);
   });
   go("history");
