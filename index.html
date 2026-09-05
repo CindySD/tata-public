@@ -2131,11 +2131,12 @@ function completeHold() {
   /* 3 秒后收起按钮，保留牌背金光 */
   setTimeout(() => { holdWrap.classList.remove("show"); }, HOLD_HIDE_MS);
 }
-/* 多数字标记牌的定位按钮：completeHold 与跳过仪式两处共用 */
+/* 多数字标记牌的定位按钮：completeHold 与跳过仪式两处共用；已存在的重新显示（startRitual 每轮会隐藏它们） */
 function addLocateButtons() {
   state.markedCards.forEach(mc => {
-    if (document.getElementById("btn-locate-" + mc.order)) return;
-    const lb = document.createElement("button");
+    let lb = document.getElementById("btn-locate-" + mc.order);
+    if (lb) { lb.style.display = "inline-block"; return; }
+    lb = document.createElement("button");
     lb.type = "button"; lb.id = "btn-locate-" + mc.order; lb.className = "btn-locate-multi";
     lb.textContent = `定位①${mc.order + 1} `;
     lb.style.cssText = "font-size:12px;color:var(--gold);border:1px solid var(--gold-faint);border-radius:999px;padding:5px 14px;cursor:pointer;background:none;font-family:var(--sans);margin-top:6px;display:none";
