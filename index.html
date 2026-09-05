@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; font-src https://cdn.jsdelivr.net data:; img-src 'self' https://cdn.jsdelivr.net data:; connect-src *; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; font-src https://cdn.jsdelivr.net data:; img-src 'self' https://cdn.jsdelivr.net data: blob:; connect-src *; base-uri 'none'; form-action 'none'">
 <title>塔塔🔮の心灵疗愈室 · 塔罗空间</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Crect width='48' height='48' rx='10' fill='%2307070e'/%3E%3Cpath d='M24 8 L27.5 20.5 L40 24 L27.5 27.5 L24 40 L20.5 27.5 L8 24 L20.5 20.5 Z' fill='%23c9a86a'/%3E%3C/svg%3E">
 <meta name="description" content="塔塔🔮の心灵疗愈室：韦特塔罗 78 张，仪式化盲抽，结合精神分析视角的温柔解读。多人在线，每个人的牌阵都是私密的一次对话。">
@@ -94,6 +94,14 @@ textarea:focus-visible,.num-input:focus-visible{outline:2px solid var(--gold-dim
 .guide-words em{font-style:normal;color:var(--gold-hi)}
 .field-label{font-size:12px;letter-spacing:.3em;color:var(--gold);margin:26px 0 10px;display:flex;align-items:center;gap:10px}
 .field-label::after{content:"";height:1px;flex:1;background:linear-gradient(90deg,var(--gold-faint),transparent)}
+/* F-002 新手引导 */
+.example-chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.ex-chip{font-size:12.5px;font-family:var(--sans);color:var(--ink-dim);background:rgba(201,168,106,.06);border:1px solid var(--gold-faint);border-radius:999px;padding:6px 14px;cursor:pointer;letter-spacing:.03em;transition:border-color .25s,color .25s}
+.ex-chip:hover,.ex-chip:focus-visible{border-color:var(--gold);color:var(--gold)}
+.help-dot{background:none;border:1px solid var(--gold-faint);color:var(--gold);border-radius:50%;width:20px;height:20px;line-height:1;font-size:12px;cursor:pointer;margin-left:2px;padding:0;font-family:var(--sans);flex:none}
+.help-dot:hover,.help-dot:focus-visible{border-color:var(--gold)}
+.demo-entry{margin-top:14px;font-size:12.5px;letter-spacing:.08em;opacity:.8}
+.demo-entry:hover{opacity:1}
 textarea,.num-input{
   width:100%;background:rgba(255,255,255,.035);border:1px solid var(--panel-line);border-radius:12px;
   color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.8;padding:14px 16px;outline:none;transition:border .3s, box-shadow .3s;resize:vertical;
@@ -448,6 +456,7 @@ footer .gold{color:var(--gold)}
       <button class="btn ghost" id="btn-hist" type="button">占卜记录</button>
       <button class="btn ghost" id="btn-settings" type="button">⚙ AI 设置</button>
     </div>
+    <button class="btn ghost demo-entry" id="btn-demo" type="button">第一次来？✦ 试试演示占卜</button>
   </section>
 
   <!-- ===== S1 提问 ===== -->
@@ -458,11 +467,12 @@ footer .gold{color:var(--gold)}
 
       <div class="field-label">写下你的问题</div>
       <textarea id="question" maxlength="120" placeholder="例如：我和他之间还有可能吗？／我该不该接受这份新工作？／最近很迷茫，想看看方向……"></textarea>
+      <div class="example-chips" id="example-chips" aria-label="不知道问什么？点一个试试"></div>
       <div class="ask-hint">问题越具体，牌的回答越清晰。避免只问「是或否」，试着问「我该如何面对」。</div>
 
       <div class="ask-row">
         <div class="num-wrap">
-          <div class="field-label">直觉数字</div>
+          <div class="field-label">直觉数字 <button class="help-dot" id="num-help" type="button" aria-label="什么是直觉数字？">ⓘ</button></div>
           <input class="num-input" id="lucky-num" type="text" inputmode="numeric" placeholder="如 37 12 55">
           <div class="ask-hint" id="num-hint" style="margin-top:8px;text-align:center">空格分隔多个数字<br>每个数字标记一张牌</div>
         </div>
@@ -523,6 +533,7 @@ footer .gold{color:var(--gold)}
       <div class="divider">✦</div>
       <p>牌面的指引已经呈现。<br>你是否需要对某张牌做更深入的解读？<br>或者想针对新的问题重新抽牌？</p>
       <div class="ending-actions">
+        <button class="btn ghost" id="btn-card" type="button">✦ 生成分享图</button>
         <button class="btn ghost" id="btn-share" type="button">✦ 抄收这段指引</button>
         <button class="btn ghost" id="btn-again" type="button">✦ 针对新问题重新抽牌</button>
         <button class="btn ghost" id="btn-hist-2" type="button">✦ 查看占卜记录</button>
@@ -1253,6 +1264,151 @@ async function callLLM(question, spreadName, draws) {
     if (!jsonMatch) return { error: "AI 返回格式异常" };
     return { data: JSON.parse(jsonMatch[0]) };
   } catch (e) { return { error: e.message || "AI 返回解析失败" }; }
+}
+
+/* ---------- F-001: AI 流式解读（SSE 增量渲染，失败自动回落一次性请求） ---------- */
+/* 从文本中提取完整闭合的 "key":"value"（值允许转义），返回原始转义串或 null */
+function scanJsonString(src, key) {
+  const re = new RegExp('"' + key + '"\\s*:\\s*"((?:[^"\\\\]|\\\\.)*)"');
+  const m = src.match(re);
+  return m ? m[1] : null;
+}
+/* 提取数组第 i 个对象元素的原文（括号配对，忽略字符串内的括号与引号） */
+function arrayElement(src, arrKey, i) {
+  const k = src.indexOf('"' + arrKey + '"');
+  if (k === -1) return null;
+  const lb = src.indexOf("[", k);
+  if (lb === -1) return null;
+  let depth = 0, idx = -1, start = -1, inStr = false, esc = false;
+  for (let p = lb; p < src.length; p++) {
+    const ch = src[p];
+    if (inStr) {
+      if (esc) esc = false;
+      else if (ch === "\\") esc = true;
+      else if (ch === '"') inStr = false;
+      continue;
+    }
+    if (ch === '"') { inStr = true; continue; }
+    if (ch === "{") { if (depth === 0) { idx++; if (idx === i) start = p; } depth++; }
+    else if (ch === "}") { depth--; if (start !== -1 && depth === 0) return src.slice(start, p + 1); }
+    else if (ch === "]") { return null; }
+  }
+  return null;
+}
+/* 提取顶层对象（如 synthesis）的原文 */
+function objectElement(src, objKey) {
+  const k = src.indexOf('"' + objKey + '"');
+  if (k === -1) return null;
+  const ob = src.indexOf("{", k);
+  if (ob === -1) return null;
+  let depth = 0, inStr = false, esc = false;
+  for (let p = ob; p < src.length; p++) {
+    const ch = src[p];
+    if (inStr) {
+      if (esc) esc = false;
+      else if (ch === "\\") esc = true;
+      else if (ch === '"') inStr = false;
+      continue;
+    }
+    if (ch === '"') { inStr = true; continue; }
+    if (ch === "{") depth++;
+    else if (ch === "}") { depth--; if (depth === 0) return src.slice(ob, p + 1); }
+  }
+  return null;
+}
+function unescapeJson(raw) {
+  try { return JSON.parse('"' + raw + '"'); } catch (e) { return raw; }
+}
+async function callLLMStream(question, spreadName, draws, onPart) {
+  const cfg = loadLLMConfig();
+  if (!cfg.apiKey || !cfg.baseURL) return null;
+  const now = new Date();
+  const dateStr = `${now.getFullYear()}年${now.getMonth() + 1}月${now.getDate()}日`;
+  const userContent = `当前日期：${dateStr}\n问题：${question}\n牌阵：${spreadName}\n抽到的牌：\n${draws.map((d, i) => `${i + 1}. ${d.pos.n}位置：${d.card.name}${d.reversed ? "（逆位）" : ""}——关键词：${(d.reversed ? d.card.reversed : d.card.upright).keywords.join("、")}`).join("\n")}\n\n请按指定JSON格式输出解读。`;
+  const url = cfg.baseURL.replace(/\/$/, "") + "/chat/completions";
+  const STREAM_TIMEOUT = 60000; /* 全程上限（含逐字生成时间） */
+  let resp;
+  try {
+    resp = await llmFetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + cfg.apiKey },
+      body: JSON.stringify({
+        model: cfg.model || "qwen-turbo",
+        messages: [{ role: "system", content: LLM_SYSTEM_PROMPT }, { role: "user", content: userContent }],
+        temperature: 0.8, max_tokens: 2000,
+        stream: true
+      })
+    }, STREAM_TIMEOUT);
+  } catch (e) {
+    return { error: (e && e.name === "AbortError") ? "请求超时" : (e.message || "网络请求失败") };
+  }
+  if (!resp.ok) return { error: `API 返回 ${resp.status}` };
+  const ctype = resp.headers.get("content-type") || "";
+  if (!resp.body || !ctype.includes("event-stream")) {
+    /* 该 API 不支持流式：按一次性返回处理 */
+    try {
+      const data = await resp.json();
+      const text = data.choices?.[0]?.message?.content || "";
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) return { error: "AI 返回格式异常" };
+      return { data: JSON.parse(jsonMatch[0]) };
+    } catch (e) { return { error: e.message || "AI 返回解析失败" }; }
+  }
+  try {
+    const reader = resp.body.getReader();
+    const dec = new TextDecoder();
+    let acc = "", sse = "";
+    const seen = new Set();
+    const deliver = (path, rawVal) => {
+      if (rawVal === null || seen.has(path)) return;
+      seen.add(path);
+      onPart(path, unescapeJson(rawVal));
+    };
+    const scanAll = () => {
+      const c = scanJsonString(acc, "conclusion");
+      if (c !== null) deliver("conclusion", c);
+      if (acc.indexOf('"cards"') !== -1) {
+        for (let i = 0; i < draws.length; i++) {
+          const obj = arrayElement(acc, "cards", i);
+          if (!obj) break;
+          ["core", "psy", "example"].forEach(f => { const v = scanJsonString(obj, f); if (v !== null) deliver("cards." + i + "." + f, v); });
+        }
+      }
+      const syn = objectElement(acc, "synthesis");
+      if (syn) ["overview", "start", "tension", "turn", "judgment"].forEach(f => { const v = scanJsonString(syn, f); if (v !== null) deliver("syn." + f, v); });
+      const en = scanJsonString(acc, "energy");
+      if (en !== null) deliver("energy", en);
+      const cl = scanJsonString(acc, "closing");
+      if (cl !== null) deliver("closing", cl);
+    };
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      sse += dec.decode(value, { stream: true });
+      /* SSE 帧：以空行分隔，取 data: 行内容（忽略 [DONE] 与注释行） */
+      let nl;
+      while ((nl = sse.indexOf("\n")) !== -1) {
+        const line = sse.slice(0, nl).replace(/\r$/, "");
+        sse = sse.slice(nl + 1);
+        if (line.startsWith("data:")) {
+          const payload = line.slice(5).trim();
+          if (payload === "[DONE]") continue;
+          try {
+            const chunk = JSON.parse(payload);
+            const delta = chunk.choices?.[0]?.delta?.content || chunk.choices?.[0]?.text || "";
+            if (delta) { acc += delta; scanAll(); }
+          } catch (e) { /* 半帧 JSON，等下一块 */ }
+        }
+      }
+    }
+    /* 流结束：以完整文本做权威解析 */
+    const jsonMatch = acc.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) return { error: "AI 返回格式异常" };
+    return { data: JSON.parse(jsonMatch[0]) };
+  } catch (e) {
+    /* 流中途失败（含超时中断）：让调用方回落一次性请求 */
+    return { error: (e && e.name === "AbortError") ? "请求超时" : (e.message || "流式读取失败") };
+  }
 }
 
 /* ---------- 精神分析解读层（原创撰写） ---------- */
@@ -2164,12 +2320,70 @@ async function renderReading() {
   if (cfg.apiKey && cfg.baseURL) {
     /* 显示 AI 加载态 */
     const synEl = $("#synthesis");
-    synEl.innerHTML = `<h3>综 合 解 读</h3><div style="text-align:center;padding:30px;color:var(--gold);font-size:14px;letter-spacing:.2em">塔塔正在凝神解读中……<br><span style="font-size:11px;color:var(--ink-faint);margin-top:8px;display:block">AI 深度解读 · 约 5-15 秒</span></div>`;
+    synEl.innerHTML = `<h3>综 合 解 读</h3><div style="text-align:center;padding:30px;color:var(--gold);font-size:14px;letter-spacing:.2em">塔塔正在凝神解读中……<br><span style="font-size:11px;color:var(--ink-faint);margin-top:8px;display:block">AI 深度解读 · 字句会逐段浮现</span></div>`;
     go("reading");
-    const aiResult = await callLLM(state.question, spread.name, state.draws);
+    /* F-001: 流式优先——字段到位即渲染（首字约 1-2 秒），失败静默回落一次性请求 */
+    const aiResult = await new Promise(async (resolve) => {
+      let result = null;
+      const streamCards = [];
+      const streamSyn = {};
+      let bannerEl = null, energyEl = null;
+      const esc = escHtml;
+      const paintSynPartial = () => {
+        const syn = streamSyn;
+        if (!Object.keys(syn).length) return;
+        let h = `<h3>综 合 解 读 ${cfg.model ? '<small style="font-size:10px;color:var(--ink-faint);font-weight:400">· AI 深度版</small>' : ''}</h3>`;
+        if (syn.overview) h += `<div class="syn-block"><div class="sb-label">能 量 概 览</div><p>${esc(syn.overview)}</p></div>`;
+        if (syn.start) h += `<div class="syn-block"><div class="sb-label">起 点</div><p>${esc(syn.start)}</p></div>`;
+        if (syn.tension) h += `<div class="syn-block"><div class="sb-label">张 力</div><p>${esc(syn.tension)}</p></div>`;
+        if (syn.turn) h += `<div class="syn-block"><div class="sb-label">转 折</div><p>${esc(syn.turn)}</p></div>`;
+        if (syn.judgment) h += `<div class="syn-block"><div class="sb-label">综 合 判 断</div><p style="color:var(--gold-hi)">${esc(syn.judgment)}</p></div>`;
+        h += `<p class="sovereign" style="opacity:.55">塔塔还在落笔……</p>`;
+        $("#synthesis").innerHTML = h;
+      };
+      try {
+        result = await callLLMStream(state.question, spread.name, state.draws, (path, val) => {
+          if (path === "conclusion") {
+            if (!bannerEl) {
+              bannerEl = document.createElement("div");
+              bannerEl.className = "conclusion-banner";
+              const readingHead = document.querySelector(".reading-head");
+              readingHead?.parentNode.insertBefore(bannerEl, readingHead.nextSibling);
+            }
+            bannerEl.innerHTML = `<span class="cb-label">塔 塔 的 直 觉</span><p>${esc(val)}</p>`;
+          } else if (path.indexOf("cards.") === 0) {
+            const seg = path.split(".");
+            const i = +seg[1], f = seg[2];
+            streamCards[i] = streamCards[i] || {};
+            streamCards[i][f] = val;
+            const psyEl = $("#psy-" + i);
+            if (psyEl) {
+              const c = streamCards[i];
+              let html = "";
+              if (c.core) html += `<p style="color:var(--gold);font-size:13px;margin-bottom:6px">${esc(c.core)}</p>`;
+              if (c.psy) html += `<p>${esc(c.psy)}</p>`;
+              if (c.example) html += `<p style="color:var(--ink-dim);font-size:13px;margin-top:6px;font-style:italic">💭 ${esc(c.example)}</p>`;
+              if (html) psyEl.innerHTML = html;
+            }
+          } else if (path.indexOf("syn.") === 0) {
+            streamSyn[path.slice(4)] = val;
+            paintSynPartial();
+          } else if (path === "energy") {
+            energyEl = document.querySelector("#synthesis .energy-word .ew");
+            if (energyEl) energyEl.textContent = val;
+          }
+          /* closing/advice 在最终权威渲染时呈现 */
+        });
+      } catch (e) { result = { error: e.message || "流式解读失败" }; }
+      if (!result || !result.data || result.error) {
+        result = await callLLM(state.question, spread.name, state.draws); /* 回落：一次性请求 */
+      }
+      resolve(result);
+    });
     if (aiResult.data) {
       const d = aiResult.data;
-      /* 结论先行：顶部 banner */
+      /* 结论先行：顶部 banner（流式阶段可能已插入，先清掉再权威渲染） */
+      document.querySelectorAll(".conclusion-banner").forEach(b => b.remove());
       if (d.conclusion) {
         const banner = document.createElement("div");
         banner.className = "conclusion-banner";
@@ -2279,6 +2493,48 @@ function closeDeep() { mask.classList.remove("show"); document.body.style.cssTex
 mask.addEventListener("click", e => { if (e.target === mask) closeDeep(); });
 addEventListener("keydown", e => { if (e.key === "Escape") { closeDeep(); closeSettings(); } });
 
+/* F-002: 通用信息弹窗（复用深读弹窗遮罩） */
+function openInfoModal(html) {
+  modalBody.innerHTML = `<button class="modal-close" type="button" aria-label="关闭">✕</button>${html}`;
+  modalBody.querySelector(".modal-close").addEventListener("click", closeDeep);
+  mask.classList.add("show");
+  savedScrollY = window.scrollY;
+  bodyOverflowSaved = document.body.style.cssText;
+  document.body.style.cssText = "position:fixed;top:0;left:0;right:0;bottom:0;overflow:hidden;width:100%";
+  document.body.style.top = `-${savedScrollY}px`;
+  trapFocus(mask);
+}
+
+/* F-002: 新手引导——示例问题 chips + 直觉数字解释 + 演示占卜 */
+const EXAMPLE_QS = ["我和他之间还有可能吗？", "我该不该接受这份新工作？", "最近很迷茫，想看看方向", "这段时间我该留意什么？"];
+(function initOnboarding() {
+  const chipBox = $("#example-chips");
+  if (chipBox && !chipBox.children.length) {
+    EXAMPLE_QS.forEach(q => {
+      const c = document.createElement("button");
+      c.type = "button"; c.className = "ex-chip"; c.textContent = q;
+      c.addEventListener("click", () => { qEl.value = q; qEl.dispatchEvent(new Event("input", { bubbles: true })); qEl.focus(); });
+      chipBox.appendChild(c);
+    });
+  }
+  $("#num-help").addEventListener("click", () => {
+    openInfoModal(`
+      <h4>什么是「直觉数字」？</h4>
+      <div class="m-row"><p>塔罗牌共 <b>78 张</b>。在传统仪式里，解牌师不会让你"挑牌"，而是让你凭第一直觉说出几个数字——数字替你定位牌，你的潜意识会替你做选择。</div>
+      <div class="m-row"><p>所以：<b>没有对错，也不用想太多</b>。心里冒出什么数字，就写什么。想抽几张牌的牌阵，就写几个数字（空格分隔）；少写了也没关系，塔塔会凭天意替你补齐。</div>
+      <div class="m-row"><p class="note" style="margin:0">试着把注意力放在你的问题上，深呼吸一次，然后写下浮现的数字。</p></div>`);
+  });
+  $("#btn-demo").addEventListener("click", () => {
+    qEl.value = "最近的我，该把力气用在哪里？";
+    qEl.dispatchEvent(new Event("input", { bubbles: true }));
+    numEl.value = "37 12 55";
+    state.spreadManual = true; state.spreadKey = "three_time";
+    refreshChips(); reasonEl.textContent = "";
+    errEl.textContent = "";
+    $("#btn-ask").click(); /* 走与真实占卜完全相同的流程 */
+  });
+})();
+
 /* 重新抽牌 */
 $("#btn-again").addEventListener("click", () => {
   qEl.value = ""; numEl.value = ""; errEl.textContent = "";
@@ -2324,6 +2580,137 @@ function fallbackCopy(txt, done) {
   try { document.execCommand("copy"); done(); } catch (e) {}
   ta.remove();
 }
+
+/* ---------- F-003: 分享图片卡片（Canvas 手绘，零依赖零后端） ---------- */
+const SHARE_W = 1080, SHARE_H = 1440;
+function loadCardImg(src) {
+  return new Promise(resolve => {
+    const im = new Image();
+    im.crossOrigin = "anonymous"; /* jsDelivr 兜底图需 CORS 才不污染画布 */
+    im.onload = () => resolve(im);
+    im.onerror = () => resolve(null);
+    im.src = src;
+  });
+}
+function wrapText(ctx, text, x, y, maxW, lineH, maxLines) {
+  let line = "", lines = 0;
+  for (const ch of text) {
+    if (ctx.measureText(line + ch).width > maxW || ch === "\n") {
+      lines++; ctx.fillText(line, x, y + (lines - 1) * lineH);
+      line = ch === "\n" ? "" : ch;
+      if (lines >= maxLines) { ctx.fillText("…", x, y + (lines - 1) * lineH + lineH); return; }
+    } else line += ch;
+  }
+  if (line) { lines++; ctx.fillText(line, x, y + (lines - 1) * lineH); }
+}
+async function buildShareCard() {
+  const cv = document.createElement("canvas");
+  cv.width = SHARE_W; cv.height = SHARE_H;
+  const ctx = cv.getContext("2d");
+  const CX = SHARE_W / 2;
+  /* 暗金背景 */
+  const g = ctx.createLinearGradient(0, 0, SHARE_W, SHARE_H);
+  g.addColorStop(0, "#0d0b19"); g.addColorStop(.55, "#12101f"); g.addColorStop(1, "#07070e");
+  ctx.fillStyle = g; ctx.fillRect(0, 0, SHARE_W, SHARE_H);
+  /* 星尘（以本次占卜 seed 为随机源，同一结果同一画面） */
+  let s = state.seed || 20260906;
+  const rnd = () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; };
+  for (let i = 0; i < 110; i++) {
+    ctx.globalAlpha = .12 + rnd() * .45;
+    ctx.fillStyle = "#c9a86a";
+    ctx.beginPath(); ctx.arc(rnd() * SHARE_W, rnd() * SHARE_H, rnd() * 1.7 + .4, 0, 7); ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+  /* 双线金边框 */
+  ctx.strokeStyle = "rgba(201,168,106,.55)"; ctx.lineWidth = 2;
+  ctx.strokeRect(36, 36, SHARE_W - 72, SHARE_H - 72);
+  ctx.strokeStyle = "rgba(201,168,106,.22)"; ctx.lineWidth = 1;
+  ctx.strokeRect(48, 48, SHARE_W - 96, SHARE_H - 96);
+  const SANS = '"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif';
+  const SERIF = '"Cormorant Garamond",Georgia,serif';
+  ctx.textAlign = "center";
+  /* 品牌区 */
+  ctx.fillStyle = "#c9a86a"; ctx.font = `600 44px ${SANS}`;
+  ctx.fillText("塔塔🔮の心灵疗愈室", CX, 150);
+  ctx.fillStyle = "#847c6a"; ctx.font = `26px ${SANS}`;
+  ctx.fillText("牌不是水晶球，而是一面镜子", CX, 200);
+  ctx.strokeStyle = "rgba(201,168,106,.4)"; ctx.beginPath();
+  ctx.moveTo(280, 240); ctx.lineTo(SHARE_W - 280, 240); ctx.stroke();
+  /* 问题 */
+  ctx.fillStyle = "#e8e2d4"; ctx.font = `34px ${SANS}`;
+  wrapText(ctx, `「${state.question}」`, CX, 312, SHARE_W - 360, 52, 2);
+  /* 牌阵名 */
+  ctx.fillStyle = "#c9a86a"; ctx.font = `26px ${SANS}`;
+  ctx.fillText(`——「${SPREADS[state.spreadKey].name}」——`, CX, 436);
+  /* 牌缩略图 + 牌名 */
+  const n = state.draws.length;
+  const gap = 26;
+  const size = Math.min(240, Math.floor((SHARE_W - 240 - (n - 1) * gap) / n));
+  const rowY = 520;
+  const startX = CX - (n * size + (n - 1) * gap) / 2 + size / 2;
+  for (let i = 0; i < n; i++) {
+    const d = state.draws[i];
+    const x = startX + i * (size + gap);
+    let im = await loadCardImg(IMG_BASE + d.card.image);
+    if (!im && CDN_BASE) im = await loadCardImg(CDN_BASE + d.card.image);
+    ctx.save();
+    if (d.reversed) { /* 逆位：旋转 180° */
+      ctx.translate(x, rowY + size / 2); ctx.rotate(Math.PI); ctx.translate(-x, -(rowY + size / 2));
+    }
+    if (im) {
+      ctx.drawImage(im, x - size / 2, rowY, size, Math.round(size * 1.72));
+    } else {
+      ctx.strokeStyle = "rgba(201,168,106,.5)"; ctx.strokeRect(x - size / 2, rowY, size, Math.round(size * 1.72));
+      ctx.fillStyle = "#c9a86a"; ctx.font = `60px ${SERIF}`; ctx.fillText("✶", x, rowY + size / 2 + 20);
+    }
+    ctx.restore();
+    if (d.reversed) {
+      ctx.fillStyle = "#07070e"; ctx.beginPath(); ctx.arc(x + size / 2 - 6, rowY + 6, 22, 0, 7); ctx.fill();
+      ctx.strokeStyle = "#c9a86a"; ctx.lineWidth = 2; ctx.stroke();
+      ctx.fillStyle = "#c9a86a"; ctx.font = `24px ${SANS}`; ctx.fillText("逆", x + size / 2 - 6, rowY + 15);
+    }
+    ctx.fillStyle = "#d8d2c2"; ctx.font = `24px ${SANS}`;
+    wrapText(ctx, `${d.pos.n}. ${d.card.name}`, x, rowY + Math.round(size * 1.72) + 44, size + 60, 32, 1);
+  }
+  /* 能量之词 */
+  ctx.fillStyle = "#c9a86a"; ctx.font = `600 72px ${SERIF}`;
+  ctx.fillText(energyWord(), CX, SHARE_H - 280);
+  ctx.fillStyle = "#847c6a"; ctx.font = `22px ${SANS}`;
+  ctx.fillText("本 次 能 量 之 词", CX, SHARE_H - 232);
+  /* 水印 */
+  ctx.strokeStyle = "rgba(201,168,106,.3)"; ctx.beginPath();
+  ctx.moveTo(340, SHARE_H - 170); ctx.lineTo(SHARE_W - 340, SHARE_H - 170); ctx.stroke();
+  ctx.fillStyle = "#847c6a"; ctx.font = `24px ${SANS}`;
+  ctx.fillText("塔塔🔮の心灵疗愈室 · cindysd.github.io/tata-public", CX, SHARE_H - 120);
+  return cv;
+}
+$("#btn-card").addEventListener("click", async () => {
+  const b = $("#btn-card"); const old = b.textContent;
+  b.disabled = true; b.textContent = "绘制中……";
+  try {
+    const cv = await buildShareCard();
+    const blob = await new Promise((res, rej) => { try { cv.toBlob(bb => bb ? res(bb) : rej(new Error("导出失败")), "image/png"); } catch (e) { rej(e); } });
+    const url = URL.createObjectURL(blob);
+    const canSysShare = !!(navigator.canShare && window.File && navigator.share);
+    openInfoModal(`
+      <h4>分享图已生成</h4>
+      <div style="text-align:center"><img src="${url}" alt="占卜分享卡片" style="max-width:64%;border-radius:12px;border:1px solid var(--gold-dim)"></div>
+      <div style="display:flex;gap:14px;justify-content:center;margin-top:22px;flex-wrap:wrap">
+        <a class="btn" href="${url}" download="tata-tarot-share.png" style="text-decoration:none">保存图片</a>
+        ${canSysShare ? '<button class="btn ghost" id="share-img" type="button">系统分享</button>' : ""}
+      </div>
+      <p class="note" style="margin-top:14px;text-align:center">微信内请长按图片保存，或直接截图发送。</p>`);
+    if (canSysShare) $("#share-img")?.addEventListener("click", async () => {
+      try {
+        const file = new File([blob], "tata-tarot-share.png", { type: "image/png" });
+        if (navigator.canShare({ files: [file] })) await navigator.share({ files: [file], title: "塔塔🔮の心灵疗愈室" });
+      } catch (e) { /* 用户取消分享不提示 */ }
+    });
+  } catch (e) {
+    alert("分享图生成失败：" + (e.message || "画布被跨域图片污染，请刷新后重试"));
+  }
+  b.disabled = false; b.textContent = old;
+});
 
 /* ---------- 占卜历史（本机保存，最多 20 条） ---------- */
 const HKEY = "tata-history-v1";
