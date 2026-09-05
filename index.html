@@ -3,12 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; font-src https://cdn.jsdelivr.net data:; img-src 'self' https://cdn.jsdelivr.net data:; connect-src *; base-uri 'none'; form-action 'none'">
 <title>塔塔🔮の心灵疗愈室 · 塔罗空间</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Crect width='48' height='48' rx='10' fill='%2307070e'/%3E%3Cpath d='M24 8 L27.5 20.5 L40 24 L27.5 27.5 L24 40 L20.5 27.5 L8 24 L20.5 20.5 Z' fill='%23c9a86a'/%3E%3C/svg%3E">
 <meta name="description" content="塔塔🔮の心灵疗愈室：韦特塔罗 78 张，仪式化盲抽，结合精神分析视角的温柔解读。多人在线，每个人的牌阵都是私密的一次对话。">
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/cormorant-garamond@5/400.css">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/cormorant-garamond@5/600.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/cormorant-garamond@5/400.css" integrity="sha384-TywduNeFb4/y4TBfpm7v7fhzo7/g2GwkW7pU0tvZVULYmPq5Vb8Dq6s6oFthQeEY" crossorigin="anonymous">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/cormorant-garamond@5/600.css" integrity="sha384-ZNeoKX2Q6iDYYsJuXi1+PdXiBX+OFdPXAPlHPQTHtw93snCl4Jg+W+jCrjfGAewa" crossorigin="anonymous">
 <style>
 /* ============ 塔塔🔮心灵疗愈师 · 暗金神秘简约 ============ */
 :root{
@@ -588,7 +589,8 @@ footer .gold{color:var(--gold)}
       不填则使用内置规则引擎解读（即时）。<br>
       <span style="color:var(--gold)">推荐</span>：DeepSeek（便宜+支持CORS）、本地 Ollama（免费+零延迟）<br>
       <span style="color:var(--gold)">注意</span>：通义/OpenAI 默认不允许浏览器跨域，需配 CORS 代理<br>
-      配置仅存本机浏览器，不上传任何服务器。
+      配置仅存本机浏览器（localStorage 明文保存），不上传任何服务器。<br>
+      <span style="color:#d98f7a">⚠️ 安全提示</span>：API Key 以明文形式保存在本机，请勿在公共或共用设备上填写；使用后可在公共设备上点「清除配置」。
     </p>
   </div>
 </div>
@@ -1143,6 +1145,12 @@ if (CARDS.length < 78) {
 
 /* ---------- LLM 配置（用户自填，兼容所有 OpenAI 格式 API） ---------- */
 const LLM_KEY = "tata-llm-config";
+/* LLM 返回内容不可信：插入 DOM 前必须经过 escHtml（防 XSS 注入链） */
+function escHtml(v) {
+  if (v == null) return "";
+  if (typeof v !== "string") { try { v = String(v); } catch (e) { return ""; } }
+  return v.replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
 function loadLLMConfig() { try { return JSON.parse(localStorage.getItem(LLM_KEY) || "{}"); } catch (e) { return {}; } }
 function saveLLMConfig(cfg) {
   try {
@@ -1190,29 +1198,53 @@ const LLM_SYSTEM_PROMPT = `你是塔塔🔮の心灵疗愈室的首席解牌师�
   "energy": "能量之词（1-2字）"
 }`;
 
+async function llmFetch(url, options, timeoutMs) {
+  /* 带超时的 fetch：旧浏览器无 AbortController 时退化为普通 fetch */
+  if (typeof AbortController === "undefined") return fetch(url, options);
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...options, signal: ctrl.signal });
+  } finally { clearTimeout(timer); }
+}
 async function callLLM(question, spreadName, draws) {
   const cfg = loadLLMConfig();
   if (!cfg.apiKey || !cfg.baseURL) return null;
   const now = new Date();
   const dateStr = `${now.getFullYear()}年${now.getMonth() + 1}月${now.getDate()}日`;
   const userContent = `当前日期：${dateStr}\n问题：${question}\n牌阵：${spreadName}\n抽到的牌：\n${draws.map((d, i) => `${i + 1}. ${d.pos.n}位置：${d.card.name}${d.reversed ? "（逆位）" : ""}——关键词：${(d.reversed ? d.card.reversed : d.card.upright).keywords.join("、")}`).join("\n")}\n\n请按指定JSON格式输出解读。`;
+  const reqOpts = {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "Authorization": "Bearer " + cfg.apiKey },
+    body: JSON.stringify({
+      model: cfg.model || "qwen-turbo",
+      messages: [{ role: "system", content: LLM_SYSTEM_PROMPT }, { role: "user", content: userContent }],
+      temperature: 0.8, max_tokens: 2000
+    })
+  };
+  const url = cfg.baseURL.replace(/\/$/, "") + "/chat/completions";
+  /* 网络层失败（含 30 秒超时）自动重试一次；HTTP 状态错误不重试 */
+  const LLM_TIMEOUT = 30000;
+  let resp = null, netErr = null;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      resp = await llmFetch(url, reqOpts, LLM_TIMEOUT);
+      netErr = null;
+      break;
+    } catch (e) {
+      netErr = (e && e.name === "AbortError") ? `请求超时（${LLM_TIMEOUT / 1000} 秒）` : (e.message || "网络请求失败");
+      if (attempt === 0) await new Promise(r => setTimeout(r, 800)); /* 稍候重试 */
+    }
+  }
   try {
-    const resp = await fetch(cfg.baseURL.replace(/\/$/, "") + "/chat/completions", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + cfg.apiKey },
-      body: JSON.stringify({
-        model: cfg.model || "qwen-turbo",
-        messages: [{ role: "system", content: LLM_SYSTEM_PROMPT }, { role: "user", content: userContent }],
-        temperature: 0.8, max_tokens: 2000
-      })
-    });
+    if (netErr) return { error: netErr + (netErr.indexOf("超时") === -1 ? "，已重试仍失败" : "") };
     if (!resp.ok) { return { error: `API 返回 ${resp.status}` }; }
     const data = await resp.json();
     const text = data.choices?.[0]?.message?.content || "";
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (!jsonMatch) return { error: "AI 返回格式异常" };
     return { data: JSON.parse(jsonMatch[0]) };
-  } catch (e) { return { error: e.message || "网络请求失败" }; }
+  } catch (e) { return { error: e.message || "AI 返回解析失败" }; }
 }
 
 /* ---------- 精神分析解读层（原创撰写） ---------- */
@@ -2122,7 +2154,7 @@ async function renderReading() {
       if (d.conclusion) {
         const banner = document.createElement("div");
         banner.className = "conclusion-banner";
-        banner.innerHTML = `<span class="cb-label">塔 塔 的 直 觉</span><p>${d.conclusion}</p>`;
+        banner.innerHTML = `<span class="cb-label">塔 塔 的 直 觉</span><p>${escHtml(d.conclusion)}</p>`;
         const readingHead = document.querySelector(".reading-head");
         readingHead?.parentNode.insertBefore(banner, readingHead.nextSibling);
       }
@@ -2132,9 +2164,9 @@ async function renderReading() {
           const psyEl = $("#psy-" + i);
           if (psyEl) {
             let html = "";
-            if (c.core) html += `<p style="color:var(--gold);font-size:13px;margin-bottom:6px">${c.core}</p>`;
-            if (c.psy) html += `<p>${c.psy}</p>`;
-            if (c.example) html += `<p style="color:var(--ink-dim);font-size:13px;margin-top:6px;font-style:italic">💭 ${c.example}</p>`;
+            if (c.core) html += `<p style="color:var(--gold);font-size:13px;margin-bottom:6px">${escHtml(c.core)}</p>`;
+            if (c.psy) html += `<p>${escHtml(c.psy)}</p>`;
+            if (c.example) html += `<p style="color:var(--ink-dim);font-size:13px;margin-top:6px;font-style:italic">💭 ${escHtml(c.example)}</p>`;
             if (html) psyEl.innerHTML = html;
           }
         });
@@ -2142,23 +2174,23 @@ async function renderReading() {
       /* 综合解读 + 建议 + 收束 */
       const syn = d.synthesis || {};
       let synHTML = `<h3>综 合 解 读 ${cfg.model ? '<small style="font-size:10px;color:var(--ink-faint);font-weight:400">· AI 深度版</small>' : ''}</h3>`;
-      if (syn.overview) synHTML += `<div class="syn-block"><div class="sb-label">能 量 概 览</div><p>${syn.overview}</p></div>`;
-      if (syn.start) synHTML += `<div class="syn-block"><div class="sb-label">起 点</div><p>${syn.start}</p></div>`;
-      if (syn.tension) synHTML += `<div class="syn-block"><div class="sb-label">张 力</div><p>${syn.tension}</p></div>`;
-      if (syn.turn) synHTML += `<div class="syn-block"><div class="sb-label">转 折</div><p>${syn.turn}</p></div>`;
-      if (syn.judgment) synHTML += `<div class="syn-block"><div class="sb-label">综 合 判 断</div><p style="color:var(--gold-hi)">${syn.judgment}</p></div>`;
-      synHTML += `<div class="energy-word"><div class="ew">${d.energy || energyWord()}</div><div class="ew-sub">本 次 能 量 之 词</div></div>`;
+      if (syn.overview) synHTML += `<div class="syn-block"><div class="sb-label">能 量 概 览</div><p>${escHtml(syn.overview)}</p></div>`;
+      if (syn.start) synHTML += `<div class="syn-block"><div class="sb-label">起 点</div><p>${escHtml(syn.start)}</p></div>`;
+      if (syn.tension) synHTML += `<div class="syn-block"><div class="sb-label">张 力</div><p>${escHtml(syn.tension)}</p></div>`;
+      if (syn.turn) synHTML += `<div class="syn-block"><div class="sb-label">转 折</div><p>${escHtml(syn.turn)}</p></div>`;
+      if (syn.judgment) synHTML += `<div class="syn-block"><div class="sb-label">综 合 判 断</div><p style="color:var(--gold-hi)">${escHtml(syn.judgment)}</p></div>`;
+      synHTML += `<div class="energy-word"><div class="ew">${d.energy ? escHtml(d.energy) : energyWord()}</div><div class="ew-sub">本 次 能 量 之 词</div></div>`;
       /* 建议步骤 */
       if (d.advice && d.advice.length) {
         synHTML += `<div class="syn-block"><div class="sb-label">塔 塔 的 行 动 建 议</div>`;
         d.advice.forEach((a, i) => {
-          synHTML += `<div class="advice-step"><span class="as-num">${i + 1}</span><div><p class="as-step">${a.step}</p>${a.why ? `<p class="as-why">${a.why}</p>` : ""}</div></div>`;
+          synHTML += `<div class="advice-step"><span class="as-num">${i + 1}</span><div><p class="as-step">${escHtml(a.step)}</p>${a.why ? `<p class="as-why">${escHtml(a.why)}</p>` : ""}</div></div>`;
         });
         synHTML += `</div>`;
       }
       /* 情绪收束 */
       if (d.closing) {
-        synHTML += `<div class="closing-block"><p>${d.closing}</p></div>`;
+        synHTML += `<div class="closing-block"><p>${escHtml(d.closing)}</p></div>`;
       }
       synHTML += `<p class="sovereign">牌显示的是当下的能量，不是注定的结局。<br>你的选择，随时可以改变走向。</p>`;
       synEl.innerHTML = synHTML;
