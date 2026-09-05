@@ -197,8 +197,9 @@ textarea{min-height:96px}
 .fan .fcard:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 .fan .fcard.picked{opacity:.14;pointer-events:none;border-style:dashed;filter:none;box-shadow:none;transform:rotate(var(--tilt,0deg))}
 .fan .fcard:first-child{margin-left:0}
-.fan .fcard.marked{border-color:var(--gold);transform:rotate(var(--tilt,0deg)) translateY(-6px);animation:fanIn .4s var(--ease-out) var(--fd) forwards,markPulse 2.6s ease-in-out 1s infinite}
-.fan .fcard.marked::after{content:"✦";position:absolute;top:-9px;left:50%;transform:translateX(-50%);color:var(--gold-hi);font-size:9px;text-shadow:0 0 6px rgba(201,168,106,.9)}
+.fan .fcard.marked{border-color:var(--gold);transform:rotate(var(--tilt,0deg)) translateY(-6px);z-index:6;animation:fanIn .4s var(--ease-out) var(--fd) forwards,markPulse 2.6s ease-in-out 1s infinite}
+/* 标记徽章：深底圆片+同色描边，叠在重叠牌面上依然清晰（z-index 高于相邻牌） */
+.fan .fcard.marked::after{content:"✦";position:absolute;top:-11px;left:50%;transform:translateX(-50%);width:21px;height:21px;line-height:19px;border-radius:50%;background:#0b0917;border:1px solid var(--gold-hi);color:var(--gold-hi);font-size:11px;text-align:center;text-shadow:none;z-index:7}
 @keyframes markPulse{0%,100%{box-shadow:0 0 5px rgba(201,168,106,.25)}50%{box-shadow:0 0 14px rgba(201,168,106,.6)}}
 @keyframes fanIn{from{opacity:0;transform:rotate(var(--tilt,0deg)) scale(.6)}to{opacity:1;transform:rotate(var(--tilt,0deg)) scale(1)}}
 
@@ -349,16 +350,17 @@ footer .gold{color:var(--gold)}
 .btn-locate-multi:hover{border-color:var(--gold-dim);color:var(--gold-hi)}
 
 /* 多标记牌颜色区分 */
+/* 数字标记：仅覆盖徽章内容与配色（徽章盒子样式由 .marked::after 统一提供） */
 .fan .fcard.marked-1{border-color:#e8c46a;box-shadow:0 0 10px rgba(232,196,106,.4)}
-.fan .fcard.marked-1::after{content:"①";position:absolute;top:-9px;left:50%;transform:translateX(-50%);color:#e8c46a;font-size:11px;text-shadow:0 0 6px rgba(232,196,106,.9)}
+.fan .fcard.marked-1::after{content:"①";color:#e8c46a;border-color:#e8c46a}
 .fan .fcard.marked-2{border-color:#7cb8c9;box-shadow:0 0 10px rgba(124,184,201,.4)}
-.fan .fcard.marked-2::after{content:"②";position:absolute;top:-9px;left:50%;transform:translateX(-50%);color:#7cb8c9;font-size:11px;text-shadow:0 0 6px rgba(124,184,201,.9)}
+.fan .fcard.marked-2::after{content:"②";color:#7cb8c9;border-color:#7cb8c9}
 .fan .fcard.marked-3{border-color:#c97ca8;box-shadow:0 0 10px rgba(201,124,168,.4)}
-.fan .fcard.marked-3::after{content:"③";position:absolute;top:-9px;left:50%;transform:translateX(-50%);color:#c97ca8;font-size:11px;text-shadow:0 0 6px rgba(201,124,168,.9)}
+.fan .fcard.marked-3::after{content:"③";color:#c97ca8;border-color:#c97ca8}
 .fan .fcard.marked-4{border-color:#9ac97c;box-shadow:0 0 10px rgba(154,201,124,.4)}
-.fan .fcard.marked-4::after{content:"④";position:absolute;top:-9px;left:50%;transform:translateX(-50%);color:#9ac97c;font-size:11px}
+.fan .fcard.marked-4::after{content:"④";color:#9ac97c;border-color:#9ac97c}
 .fan .fcard.marked-5{border-color:#c97c7c;box-shadow:0 0 10px rgba(201,124,124,.4)}
-.fan .fcard.marked-5::after{content:"⑤";position:absolute;top:-9px;left:50%;transform:translateX(-50%);color:#c97c7c;font-size:11px}
+.fan .fcard.marked-5::after{content:"⑤";color:#c97c7c;border-color:#c97c7c}
 
 /* P1-5: 逆位科普注 */
 .rev-note{background:rgba(201,168,106,.06);border:1px solid var(--gold-faint);border-radius:10px;padding:12px 16px;margin-bottom:8px;font-size:13px;color:var(--ink-dim);line-height:1.9;letter-spacing:.04em}
@@ -2651,26 +2653,30 @@ async function buildShareCard() {
   for (let i = 0; i < n; i++) {
     const d = state.draws[i];
     const x = startX + i * (size + gap);
+    const imgH = Math.round(size * 1.72);
     let im = await loadCardImg(IMG_BASE + d.card.image);
     if (!im && CDN_BASE) im = await loadCardImg(CDN_BASE + d.card.image);
     ctx.save();
-    if (d.reversed) { /* 逆位：旋转 180° */
-      ctx.translate(x, rowY + size / 2); ctx.rotate(Math.PI); ctx.translate(-x, -(rowY + size / 2));
+    if (d.reversed) { /* 逆位：绕图片几何中心旋转 180°（中心必须取 imgH/2，否则牌图会错位） */
+      ctx.translate(x, rowY + imgH / 2); ctx.rotate(Math.PI); ctx.translate(-x, -(rowY + imgH / 2));
     }
     if (im) {
-      ctx.drawImage(im, x - size / 2, rowY, size, Math.round(size * 1.72));
+      ctx.drawImage(im, x - size / 2, rowY, size, imgH);
     } else {
-      ctx.strokeStyle = "rgba(201,168,106,.5)"; ctx.strokeRect(x - size / 2, rowY, size, Math.round(size * 1.72));
-      ctx.fillStyle = "#c9a86a"; ctx.font = `60px ${SERIF}`; ctx.fillText("✶", x, rowY + size / 2 + 20);
+      ctx.strokeStyle = "rgba(201,168,106,.5)"; ctx.strokeRect(x - size / 2, rowY, size, imgH);
+      ctx.fillStyle = "#c9a86a"; ctx.font = `60px ${SERIF}`; ctx.fillText("✶", x, rowY + imgH / 2 + 20);
     }
     ctx.restore();
     if (d.reversed) {
-      ctx.fillStyle = "#07070e"; ctx.beginPath(); ctx.arc(x + size / 2 - 6, rowY + 6, 22, 0, 7); ctx.fill();
+      const bx = x + size / 2 - 8, by = rowY + 10;
+      ctx.fillStyle = "#07070e"; ctx.beginPath(); ctx.arc(bx, by, 20, 0, 7); ctx.fill();
       ctx.strokeStyle = "#c9a86a"; ctx.lineWidth = 2; ctx.stroke();
-      ctx.fillStyle = "#c9a86a"; ctx.font = `24px ${SANS}`; ctx.fillText("逆", x + size / 2 - 6, rowY + 15);
+      ctx.fillStyle = "#c9a86a"; ctx.font = `24px ${SANS}`; ctx.textBaseline = "middle";
+      ctx.fillText("逆", bx, by + 2);
+      ctx.textBaseline = "alphabetic";
     }
     ctx.fillStyle = "#d8d2c2"; ctx.font = `24px ${SANS}`;
-    wrapText(ctx, `${d.pos.n}. ${d.card.name}`, x, rowY + Math.round(size * 1.72) + 44, size + 60, 32, 1);
+    wrapText(ctx, `${d.pos.n}. ${d.card.name}`, x, rowY + imgH + 44, size + 60, 32, 1);
   }
   /* 能量之词 */
   ctx.fillStyle = "#c9a86a"; ctx.font = `600 72px ${SERIF}`;
