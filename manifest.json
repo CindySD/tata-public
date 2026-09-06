@@ -1,0 +1,26 @@
+{
+  "name": "塔塔🔮の心灵疗愈室 · 塔罗空间",
+  "short_name": "塔塔疗愈室",
+  "description": "韦特塔罗 78 张，仪式化盲抽，精神分析视角的温柔解读",
+  "lang": "zh-CN",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#07070e",
+  "background_color": "#07070e",
+  "icons": [
+    {
+      "src": "assets/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
