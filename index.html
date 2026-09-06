@@ -447,6 +447,16 @@ footer .gold{color:var(--gold)}
 /* AI 解读常驻声明 */
 .ai-note{text-align:center;font-size:11px;color:var(--ink-faint);letter-spacing:.08em;margin-top:14px;opacity:.85}
 
+/* F-008 音效开关 */
+.sfx-row{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap}
+.sfx-label{font-size:13px;color:var(--ink);letter-spacing:.08em}
+.sfx-toggle{appearance:none;-webkit-appearance:none;width:44px;height:24px;border-radius:12px;background:rgba(255,255,255,.08);border:1px solid var(--panel-line);position:relative;cursor:pointer;transition:background .25s,border-color .25s;flex:none}
+.sfx-toggle::after{content:"";position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:var(--ink-dim);transition:transform .25s,background .25s}
+.sfx-toggle:checked{background:rgba(201,168,106,.35);border-color:var(--gold)}
+.sfx-toggle:checked::after{transform:translateX(20px);background:var(--gold-hi)}
+.sfx-toggle:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.sfx-hint{font-size:11px;color:var(--ink-faint)}
+
 </style>
 </head>
 <body>
@@ -563,9 +573,12 @@ footer .gold{color:var(--gold)}
       <div id="history-list"></div>
       <div style="display:flex;gap:14px;justify-content:center;margin-top:30px;flex-wrap:wrap">
         <button class="btn ghost" id="btn-hist-new" type="button">✦ 新的占卜</button>
+        <button class="btn ghost" id="btn-hist-export" type="button">✦ 导出记录</button>
+        <button class="btn ghost" id="btn-hist-import" type="button">✦ 导入记录</button>
         <button class="btn ghost" id="btn-hist-clear" type="button">清空记录</button>
       </div>
-      <p class="note" style="margin-top:20px">记录保存在你的浏览器本机，最多保留最近 20 次，不上传任何服务器。</p>
+      <input type="file" id="hist-import-file" accept=".json,application/json" style="display:none" aria-label="选择历史记录备份文件">
+      <p class="note" style="margin-top:20px">记录保存在你的浏览器本机，最多保留最近 20 次，不上传任何服务器。<br>导出的 JSON 文件可用于换机迁移——在新设备上点「导入记录」即可合并。</p>
     </div>
   </section>
 
@@ -613,6 +626,11 @@ footer .gold{color:var(--gold)}
     <div class="m-row">
       <div class="m-label">模型名（可选）</div>
       <input class="num-input" id="llm-model" type="text" placeholder="如 deepseek-chat / qwen-turbo / gpt-4o-mini" style="font-size:13px;font-family:var(--sans);height:42px;text-align:left">
+    </div>
+    <div class="m-row sfx-row">
+      <label class="sfx-label" for="sfx-toggle">音效与震动</label>
+      <input type="checkbox" id="sfx-toggle" class="sfx-toggle" aria-label="开关音效与震动反馈">
+      <span class="sfx-hint">洗牌/翻牌音效与轻震动（默认关）</span>
     </div>
     <div style="display:flex;gap:14px;justify-content:center;margin-top:24px;flex-wrap:wrap">
       <button class="btn" id="llm-save" type="button">保 存</button>
@@ -1662,7 +1680,8 @@ function hashStr(s) { let h = 2166136261; for (let i = 0; i < s.length; i++) { h
 const state = {
   question: "", number: 0, numbers: [], spreadKey: "three_time", spreadManual: false,
   draws: [], revealed: 0, seed: 0, domain: "general",
-  deck: [], offer: [], markedCards: []
+  deck: [], offer: [], markedCards: [],
+  dailyMode: false, dailyCard: null, dailyReversed: false
 };
 
 function buildDraws() {
@@ -1683,6 +1702,16 @@ function buildDraws() {
     while (usedIdx.has(idx)) idx = (idx + 1) % deck.length;
     usedIdx.add(idx);
     state.markedCards.push({ card: deck[idx], idx, order: i });
+  }
+  /* F-009 每日一牌·全站同频：以本地日期为种子固定"今日之牌"，任选一张揭开的都是它 */
+  if (state.dailyMode) {
+    const t = new Date();
+    const dayKey = `daily|${t.getFullYear()}-${t.getMonth() + 1}-${t.getDate()}`;
+    const ds = hashStr(dayKey);
+    const idx = ds % deck.length;
+    state.dailyCard = deck[idx];
+    state.dailyReversed = ((ds >>> 8) % 100) < REVERSED_CHANCE;
+    state.markedCards = [{ card: state.dailyCard, idx, order: 0 }];
   }
   state.draws = [];
   state.seed = ((state.numbers[0] * 2654435761) ^ hashStr(state.question) ^ (Date.now() & 0xFFFFF)) >>> 0;
@@ -1969,8 +1998,13 @@ $("#llm-clear").addEventListener("click", () => {
   $("#llm-baseurl").value = ""; $("#llm-apikey").value = ""; $("#llm-model").value = "";
 });
 
+/* F-008: 音效开关（打开设置弹窗时同步状态） */
+$("#sfx-toggle").checked = sfxOn();
+$("#sfx-toggle").addEventListener("change", function () { setSfx(this.checked); if (this.checked) playSfx("flip"); });
+
 $("#btn-ask").addEventListener("click", () => {
   errEl.textContent = "";
+  state.dailyMode = false;
   const q = qEl.value.trim();
   if (!q) { errEl.textContent = "请先写下你的问题，再开启仪式。"; qEl.focus(); return; }
   const numsRaw = numEl.value.trim().split(/[\s,，]+/).filter(s => s.length > 0);
@@ -2003,6 +2037,53 @@ const SHUFFLE_GAP_MS = 500;   /* 洗牌结束到铺牌的间隔 */
 const HOLD_HIDE_MS = 3000;    /* 凝神完成后定位按钮收起的延时 */
 const REVERSED_CHANCE = 0.34; /* 逆位概率（约三分之一，对应传统韦特逆位习惯） */
 
+/* ---------- F-008: 音效与震动（WebAudio 合成，零素材；默认关闭，设置里可开） ---------- */
+const SFX_KEY = "tata-sfx";
+let sfxCtx = null;
+function sfxOn() { try { return localStorage.getItem(SFX_KEY) === "1"; } catch (e) { return false; } }
+function setSfx(on) { try { localStorage.setItem(SFX_KEY, on ? "1" : "0"); } catch (e) {} const s = $("#sfx-toggle"); if (s) s.checked = on; }
+function sfxAudio() {
+  const AC = window.AudioContext || window.webkitAudioContext;
+  if (!AC) return null;
+  if (!sfxCtx) sfxCtx = new AC();
+  if (sfxCtx.state === "suspended") sfxCtx.resume();
+  return sfxCtx;
+}
+function playSfx(kind) {
+  if (!sfxOn()) return;
+  const ctx = sfxAudio(); if (!ctx) return;
+  const now = ctx.currentTime;
+  if (kind === "shuffle") {        /* 洗牌沙沙声：衰减噪声过带通 */
+    const dur = 1.4;
+    const buf = ctx.createBuffer(1, Math.floor(ctx.sampleRate * dur), ctx.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / d.length, 2);
+    const src = ctx.createBufferSource(); src.buffer = buf;
+    const f = ctx.createBiquadFilter(); f.type = "bandpass"; f.frequency.value = 3200; f.Q.value = 0.8;
+    const g = ctx.createGain(); g.gain.value = 0.16;
+    src.connect(f); f.connect(g); g.connect(ctx.destination); src.start();
+  } else if (kind === "flip") {    /* 翻牌：短促上滑音 */
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.type = "triangle";
+    o.frequency.setValueAtTime(520, now);
+    o.frequency.exponentialRampToValueAtTime(880, now + 0.12);
+    g.gain.setValueAtTime(0.11, now);
+    g.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
+    o.connect(g); g.connect(ctx.destination); o.start(now); o.stop(now + 0.18);
+  } else if (kind === "done") {    /* 凝神完成：三音上行琶音 */
+    [523.25, 659.25, 783.99].forEach((freq, i) => {
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.type = "sine"; o.frequency.value = freq;
+      const t0 = now + i * 0.09;
+      g.gain.setValueAtTime(0.0001, t0);
+      g.gain.exponentialRampToValueAtTime(0.08, t0 + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.001, t0 + 0.5);
+      o.connect(g); g.connect(ctx.destination); o.start(t0); o.stop(t0 + 0.55);
+    });
+  }
+  if (navigator.vibrate) { try { if (kind === "flip") navigator.vibrate(15); else if (kind === "done") navigator.vibrate([20, 40, 20]); } catch (e) {} }
+}
+
 function startRitual() {
   state.revealed = 0;
   fanArmed = false;
@@ -2016,8 +2097,9 @@ function startRitual() {
   skipBtn.style.display = (loadHistory().length > 0) ? "inline-block" : "none";
   document.querySelectorAll(".btn-locate-multi").forEach(b => b.style.display = "none");
   go("ritual");
-  statusEl.textContent = "正在为你洗牌……";
+  statusEl.textContent = state.dailyMode ? "今日之牌正在浮现……" : "正在为你洗牌……";
   subEl.textContent = "宇宙的能量正在汇聚……";
+  playSfx("shuffle");
   /* 洗牌轨道 */
   for (let i = 0; i < 9; i++) {
     const o = document.createElement("div");
@@ -2086,7 +2168,7 @@ function pickFromSpread(el) {
   /* 隐藏定位按钮 */
   const locBtns = document.querySelectorAll("[id^='btn-locate-']");
   locBtns.forEach(b => b.style.display = "none");
-  revealChosen(card, Math.random() < REVERSED_CHANCE);
+  revealChosen(state.dailyMode && state.dailyCard ? state.dailyCard : card, state.dailyMode && state.dailyCard ? state.dailyReversed : Math.random() < REVERSED_CHANCE);
 }
 /* 牌桌横向滑动：桌面鼠标拖拽 + 滚轮转横向，触摸走原生 pan-x；拖拽后抑制误触点击 */
 let dragState = null, justDragged = false;
@@ -2139,6 +2221,7 @@ function completeHold() {
   statusEl.textContent = "能量已汇聚。";
   subEl.textContent = "凭直觉选牌——标记牌或任意一张都可以。";
   holdTip.textContent = "✦ 凝神完成 · 牌已苏醒";
+  playSfx("done");
   /* 多定位按钮（与跳过仪式路径共用 addLocateButtons，防止重复创建） */
   addLocateButtons();
   /* 3 秒后收起按钮，保留牌背金光 */
@@ -2207,6 +2290,7 @@ function revealChosen(card, reversed) {
   const idx = state.draws.length;
   const pos = SPREADS[state.spreadKey].positions[idx];
   state.draws.push({ pos, card, reversed });
+  playSfx("flip");
   statusEl.textContent = idx === 0
     ? (state.markedCards.find(mc => mc.card === card) ? `你翻开了数字标记的牌——` : `第一张牌现身——`)
     : "牌阵继续为你展开……";
@@ -2546,6 +2630,7 @@ const EXAMPLE_QS = ["我和他之间还有可能吗？", "我该不该接受这�
       <div class="m-row"><p class="note" style="margin:0">试着把注意力放在你的问题上，深呼吸一次，然后写下浮现的数字。</p></div>`);
   });
   $("#btn-demo").addEventListener("click", () => {
+    state.dailyMode = false;
     qEl.value = "最近的我，该把力气用在哪里？";
     qEl.dispatchEvent(new Event("input", { bubbles: true }));
     numEl.value = "37 12 55";
@@ -2559,6 +2644,7 @@ const EXAMPLE_QS = ["我和他之间还有可能吗？", "我该不该接受这�
 /* 重新抽牌 */
 $("#btn-again").addEventListener("click", () => {
   qEl.value = ""; numEl.value = ""; errEl.textContent = "";
+  state.dailyMode = false;
   state.spreadManual = false; state.spreadKey = "three_time";
   refreshChips(); reasonEl.textContent = "";
   go("ask");
@@ -2571,8 +2657,9 @@ $("#btn-daily").addEventListener("click", () => {
   qEl.dispatchEvent(new Event("input", { bubbles: true }));
   numEl.value = "";
   state.spreadManual = true; state.spreadKey = "single";
+  state.dailyMode = true;
   refreshChips();
-  reasonEl.textContent = "今日一牌：一张牌，一句今天的提醒。";
+  reasonEl.textContent = "今日一牌 · 全站同频：今天所有人抽到的是同一张牌。凭直觉选一张，揭开它就是。";
   go("ask");
   numEl.focus();
 });
@@ -2784,6 +2871,7 @@ function restoreReading(rec) {
     return;
   }
   state.question = rec.q; state.number = rec.n; state.spreadKey = rec.sp;
+  state.dailyMode = false;
   state.domain = detectDomain(rec.q); state.seed = rec.seed || 0; state.spreadManual = true;
   const positions = SPREADS[rec.sp].positions;
   state.draws = rec.d.map((x, i) => ({ pos: positions[i] || positions[positions.length - 1], card: cardById[x.id], reversed: !!x.r })).filter(d => d.card);
@@ -2796,9 +2884,52 @@ function restoreReading(rec) {
 }
 $("#btn-hist").addEventListener("click", renderHistory);
 $("#btn-hist-2").addEventListener("click", renderHistory);
-$("#btn-hist-new").addEventListener("click", () => { qEl.value = ""; numEl.value = ""; errEl.textContent = ""; state.spreadManual = false; state.spreadKey = "three_time"; refreshChips(); reasonEl.textContent = ""; go("ask"); });
+$("#btn-hist-new").addEventListener("click", () => { qEl.value = ""; numEl.value = ""; errEl.textContent = ""; state.dailyMode = false; state.spreadManual = false; state.spreadKey = "three_time"; refreshChips(); reasonEl.textContent = ""; go("ask"); });
 $("#btn-hist-clear").addEventListener("click", () => {
   if (confirm("确定清空全部占卜记录吗？此操作不可恢复。")) { try { localStorage.removeItem(HKEY); } catch (e) {} renderHistory(); }
+});
+
+/* F-005: 历史记录导出/导入（换机迁移，纯本地文件，不上传） */
+$("#btn-hist-export").addEventListener("click", () => {
+  const h = loadHistory();
+  if (!h.length) { alert("还没有记录可导出。"); return; }
+  const blob = new Blob([JSON.stringify({ app: "tata-tarot", version: 1, exportedAt: Date.now(), records: h }, null, 2)], { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `tata-history-${new Date().toISOString().slice(0, 10)}.json`;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 3000);
+});
+$("#btn-hist-import").addEventListener("click", () => $("#hist-import-file").click());
+$("#hist-import-file").addEventListener("change", (e) => {
+  const file = e.target.files && e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const data = JSON.parse(reader.result);
+      const incoming = Array.isArray(data) ? data : data.records;
+      if (!Array.isArray(incoming)) throw new Error("文件里没有记录数组");
+      const cur = loadHistory();
+      const seen = new Set(cur.map(r => `${r.t}|${r.q}|${r.seed || 0}`));
+      let added = 0;
+      for (const r of incoming) {
+        if (!r || typeof r.q !== "string" || !Array.isArray(r.d)) continue;
+        const key = `${r.t}|${r.q}|${r.seed || 0}`;
+        if (seen.has(key)) continue;
+        seen.add(key); cur.push(r); added++;
+      }
+      cur.sort((a, b) => (b.t || 0) - (a.t || 0));
+      const kept = cur.slice(0, 20);
+      try { localStorage.setItem(HKEY, JSON.stringify(kept)); } catch (err) { alert("保存失败：浏览器存储不可用。"); e.target.value = ""; return; }
+      renderHistory();
+      alert(`导入完成：新增 ${added} 条，当前共 ${kept.length} 条（最多保留最近 20 条）。`);
+    } catch (err) {
+      alert("导入失败：" + (err.message || "文件格式不正确。请选择本站导出的 JSON 文件。"));
+    }
+    e.target.value = "";
+  };
+  reader.readAsText(file);
 });
 
 /* F-004: PWA Service Worker 注册（离线缓存 + 可安装） */
