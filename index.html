@@ -2503,7 +2503,7 @@ async function renderReading() {
     html += `
       <div class="rc-block"><div class="bk-label">塔 塔 的 具 体 建 议</div><p>${r.advice}</p></div>`;
     /* Bunning 行动词库：把牌义转成可执行的行动 */
-    const acts = (typeof CARD_ACTIONS !== "undefined" && CARD_ACTIONS[c.name]) ? CARD_ACTIONS[c.name] : [];
+    const acts = (typeof CARD_ACTIONS !== "undefined" && CARD_ACTIONS[d.card.name]) ? CARD_ACTIONS[d.card.name] : [];
     if (acts.length) {
       const a1 = acts[state.seed % acts.length];
       const a2 = acts[(state.seed + Math.floor(acts.length / 2)) % acts.length];
