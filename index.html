@@ -488,6 +488,8 @@ footer .gold{color:var(--gold)}
 .link-line .l-label{color:var(--gold);letter-spacing:.15em;flex:none}
 .link-line .l-pair{color:var(--ink);letter-spacing:.04em}
 
+.link-sub{font-size:12px;color:var(--ink-dim);padding:2px 0 8px 30px;letter-spacing:.03em;line-height:1.8}
+
 </style>
 </head>
 <body>
@@ -1279,6 +1281,7 @@ const LLM_SYSTEM_PROMPT = `你是塔塔🔮の心灵疗愈室的首席解牌师�
 - 四要素流向：权杖(火)与宝剑(风)同现、或圣杯(水)与钱币(土)同现=能量相生、情况改善；火水同现、风土同现=能量相克、事态易恶化；缺哪个元素=缺哪种性质（问事业缺钱币=现实基础薄弱）。
 - 结合法：把整阵牌当作一个完整故事讲出来——起点、冲突、走向，而不是一张张孤立的牌。
 - 比较法：主动找出阵中互相呼应（相似牌=症结强化）或互相矛盾（相反牌=内在拉扯）的组合并点明。
+- 行动词参考已随牌附上：advice 的 step 要尽量承接这些动词的质感，把牌义翻译成本周可执行的动作，而不是复述牌义。
 
 【职业操守】
 - 只分析情势与选项，绝不替问者做决定（不说"你应该分手"），决定权归问者。
@@ -1322,7 +1325,7 @@ async function callLLM(question, spreadName, draws) {
   if (!cfg.apiKey || !cfg.baseURL) return null;
   const now = new Date();
   const dateStr = `${now.getFullYear()}年${now.getMonth() + 1}月${now.getDate()}日`;
-  const userContent = `当前日期：${dateStr}\n问题：${question}\n牌阵：${spreadName}\n抽到的牌：\n${draws.map((d, i) => `${i + 1}. ${d.pos.n}位置：${d.card.name}${d.reversed ? "（逆位）" : ""}——关键词：${(d.reversed ? d.card.reversed : d.card.upright).keywords.join("、")}`).join("\n")}\n\n请按指定JSON格式输出解读。`;
+  const userContent = `当前日期：${dateStr}\n问题：${question}\n牌阵：${spreadName}\n抽到的牌：\n${draws.map((d, i) => { const kw = (d.reversed ? d.card.reversed : d.card.upright).keywords.join("、"); const acts = (typeof CARD_ACTIONS !== "undefined" && CARD_ACTIONS[d.card.name]) ? CARD_ACTIONS[d.card.name].slice(0, 4).join("、") : ""; return `${i + 1}. ${d.pos.n}位置：${d.card.name}${d.reversed ? "（逆位）" : ""}——关键词：${kw}${acts ? `\n   行动词参考：${acts}` : ""}`; }).join("\n")}\n\n请按指定JSON格式输出解读。`;
   const reqOpts = {
     method: "POST",
     headers: { "Content-Type": "application/json", "Authorization": "Bearer " + cfg.apiKey },
@@ -1415,7 +1418,7 @@ async function callLLMStream(question, spreadName, draws, onPart) {
   if (!cfg.apiKey || !cfg.baseURL) return null;
   const now = new Date();
   const dateStr = `${now.getFullYear()}年${now.getMonth() + 1}月${now.getDate()}日`;
-  const userContent = `当前日期：${dateStr}\n问题：${question}\n牌阵：${spreadName}\n抽到的牌：\n${draws.map((d, i) => `${i + 1}. ${d.pos.n}位置：${d.card.name}${d.reversed ? "（逆位）" : ""}——关键词：${(d.reversed ? d.card.reversed : d.card.upright).keywords.join("、")}`).join("\n")}\n\n请按指定JSON格式输出解读。`;
+  const userContent = `当前日期：${dateStr}\n问题：${question}\n牌阵：${spreadName}\n抽到的牌：\n${draws.map((d, i) => { const kw = (d.reversed ? d.card.reversed : d.card.upright).keywords.join("、"); const acts = (typeof CARD_ACTIONS !== "undefined" && CARD_ACTIONS[d.card.name]) ? CARD_ACTIONS[d.card.name].slice(0, 4).join("、") : ""; return `${i + 1}. ${d.pos.n}位置：${d.card.name}${d.reversed ? "（逆位）" : ""}——关键词：${kw}${acts ? `\n   行动词参考：${acts}` : ""}`; }).join("\n")}\n\n请按指定JSON格式输出解读。`;
   const url = cfg.baseURL.replace(/\/$/, "") + "/chat/completions";
   const STREAM_TIMEOUT = 60000; /* 全程上限（含逐字生成时间） */
   let resp;
@@ -2669,10 +2672,36 @@ function renderLinks() {
   };
   check((typeof CARD_PAIRS !== "undefined" ? CARD_PAIRS.opposite : []), "⚖", "对冲", "");
   check((typeof CARD_PAIRS !== "undefined" ? CARD_PAIRS.reinforce : []), "✦", "共振", "");
-  /* 宫廷牌同现：人物互动提示 */
+  /* 宫廷牌同现：按 Bunning 宫廷配对系统做组合解读（元素×角色元数据） */
+  const SUIT_META = { "权杖": ["火", "行动与创造"], "圣杯": ["水", "情感与人际"], "宝剑": ["风", "思考与冲突"], "星币": ["土", "物质与现实"] };
+  const RANK_META = { "国王": "成熟的掌控者", "王后": "成熟的照顾者·内在面", "骑士": "冲劲十足的青年行动派", "侍从": "学习探索的孩童·信使" };
+  const elFlow = (a, b) => {
+    if (a === b) return "性质加强";
+    const FLOW = { "火|风": "相生·情况改善", "风|火": "相生·情况改善", "水|土": "相生·情况改善", "土|水": "相生·情况改善", "火|水": "相克·易生拉扯", "水|火": "相克·易生拉扯", "风|土": "相克·易生拉扯", "土|风": "相克·易生拉扯" };
+    return FLOW[a + "|" + b] || "性质并立·维持现状";
+  };
   const courts = names.filter(n => /侍从|骑士|王后|国王/.test(n));
   if (courts.length >= 2) {
-    lines.push(`<div class="link-line"><span class="l-icon">👥</span><span class="l-label">宫廷同现</span><span class="l-pair">${courts.join(" ↔ ")}</span></div>`);
+    let combos = 0;
+    for (let i = 0; i < courts.length && combos < 2; i++) {
+      for (let j = i + 1; j < courts.length && combos < 2; j++) {
+        const A = courts[i], B = courts[j];
+        const suitA = Object.keys(SUIT_META).find(s2 => A.includes(s2));
+        const suitB = Object.keys(SUIT_META).find(s2 => B.includes(s2));
+        const rankA = Object.keys(RANK_META).find(r => A.includes(r));
+        const rankB = Object.keys(RANK_META).find(r => B.includes(r));
+        if (!suitA || !suitB || !rankA || !rankB) continue;
+        const flow = elFlow(SUIT_META[suitA][0], SUIT_META[suitB][0]);
+        const note = suitA === suitB
+          ? "同一元素（" + SUIT_META[suitA][0] + "·" + SUIT_META[suitA][1] + "）的两个阶段：" + RANK_META[rankA] + " 与 " + RANK_META[rankB] + "——课题是该以哪种成熟度行事"
+          : "不同元素同台（" + flow + "）：" + RANK_META[rankA] + "（" + suitA + "）与 " + RANK_META[rankB] + "（" + suitB + "）——留意谁主导、谁被影响";
+        lines.push('<div class="link-line"><span class="l-icon">👥</span><span class="l-label">宫廷组合</span><span class="l-pair">' + A + " ↔ " + B + '</span></div><div class="link-sub">' + note + "</div>");
+        combos++;
+      }
+    }
+    if (combos === 0) {
+      lines.push('<div class="link-line"><span class="l-icon">👥</span><span class="l-label">宫廷同现</span><span class="l-pair">' + courts.join(" ↔ ") + "</span></div>");
+    }
   }
   if (!lines.length) return;
   const block = document.createElement("div");
