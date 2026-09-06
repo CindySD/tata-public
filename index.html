@@ -251,6 +251,12 @@ textarea{min-height:96px}
 .reading-q{font-family:var(--serif);font-size:16px;color:var(--ink-dim);letter-spacing:.1em;margin-top:10px;line-height:2}
 .reading-q b{color:var(--gold-hi);font-weight:600}
 .reading-meta{font-size:11.5px;color:var(--ink-faint);letter-spacing:.26em;margin-top:12px}
+/* 切牌可点入口 + 回响码（P4/P10：让 meta 行的信息可被使用） */
+.reading-meta .meta-cut{background:none;border:none;border-bottom:1px dashed var(--gold-dim);color:var(--gold);font:inherit;letter-spacing:inherit;padding:0;cursor:pointer}
+.reading-meta .meta-cut:hover{border-bottom-color:var(--gold);color:var(--gold-hi)}
+.reading-meta .echo-code{border-bottom:1px dotted var(--ink-faint);cursor:help}
+/* 历史满额预警（P3） */
+.hist-warn{font-size:12.5px;color:var(--gold);background:rgba(201,168,106,.07);border:1px solid var(--gold-faint);border-radius:10px;padding:10px 14px;margin-bottom:14px;line-height:1.8;letter-spacing:.04em;text-align:center}
 .spread-strip{display:flex;justify-content:center;gap:16px;flex-wrap:wrap;margin:30px 0 8px}
 .spread-strip .mini{cursor:pointer;text-align:center;transition:transform .3s}
 .spread-strip .mini:hover{transform:translateY(-4px)}
@@ -608,6 +614,7 @@ footer .gold{color:var(--gold)}
   <section class="stage" id="stage-history">
     <div class="kicker">回 响 档 案</div>
     <div class="ask-panel" style="margin-top:8px">
+      <input class="num-input" id="hist-search" type="search" placeholder="🔍 搜问题、牌名、牌阵或能量之词" style="width:100%;height:42px;text-align:left;font-size:13px;font-family:var(--sans);margin-bottom:6px" aria-label="搜索占卜记录">
       <div id="history-list"></div>
       <div style="display:flex;gap:14px;justify-content:center;margin-top:30px;flex-wrap:wrap">
         <button class="btn ghost" id="btn-hist-new" type="button">✦ 新的占卜</button>
@@ -655,6 +662,14 @@ footer .gold{color:var(--gold)}
     <h4>AI 解读设置</h4>
     <div class="m-en" style="text-align:center;font-size:11px;letter-spacing:.3em;color:var(--ink-faint);margin-bottom:20px">兼容所有 OpenAI 格式 API</div>
     <div class="m-row">
+      <div class="m-label">常用服务快捷填充</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="ex-chip" type="button" data-preset="deepseek">DeepSeek</button>
+        <button class="ex-chip" type="button" data-preset="zhipu">智谱 GLM</button>
+        <button class="ex-chip" type="button" data-preset="ollama">本地 Ollama</button>
+      </div>
+    </div>
+    <div class="m-row">
       <div class="m-label">API 地址（baseURL）</div>
       <input class="num-input" id="llm-baseurl" type="text" placeholder="如 https://api.deepseek.com 或 https://dashscope.aliyuncs.com/compatible-mode/v1" style="font-size:13px;font-family:var(--sans);height:42px;text-align:left">
     </div>
@@ -673,10 +688,11 @@ footer .gold{color:var(--gold)}
     </div>
     <div style="display:flex;gap:14px;justify-content:center;margin-top:24px;flex-wrap:wrap">
       <button class="btn" id="llm-save" type="button">保 存</button>
+      <button class="btn ghost" id="llm-test" type="button">测试连接</button>
       <button class="btn ghost" id="llm-clear" type="button">清除配置</button>
     </div>
     <p class="note" style="margin-top:18px;font-size:11px;line-height:1.8">
-      配置后解读页将调用 AI 生成个性化深度解读（约 5-15 秒）。<br>
+      配置后解读页将调用 AI 生成个性化深度解读（约 5-20 秒，期间可先看逐牌解读）。<br>
       不填则使用内置规则引擎解读（即时）。<br>
       <span style="color:var(--gold)">推荐</span>：DeepSeek（便宜+支持CORS）、本地 Ollama（免费+零延迟）<br>
       <span style="color:var(--gold)">注意</span>：通义/OpenAI 默认不允许浏览器跨域，需配 CORS 代理<br>
@@ -1693,7 +1709,7 @@ const SPREADS = {
     reason: "你在两条路之间徘徊，牌阵会把两条路都照亮。"
   },
   action: {
-    name: "行动之路", positions: [{ n: "现状", lens: "镜子" }, { n: "该做的行动", lens: "门" }, { n: "将落向的结果", lens: "窗户" }],
+    name: "行动之路", positions: [{ n: "现状", lens: "镜子" }, { n: "该做的行动", lens: "门" }, { n: "结果", lens: "窗户" }],
     reason: "这个问题落在具体的行动与结果上，牌阵直指「下一步」。"
   },
   celtic: {
@@ -2079,6 +2095,43 @@ $("#llm-clear").addEventListener("click", () => {
   $("#llm-baseurl").value = ""; $("#llm-apikey").value = ""; $("#llm-model").value = "";
 });
 
+/* 常用服务快捷填充：免查文档，点一下带出 baseURL 与推荐模型 */
+const LLM_PRESETS = {
+  deepseek: { baseURL: "https://api.deepseek.com", model: "deepseek-chat" },
+  zhipu: { baseURL: "https://open.bigmodel.cn/api/paas/v4", model: "glm-4-flash" },
+  ollama: { baseURL: "http://localhost:11434/v1", model: "qwen2.5:7b" }
+};
+document.querySelectorAll("[data-preset]").forEach(b => b.addEventListener("click", () => {
+  const p = LLM_PRESETS[b.dataset.preset];
+  if (!p) return;
+  $("#llm-baseurl").value = p.baseURL;
+  $("#llm-model").value = p.model;
+  if (b.dataset.preset === "ollama" && !$("#llm-apikey").value.trim()) $("#llm-apikey").value = "ollama";
+}));
+
+/* 测试连接：发一条 1 token 请求，免去"配置对不对要开一整局才知道" */
+$("#llm-test").addEventListener("click", async () => {
+  const btn = $("#llm-test");
+  if (btn.disabled) return;
+  const baseURL = $("#llm-baseurl").value.trim();
+  const apiKey = $("#llm-apikey").value.trim();
+  const model = $("#llm-model").value.trim();
+  if (!baseURL || !apiKey) { btn.textContent = "请先填地址和 Key"; setTimeout(() => { btn.textContent = "测试连接"; }, 2500); return; }
+  btn.disabled = true; btn.textContent = "测试中……";
+  try {
+    const resp = await llmFetch(baseURL.replace(/\/$/, "") + "/chat/completions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + apiKey },
+      body: JSON.stringify({ model: model || "gpt-4o-mini", messages: [{ role: "user", content: "hi" }], max_tokens: 1 })
+    }, 15000);
+    btn.textContent = resp.ok ? "连接成功 ✓" : `不通：API 返回 ${resp.status}`;
+  } catch (e) {
+    btn.textContent = "不通：" + (e.message || "网络/CORS 错误").slice(0, 30);
+  }
+  btn.disabled = false;
+  setTimeout(() => { btn.textContent = "测试连接"; }, 4000);
+});
+
 /* F-008: 音效开关（打开设置弹窗时同步状态） */
 $("#sfx-toggle").checked = sfxOn();
 $("#sfx-toggle").addEventListener("change", function () { setSfx(this.checked); if (this.checked) playSfx("flip"); });
@@ -2087,7 +2140,8 @@ $("#btn-ask").addEventListener("click", () => {
   errEl.textContent = "";
   /* 注意：此处不得重置 dailyMode——「今日一牌」经由此入口提交，重置已前移到 btn-start/btn-again 等入口 */
   const q = qEl.value.trim();
-  if (!q) { errEl.textContent = "请先写下你的问题，再开启仪式。"; qEl.focus(); return; }
+  /* 每日一牌允许空问题：轻量定位，默认记为「今日指引」 */
+  if (!q && !state.dailyMode) { errEl.textContent = "请先写下你的问题，再开启仪式。"; qEl.focus(); return; }
   const numsRaw = numEl.value.trim().split(/[\s,，]+/).filter(s => s.length > 0);
   const nums = numsRaw.map(s => parseInt(s, 10)).filter(n => Number.isFinite(n) && n >= 1 && n <= 78);
   const total = SPREADS[state.spreadKey || pickSpread(q)].positions.length;
@@ -2098,7 +2152,7 @@ $("#btn-ask").addEventListener("click", () => {
     setTimeout(() => { errEl.textContent = ""; }, 4000);
   }
   if (SAFETY_RE.test(q)) { qEl.value = ""; go("care"); return; }
-  state.question = q; state.numbers = nums; state.number = nums[0];
+  state.question = q || (state.dailyMode ? "今日指引" : q); state.numbers = nums; state.number = nums[0];
   state.domain = detectDomain(q);
   if (!state.spreadManual) state.spreadKey = pickSpread(q);
   try { buildDraws(); } catch(e) { errEl.textContent = "抽牌出错: " + e.message; return; }
@@ -2488,7 +2542,8 @@ async function renderReading() {
   $("#reading-q").innerHTML = `你问：「<b>${escapeHtml(state.question)}</b>」`;
   const h = new Date().getHours();
   const daypart = h >= 6 && h < 12 ? "晨光初启的时分" : h < 18 ? "日光渐沉的时分" : "夜色渐深的时分";
-  $("#reading-meta").textContent = `直觉数字 ${state.number} · ${daypart} · 回响码 ${state.seed.toString(16).slice(0, 6).toUpperCase()}` + (state.cutCard ? ` · 切牌：${state.cutCard.name}（${state.cutCard.upright.keywords[0]}）` : "");
+  $("#reading-meta").innerHTML = `直觉数字 ${state.number} · ${daypart} · 回响码 <span class="echo-code" title="本次占卜的唯一印记，由数字与问题共同生成，可用于对照复盘">${state.seed.toString(16).slice(0, 6).toUpperCase()}</span>` + (state.cutCard ? ` · <button class="meta-cut" id="meta-cut" type="button" title="点开看这张心态牌的牌义">切牌：${state.cutCard.name}（${state.cutCard.upright.keywords[0]}）</button>` : "");
+  $("#meta-cut")?.addEventListener("click", openCutDeep);
   /* 概览小牌 */
   const strip = $("#spread-strip"); strip.innerHTML = "";
   state.draws.forEach((d, i) => {
@@ -2515,12 +2570,12 @@ async function renderReading() {
     note.innerHTML = "ℹ️ 本轮出现逆位牌：逆位 ≠ 坏消息——它提示能量转向了内部或被卡住，是需要被看见的部分。";
     list.parentNode.insertBefore(note, list);
   }
-  const isMobile = matchMedia("(max-width:600px)").matches;
   const ruleReadings = state.draws.map(d => composeReading(d, state.domain));
   state.draws.forEach((d, i) => {
     const r = ruleReadings[i];
+    /* 深层解读全端默认折叠：避免多牌局页面过长（用户可点开） */
     const art = document.createElement("article");
-    art.className = "reading-card" + (isMobile ? " collapsed" : ""); art.id = "rc-" + i;
+    art.className = "reading-card collapsed"; art.id = "rc-" + i;
     art.style.animationDelay = (i * 0.1) + "s";
     let html = `
       <div class="rc-head">
@@ -2546,7 +2601,7 @@ async function renderReading() {
     }
     html += `
       <button class="rc-deep" type="button" data-i="${i}">✦ 深读这张牌</button>
-      <button class="rc-collapse" type="button">${isMobile ? "展开深层解读 ↓" : "收起深层解读 ↑"}</button>`;
+      <button class="rc-collapse" type="button">展开深层解读 ↓</button>`;
     art.innerHTML = html;
     list.appendChild(art);
   });
@@ -2561,7 +2616,7 @@ async function renderReading() {
   if (cfg.apiKey && cfg.baseURL) {
     /* 显示 AI 加载态 */
     const synEl = $("#synthesis");
-    synEl.innerHTML = `<h3>综 合 解 读</h3><div style="text-align:center;padding:30px;color:var(--gold);font-size:14px;letter-spacing:.2em">塔塔正在凝神解读中……<br><span style="font-size:11px;color:var(--ink-faint);margin-top:8px;display:block">AI 深度解读 · 字句会逐段浮现</span></div>`;
+    synEl.innerHTML = `<h3>综 合 解 读</h3><div style="text-align:center;padding:30px;color:var(--gold);font-size:14px;letter-spacing:.2em">塔塔正在凝神解读中……<br><span style="font-size:11px;color:var(--ink-faint);margin-top:8px;display:block">AI 深度解读 · 字句会逐段浮现 · 约需 5-20 秒<br>上面的逐牌解读可以先看，这里生成好了会自动替换</span></div>`;
     go("reading");
     /* F-001: 流式优先——字段到位即渲染（首字约 1-2 秒），失败静默回落一次性请求 */
     const aiResult = await new Promise(async (resolve) => {
@@ -2647,7 +2702,7 @@ async function renderReading() {
       }
       /* 综合解读 + 建议 + 收束 */
       const syn = d.synthesis || {};
-      let synHTML = `<h3>综 合 解 读 ${cfg.model ? '<small style="font-size:10px;color:var(--ink-faint);font-weight:400">· AI 深度版</small>' : ''}</h3>`;
+      let synHTML = `<h3>综 合 解 读 ${cfg.model ? '<small style="font-size:10px;color:var(--ink-faint);font-weight:400">· AI 深度版</small>' : ''}</h3>${cutLine()}`;
       if (syn.overview) synHTML += `<div class="syn-block"><div class="sb-label">能 量 概 览</div><p>${escHtml(syn.overview)}</p></div>`;
       if (syn.start) synHTML += `<div class="syn-block"><div class="sb-label">起 点</div><p>${escHtml(syn.start)}</p></div>`;
       if (syn.tension) synHTML += `<div class="syn-block"><div class="sb-label">张 力</div><p>${escHtml(syn.tension)}</p></div>`;
@@ -2760,7 +2815,10 @@ const TIMING_COURT = {
   "权杖王后": "3月21日–4月20日（牡羊）", "星币国王": "4月21日–5月20日（金牛）", "宝剑骑士": "5月21日–6月20日（双子）",
   "圣杯王后": "6月21日–7月21日（巨蟹）", "权杖国王": "7月22日–8月22日（狮子）", "星币骑士": "8月23日–9月22日（处女）",
   "宝剑王后": "9月23日–10月22日（天秤）", "圣杯国王": "10月23日–11月22日（天蝎）", "权杖骑士": "11月23日–12月21日（射手）",
-  "星币王后": "12月22日–1月20日（魔羯）", "宝剑国王": "1月20日–2月18日（水瓶）", "圣杯骑士": "2月19日–3月20日（双鱼）"
+  "星币王后": "12月22日–1月20日（魔羯）", "宝剑国王": "1月20日–2月18日（水瓶）", "圣杯骑士": "2月19日–3月20日（双鱼）",
+  /* 侍从按书中季节法对应四要素季节（区间内凭直觉收窄到旬） */
+  "权杖侍从": "春季（3/21–6/20 之间，凭直觉收窄）", "圣杯侍从": "夏季（6/21–9/22 之间，凭直觉收窄）",
+  "宝剑侍从": "秋季（9/23–12/21 之间，凭直觉收窄）", "星币侍从": "冬季（12/22–3/20 之间，凭直觉收窄）"
 };
 const TIMING_MINOR = {
   "权杖二": "3/21–3/30", "权杖三": "3/31–4/10", "权杖四": "4/11–4/20",
@@ -2779,7 +2837,7 @@ const TIMING_MINOR = {
 const TIMING_ACE = { "权杖": "春季（三月前后启动）", "圣杯": "夏季（六月前后启动）", "宝剑": "秋季（九月前后启动）", "星币": "冬季（十二月前后启动）" };
 function timingFor(name) {
   if (TIMING_MAJOR[name]) return TIMING_MAJOR[name];
-  if (TIMING_NO_SIGN.includes(name)) return "一年内难以成形（无星座对应）";
+  if (TIMING_NO_SIGN.includes(name)) return null; /* 无星座/季节对应：不产出误导性文字 */
   if (TIMING_COURT[name]) return TIMING_COURT[name];
   if (TIMING_MINOR[name]) return TIMING_MINOR[name] + "（前后 3-5 日内）";
   const ace = Object.keys(TIMING_ACE).find(s => name === s + "王牌");
@@ -2790,9 +2848,12 @@ function renderTiming() {
   document.querySelectorAll(".timing-block").forEach(b => b.remove());
   const synEl = document.getElementById("synthesis");
   if (!synEl || !state.draws.length) return;
+  const usable = state.draws.filter(d => timingFor(d.card.name));
+  /* 全部牌都无传统时间对应且非每日一牌：整块隐藏，避免零信息区块 */
+  if (!usable.length && !(state.dailyMode && state.dailyCard)) return;
   const lines = state.draws.map(d => {
     const t = timingFor(d.card.name);
-    return `<div class="timing-line"><span class="t-card">${d.card.name}${d.reversed ? "（逆）" : ""}</span><span class="t-time">${t || "—"}</span></div>`;
+    return `<div class="timing-line"><span class="t-card">${d.card.name}${d.reversed ? "（逆）" : ""}</span><span class="t-time">${t || "无传统对应"}</span></div>`;
   });
   const block = document.createElement("div");
   block.className = "timing-block";
@@ -2817,6 +2878,7 @@ function renderSynthesisRule() {
   const synEl = $("#synthesis");
   synEl.innerHTML = `
     <h3>综 合 解 读</h3>
+    ${cutLine()}
     <div class="syn-block"><div class="sb-label">能 量 概 览</div><p>${syn.overview}</p></div>
     ${syn.relation ? `<div class="syn-block"><div class="sb-label">牌 与 牌 之 间</div><p>${syn.relation}</p></div>` : ""}
     <div class="syn-block"><div class="sb-label">起 点</div><p>${syn.start}</p></div>
@@ -2828,6 +2890,24 @@ function renderSynthesisRule() {
     <p class="sovereign">牌显示的是当下的能量，不是注定的结局。<br>你的选择，随时可以改变走向。</p>`;
 }
 function escapeHtml(s) { return s.replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
+
+/* 切牌（心态牌）：meta 行可点击查看 + 综合解读开头关联一句 */
+function cutLine() {
+  if (!state.cutCard) return "";
+  const kw = state.cutCard.upright.keywords.slice(0, 2).join(" · ");
+  return `<div class="syn-block"><div class="sb-label">心 态 底 色 · 切 牌</div><p>开牌前你切到了「${state.cutCard.name}」（${kw}）——这是你走进这次解读时的心态。若它说中了现在的你，下面的指引会更贴合；若完全不像，也许你比自己以为的，已经走远了一步。</p></div>`;
+}
+function openCutDeep() {
+  const c = state.cutCard;
+  if (!c) return;
+  openInfoModal(`
+    <div class="m-img"><img src="${IMG_BASE + c.image}" data-fallback="${CDN_BASE + c.image}" alt="${c.name}" referrerpolicy="no-referrer" onerror="if(!this.dataset.fb){this.dataset.fb=1;this.src=this.dataset.fallback}"></div>
+    <h4>切牌 · ${c.name}</h4>
+    <div class="m-en">${c.englishName} · 你此刻的心态底色</div>
+    <div class="m-row"><div class="m-label">关 键 词</div><p>${c.upright.keywords.join(" / ")}</p></div>
+    <div class="m-row"><div class="m-label">牌 面 之 言</div><p>${c.upright.meaning}</p></div>
+    <div class="m-row"><div class="m-label">为 什 么 重 要</div><p>切牌映照你问这个问题时的心态——牌阵是同一副，但带着不同的心态去行动，走向也会不同。先确认这张牌说的状态像不像现在的你，再往下读指引。</p></div>`);
+}
 
 /* 深读弹窗 */
 const mask = $("#modal-mask"), modalBody = $("#modal-body");
@@ -2883,7 +2963,7 @@ const EXAMPLE_QS = ["我和他之间还有可能吗？", "我该不该接受这�
 function coachTips(q) {
   const tips = [];
   if (!q || q.length < 4) return tips;
-  if (/(会不会|能不能|可不可|有没有|是否|成功吗|赢吗|嫁|娶)/.test(q) && !/如何|怎么|怎样/.test(q))
+  if (/(会不会|能不能|可不可|有没有|是否|成功吗|赢吗|嫁|娶|可能吗|可以吗|行不行|成不成|有机会吗)/.test(q) && !/如何|怎么|怎样/.test(q))
     tips.push("牌更擅长回答「我该如何做」——试试把是非题改写成对策式提问。");
   if (/(一辈子|这辈子|永远|命中注定|最终)/.test(q))
     tips.push("塔罗擅长看约一年内的事——太远的问题建议聚焦近期。");
@@ -2947,17 +3027,41 @@ $("#btn-daily").addEventListener("click", () => {
   state.spreadManual = true; state.spreadKey = "single";
   state.dailyMode = true;
   refreshChips();
-  reasonEl.textContent = "今日一牌 · 全站同频：今天所有人抽到的是同一张牌。凭直觉选一张，揭开它就是。";
+  reasonEl.textContent = "今日一牌 · 全站同频：今天所有人抽到的是同一张牌。凭直觉选一张，揭开它就是（问题可留空，数字即可）。";
   go("ask");
   numEl.focus();
 });
 
-/* 抄收指引（文本分享，零依赖） */
+/* 抄收指引（文本分享，零依赖）：牌面 + 综合解读 + 行动建议 + 站点链接 */
 function shareText() {
-  const lines = ["🔮 塔塔🔮の心灵疗愈室 · 占卜记录", `问：${state.question}`, `牌阵：${SPREADS[state.spreadKey].name}`];
+  const lines = ["塔塔🔮の心灵疗愈室 · 占卜记录", `问：${state.question}`, `牌阵：${SPREADS[state.spreadKey].name}`];
   state.draws.forEach((d, i) => lines.push(`${i + 1}. ${d.pos.n} · ${d.card.name}${d.reversed ? "·逆" : ""}`));
-  lines.push(`能量之词：${energyWord()}`);
+  const synEl = document.getElementById("synthesis");
+  /* 能量之词优先取渲染后的 DOM（AI 可能覆写），拿不到回落规则引擎 */
+  const ew = (synEl && synEl.querySelector(".energy-word .ew")?.textContent.trim()) || energyWord();
+  lines.push(`能量之词：${ew}`);
+  /* 综合解读正文（能量概览/起点/张力/转折/综合判断/行动建议/收束），AI 深度版与规则版通用 */
+  if (synEl) {
+    synEl.querySelectorAll(".syn-block").forEach(b => {
+      const label = (b.querySelector(".sb-label")?.textContent || "").replace(/\s+/g, "");
+      if (!label) return;
+      const steps = [...b.querySelectorAll(".advice-step")].map((s, i) => {
+        const step = s.querySelector(".as-step")?.textContent.trim() || "";
+        const why = s.querySelector(".as-why")?.textContent.trim() || "";
+        return `${i + 1}. ${step}${why ? `（${why}）` : ""}`;
+      });
+      if (steps.length) { lines.push(`【${label}】`); steps.forEach(s => lines.push(s)); return; }
+      const p = b.querySelector("p");
+      if (p && p.textContent.trim()) lines.push(`【${label}】${p.textContent.trim()}`);
+    });
+    const closing = synEl.querySelector(".closing-block p")?.textContent.trim();
+    if (closing) lines.push(closing);
+  }
   lines.push("牌显示的是当下的能量，你的选择随时可以改变走向。");
+  const siteUrl = /cindysd\.github\.io$/.test(location.origin)
+    ? location.origin + location.pathname.replace(/index\.html$/, "")
+    : "https://cindysd.github.io/tata-public/";
+  lines.push(`🔮 想试试吗：${siteUrl}`);
   return lines.join("\n");
 }
 $("#btn-share").addEventListener("click", () => {
@@ -3130,12 +3234,34 @@ function fmtTime(ts) {
   return `${dt.getFullYear()}-${p(dt.getMonth() + 1)}-${p(dt.getDate())} ${p(dt.getHours())}:${p(dt.getMinutes())}`;
 }
 function renderHistory() {
+  /* 每次进入历史页重置搜索，展示全部 */
+  const si = $("#hist-search");
+  if (si) si.value = "";
+  renderHistList();
+  go("history");
+  window.scrollTo(0, 0);
+}
+function renderHistList() {
   const h = loadHistory();
   const box = $("#history-list"); box.innerHTML = "";
+  const kw = ($("#hist-search")?.value || "").trim().toLowerCase();
+  /* 满额预警：接近 20 条上限时提醒备份（搜索时不显示，避免干扰结果） */
+  const warnHtml = (!kw && h.length >= 17)
+    ? `<div class="hist-warn">📦 记录已存 ${h.length}/20 条${h.length >= 20 ? "，再占卜将淘汰最旧记录" : `，再占 ${20 - h.length} 次将开始淘汰最旧记录`}——建议先「导出记录」备份。</div>`
+    : "";
   if (!h.length) {
-    box.innerHTML = '<p class="note" style="padding:44px 0;line-height:2.4">还没有记录。<br>你的每一次占卜，都会留在这里，随时回来回看。</p>';
+    box.innerHTML = warnHtml + '<p class="note" style="padding:44px 0;line-height:2.4">还没有记录。<br>你的每一次占卜，都会留在这里，随时回来回看。</p>';
+    return;
   }
-  h.forEach(rec => {
+  const recs = kw ? h.filter(rec => {
+    const cards = rec.d.map(x => { const c = cardById[x.id]; return c ? c.name : ""; }).join(" ");
+    return ((rec.q || "") + " " + cards + " " + (SPREADS[rec.sp] ? SPREADS[rec.sp].name : (rec.sp || "")) + " " + (rec.e || "")).toLowerCase().includes(kw);
+  }) : h;
+  if (!recs.length) {
+    box.innerHTML = warnHtml + `<p class="note" style="padding:44px 0;line-height:2.4">没有匹配「${escapeHtml(kw)}」的记录。<br>换个关键词试试，或清空搜索看全部。</p>`;
+    return;
+  }
+  recs.forEach(rec => {
     const it = document.createElement("div");
     it.className = "hist-item";
     it.tabIndex = 0; it.setAttribute("role", "button"); it.setAttribute("aria-label", `回看 ${fmtTime(rec.t)} 的占卜记录`);
@@ -3172,6 +3298,7 @@ function restoreReading(rec) {
 }
 $("#btn-hist").addEventListener("click", renderHistory);
 $("#btn-hist-2").addEventListener("click", renderHistory);
+$("#hist-search").addEventListener("input", renderHistList);
 $("#btn-hist-new").addEventListener("click", () => { qEl.value = ""; numEl.value = ""; errEl.textContent = ""; state.dailyMode = false; state.spreadManual = false; state.spreadKey = "three_time"; refreshChips(); reasonEl.textContent = ""; go("ask"); });
 $("#btn-hist-clear").addEventListener("click", () => {
   if (confirm("确定清空全部占卜记录吗？此操作不可恢复。")) { try { localStorage.removeItem(HKEY); } catch (e) {} renderHistory(); }
