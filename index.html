@@ -202,9 +202,11 @@ textarea{min-height:96px}
 .fan .fcard:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 .fan .fcard.picked{opacity:.14;pointer-events:none;border-style:dashed;filter:none;box-shadow:none;transform:rotate(var(--tilt,0deg))}
 .fan .fcard:first-child{margin-left:0}
-.fan .fcard.marked{border-color:var(--gold);transform:rotate(var(--tilt,0deg)) translateY(-6px);z-index:6;animation:fanIn .4s var(--ease-out) var(--fd) backwards,markPulse 2.6s ease-in-out 1s infinite}
+/* 标记牌样式数据驱动：颜色与徽章序号由 app.js 注入（--mk / data-mark-badge），
+   新增牌阵不必改这里；--mk 缺省时回退金色边框。 */
+.fan .fcard.marked{border-color:var(--mk,var(--gold));transform:rotate(var(--tilt,0deg)) translateY(-6px);z-index:6;animation:fanIn .4s var(--ease-out) var(--fd) backwards,markPulse 2.6s ease-in-out 1s infinite}
 /* 标记徽章：深底圆片+同色描边，叠在重叠牌面上依然清晰（z-index 高于相邻牌） */
-.fan .fcard.marked::after{content:"✦";position:absolute;top:-11px;left:50%;transform:translateX(-50%);width:21px;height:21px;line-height:19px;border-radius:50%;background:#0b0917;border:1px solid var(--gold-hi);color:var(--gold-hi);font-size:11px;text-align:center;text-shadow:none;z-index:7}
+.fan .fcard.marked::after{content:attr(data-mark-badge);position:absolute;top:-11px;left:50%;transform:translateX(-50%);width:21px;height:21px;line-height:19px;border-radius:50%;background:#0b0917;border:1px solid var(--mk,var(--gold-hi));color:var(--mk,var(--gold-hi));font-size:11px;text-align:center;text-shadow:none;z-index:7}
 @keyframes markPulse{0%,100%{box-shadow:0 0 5px rgba(201,168,106,.25)}50%{box-shadow:0 0 14px rgba(201,168,106,.6)}}
 @keyframes fanIn{from{opacity:0;transform:rotate(var(--tilt,0deg)) scale(.6)}to{opacity:1;transform:rotate(var(--tilt,0deg)) scale(1)}}
 
@@ -364,28 +366,7 @@ footer .gold{color:var(--gold)}
 .btn-locate-multi:hover{border-color:var(--gold-dim);color:var(--gold-hi)}
 
 /* 多标记牌颜色区分 */
-/* 数字标记：仅覆盖徽章内容与配色（徽章盒子样式由 .marked::after 统一提供） */
-.fan .fcard.marked-1{border-color:#e8c46a;box-shadow:0 0 10px rgba(232,196,106,.4)}
-.fan .fcard.marked-1::after{content:"①";color:#e8c46a;border-color:#e8c46a}
-.fan .fcard.marked-2{border-color:#7cb8c9;box-shadow:0 0 10px rgba(124,184,201,.4)}
-.fan .fcard.marked-2::after{content:"②";color:#7cb8c9;border-color:#7cb8c9}
-.fan .fcard.marked-3{border-color:#c97ca8;box-shadow:0 0 10px rgba(201,124,168,.4)}
-.fan .fcard.marked-3::after{content:"③";color:#c97ca8;border-color:#c97ca8}
-.fan .fcard.marked-4{border-color:#9ac97c;box-shadow:0 0 10px rgba(154,201,124,.4)}
-.fan .fcard.marked-4::after{content:"④";color:#9ac97c;border-color:#9ac97c}
-.fan .fcard.marked-5{border-color:#c97c7c;box-shadow:0 0 10px rgba(201,124,124,.4)}
-.fan .fcard.marked-5::after{content:"⑤";color:#c97c7c;border-color:#c97c7c}
-/* 凯尔特十字（10 张）专用：第 6-10 个数字标记 */
-.fan .fcard.marked-6{border-color:#c9a47c;box-shadow:0 0 10px rgba(201,164,124,.4)}
-.fan .fcard.marked-6::after{content:"⑥";color:#c9a47c;border-color:#c9a47c}
-.fan .fcard.marked-7{border-color:#8d7cc9;box-shadow:0 0 10px rgba(141,124,201,.4)}
-.fan .fcard.marked-7::after{content:"⑦";color:#8d7cc9;border-color:#8d7cc9}
-.fan .fcard.marked-8{border-color:#7cc9bd;box-shadow:0 0 10px rgba(124,201,189,.4)}
-.fan .fcard.marked-8::after{content:"⑧";color:#7cc9bd;border-color:#7cc9bd}
-.fan .fcard.marked-9{border-color:#c9c47c;box-shadow:0 0 10px rgba(201,196,124,.4)}
-.fan .fcard.marked-9::after{content:"⑨";color:#c9c47c;border-color:#c9c47c}
-.fan .fcard.marked-10{border-color:#b08ac9;box-shadow:0 0 10px rgba(176,138,201,.4)}
-.fan .fcard.marked-10::after{content:"⑩";color:#b08ac9;border-color:#b08ac9}
+/* 数字标记配色：已改为数据驱动（见上方 .marked 规则），新增牌阵无需在此登记 */
 
 /* P1-5: 逆位科普注 */
 .rev-note{background:rgba(201,168,106,.06);border:1px solid var(--gold-faint);border-radius:10px;padding:12px 16px;margin-bottom:8px;font-size:13px;color:var(--ink-dim);line-height:1.9;letter-spacing:.04em}
@@ -1741,6 +1722,19 @@ const SPREADS = {
 };
 const SPREAD_ORDER = ["single", "three_time", "relation", "choice", "action", "celtic"];
 const SPREAD_HINT = { single: "一问一答", three_time: "过去 · 现在 · 未来", relation: "你 · 对方 · 关系", choice: "两条路的对照", action: "现状 · 行动 · 结果", celtic: "十张全景" };
+/* ============================================================
+   ★ 新增牌阵接入说明（2026-09 事故复盘固化）
+   只需：① 在 SPREADS 加条目（positions 决定要抽几张）
+        ② 在 SPREAD_ORDER / SPREAD_HINT 登记
+        ③ （可选）在 pickSpread 关键词里登记自动选阵
+   数字标记徽章/定位按钮/数字计数提示全部由 positions.length 数据驱动，
+   无需新增任何 CSS 类或枚举——张数超过配色表长度时循环复用配色、徽章退回阿拉伯数字。
+   ⚠ 禁止在 CSS/JS 里再写按张数枚举的 marked-N 硬编码（凯尔特徽章事故根因）
+   ============================================================ */
+const CIRCLED = "①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮"; /* 徽章序号支持到 15 张，超出退回数字 */
+const MK_COLORS = ["#e8c46a", "#7cb8c9", "#c97ca8", "#9ac97c", "#c97c7c", "#c9a47c", "#8d7cc9", "#7cc9bd", "#c9c47c", "#b08ac9"];
+function markColor(order) { return MK_COLORS[order % MK_COLORS.length]; }
+function markLabel(order) { return CIRCLED[order] || String(order + 1); }
 
 function pickSpread(q) {
   /* 权重打分制：每个牌阵的关键词赋分，取总分最高，解决"我和他合伙做生意"等边界case */
@@ -2352,10 +2346,13 @@ function showSpread() {
     const marked = state.markedCards.find(m => m.idx === i);
     const f = document.createElement("button");
     f.type = "button";
-    f.className = "fcard" + (marked ? " marked marked-" + (marked.order + 1) : "");
+    f.className = "fcard" + (marked ? " marked" : "");
     f.style.setProperty("--fd", (i * 0.012) + "s");
     f.style.setProperty("--tilt", ((i * 7919) % 7 - 3) * 0.9 + "deg");
     if (marked) {
+      /* 徽章配色/序号由数据注入——任意张数的牌阵自动获得完整标记支持 */
+      f.style.setProperty("--mk", markColor(marked.order));
+      f.dataset.markBadge = markLabel(marked.order);
       f.setAttribute("aria-label", `第 ${i + 1} 张牌背（你的第 ${marked.order + 1} 个数字标记）`);
       f.__markedOrder = marked.order;
     } else {
@@ -2391,9 +2388,9 @@ function pickFromSpread(el) {
   ritualBusy = true;
   const card = state.deck.splice(idx, 1)[0];
   el.classList.add("picked");
-  /* 移除该牌的标记类（如果有的话）；循环清除 1-10，覆盖凯尔特十字 */
+  /* 移除标记（数据驱动方案：单一类 + data 属性，任意张数牌阵通用） */
   el.classList.remove("marked");
-  for (let mi = 1; mi <= 10; mi++) el.classList.remove("marked-" + mi);
+  delete el.dataset.markBadge;
   /* 隐藏定位按钮 */
   const locBtns = document.querySelectorAll("[id^='btn-locate-']");
   locBtns.forEach(b => b.style.display = "none");
@@ -2463,7 +2460,7 @@ function addLocateButtons() {
     if (lb) { lb.style.display = "inline-block"; return; }
     lb = document.createElement("button");
     lb.type = "button"; lb.id = "btn-locate-" + mc.order; lb.className = "btn-locate-multi";
-    lb.textContent = `定位${"①②③④⑤⑥⑦⑧⑨⑩"[mc.order] || (mc.order + 1)} `;
+    lb.textContent = `定位${markLabel(mc.order)} `;
     lb.style.cssText = "font-size:12px;color:var(--gold);border:1px solid var(--gold-faint);border-radius:999px;padding:5px 14px;cursor:pointer;background:none;font-family:var(--sans);margin-top:6px;display:none";
     lb.addEventListener("click", () => {
       const markedEl = [...fanEl.querySelectorAll(".fcard")].find(f => f.__card === mc.card && !f.classList.contains("picked"));
