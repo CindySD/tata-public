@@ -2027,7 +2027,7 @@ SPREAD_ORDER.forEach(k => {
   const b = document.createElement("button");
   b.type = "button"; b.className = "chip"; b.dataset.k = k;
   b.innerHTML = `${SPREADS[k].name}<small>${SPREAD_HINT[k]}</small>`;
-  b.addEventListener("click", () => { state.spreadManual = true; state.spreadKey = k; refreshChips(); reasonEl.textContent = "好，就用「" + SPREADS[k].name + "」。" + SPREADS[k].reason; refreshNumHint(); });
+  b.addEventListener("click", () => { state.spreadManual = true; state.dailyMode = false; /* 手动换阵即退出每日一牌模式，防止 dailyCard 劫持多张阵的翻牌 */ state.spreadKey = k; refreshChips(); reasonEl.textContent = "好，就用「" + SPREADS[k].name + "」。" + SPREADS[k].reason; refreshNumHint(); });
   chipsBox.appendChild(b);
 });
 function refreshChips() {
@@ -2182,6 +2182,8 @@ $("#btn-ask").addEventListener("click", () => {
   state.question = q || (state.dailyMode ? "今日指引" : q); state.numbers = nums; state.number = nums[0];
   state.domain = detectDomain(q);
   if (!state.spreadManual) state.spreadKey = pickSpread(q);
+  /* 不变量兜底：每日一牌只允许单牌阵。任何路径组合出 dailyMode+多张阵都会让 dailyCard 劫持全部翻牌（同牌 bug），一律自动退出 */
+  if (state.dailyMode && SPREADS[state.spreadKey].positions.length > 1) state.dailyMode = false;
   try { buildDraws(); } catch(e) { errEl.textContent = "抽牌出错: " + e.message; return; }
   startRitual();
 });
@@ -2291,6 +2293,7 @@ function startRitual() {
 let cutGen = 0;
 function showCutStep() {
   const gen = ++cutGen;
+  skipBtn.style.display = "none"; /* 洗牌已跳过/结束：切牌是亲手环节，不再提供跳过 */
   state.cutCard = null;
   const layer = document.createElement("div");
   layer.className = "cut-layer";
@@ -2481,18 +2484,10 @@ const skipBtn = document.createElement("button");
 skipBtn.type = "button"; skipBtn.className = "btn ghost"; skipBtn.id = "btn-skip";
 skipBtn.textContent = "跳过仪式 →"; skipBtn.style.display = "none";
 skipBtn.addEventListener("click", () => {
-  const gen = ++ritualGen; /* 作废洗牌→切牌的待触发定时器，这才是"跳过后还在转"的真正修复 */
-  cutGen++;                /* 若已进行到切牌步骤，一并作废并移除 */
-  document.querySelectorAll(".cut-layer").forEach(l => l.remove());
-  orbitLayer.classList.remove("show"); skipBtn.style.display = "none";
-  showSpread();
-  setTimeout(() => {
-    if (gen !== ritualGen) return;
-    fanEl.classList.add("blessed");
-    statusEl.textContent = "牌已就绪。";
-    subEl.textContent = `凭直觉选牌——标记牌或任意一张都可以。`;
-    addLocateButtons();
-  }, 800);
+  ritualGen++; /* 作废洗牌→切牌的定时器链，跳过只跳"等"，不跳"做" */
+  orbitLayer.classList.remove("show");
+  skipBtn.style.display = "none";
+  showCutStep(); /* 只跳过洗牌动画等待；切牌是用户亲手的一步，保留 */
 });
 spreadTagEl.parentNode.insertBefore(skipBtn, spreadTagEl.nextSibling);
 
