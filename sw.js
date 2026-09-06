@@ -6,7 +6,10 @@ const CORE = ['./', './index.html', './manifest.json'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(
-    caches.open(VER).then((c) => c.addAll(CORE)).then(() => self.skipWaiting())
+    caches.open(VER).then((c) =>
+      /* 逐条缓存并容忍单条失败：任一资源缺失不应让 SW 永久安装失败 */
+      Promise.all(CORE.map((u) => c.add(u).catch(() => {})))
+    ).then(() => self.skipWaiting())
   );
 });
 
