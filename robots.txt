@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://cindysd.github.io/tata-public/sitemap.xml
