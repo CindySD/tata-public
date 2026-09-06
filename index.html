@@ -440,6 +440,9 @@ footer .gold{color:var(--gold)}
   *{animation-duration:.001s !important;animation-iteration-count:1 !important;animation-delay:0s !important;transition-duration:.15s !important}
 }
 
+/* AI 解读常驻声明 */
+.ai-note{text-align:center;font-size:11px;color:var(--ink-faint);letter-spacing:.08em;margin-top:14px;opacity:.85}
+
 </style>
 </head>
 <body>
@@ -585,12 +588,12 @@ footer .gold{color:var(--gold)}
 <button class="float-settings" id="float-settings" type="button" aria-label="AI 解读设置">⚙</button>
 
 <!-- 深读弹窗 -->
-<div class="modal-mask" id="modal-mask">
+<div class="modal-mask" id="modal-mask" role="dialog" aria-modal="true" aria-label="牌义深读">
   <div class="modal" id="modal-body"></div>
 </div>
 
 <!-- AI 设置弹窗 -->
-<div class="modal-mask" id="settings-mask">
+<div class="modal-mask" id="settings-mask" role="dialog" aria-modal="true" aria-label="AI 解读设置">
   <div class="modal" style="max-width:520px">
     <button class="modal-close" type="button" id="settings-close">✕</button>
     <h4>AI 解读设置</h4>
@@ -2438,6 +2441,7 @@ async function renderReading() {
         synHTML += `<div class="closing-block"><p>${escHtml(d.closing)}</p></div>`;
       }
       synHTML += `<p class="sovereign">牌显示的是当下的能量，不是注定的结局。<br>你的选择，随时可以改变走向。</p>`;
+      synHTML += `<p class="ai-note">✦ 本段解读由 AI 生成，仅供自我觉察参考，不构成任何专业建议</p>`;
       synEl.innerHTML = synHTML;
     } else {
       /* #2 AI 失败：回落规则引擎 + 用户可见提示 */
