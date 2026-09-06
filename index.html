@@ -490,6 +490,10 @@ footer .gold{color:var(--gold)}
 
 .link-sub{font-size:12px;color:var(--ink-dim);padding:2px 0 8px 30px;letter-spacing:.03em;line-height:1.8}
 
+/* 反馈入口 */
+.footer-feedback{color:var(--ink-faint);text-decoration:none;letter-spacing:.1em;font-size:12px;transition:color .3s}
+.footer-feedback:hover{color:var(--gold)}
+
 </style>
 </head>
 <body>
@@ -631,6 +635,7 @@ footer .gold{color:var(--gold)}
     <span class="gold">✦</span> 塔塔🔮の心灵疗愈室 · 塔罗是镜子，不是宣判 —— 你的选择随时可以改变走向 <span class="gold">✦</span><br>
     牌义数据参考开源项目 strawberrynine/tarot-archive · 牌阵与解读框架参考 daman-ovo-0404/tarot-skill（MIT）<br>
     牌面为 Rider-Waite-Smith（1909，公有领域）· 解读仅供自我觉察与娱乐参考，不构成医疗、法律或投资建议
+    <a href="javascript:void(0)" id="btn-feedback" class="footer-feedback">💬 意见反馈</a>
   </footer>
 </div>
 
@@ -3213,6 +3218,27 @@ $("#hist-import-file").addEventListener("change", (e) => {
     e.target.value = "";
   };
   reader.readAsText(file);
+});
+
+/* ---------- 反馈入口（零后端：mailto + 复制模板适配微信场景） ---------- */
+const FEEDBACK_EMAIL = "dieshen1212@gmail.com"; /* 站长接收反馈的邮箱，改这里即可 */
+$("#btn-feedback").addEventListener("click", () => {
+  const NL = String.fromCharCode(10);
+  const fb = "【塔塔🔮の心灵疗愈室 反馈】" + NL + "类型：（解读质量 / 体验问题 / 功能愿望）" + NL + "内容：";
+  openInfoModal(`
+    <h4>💬 意见反馈</h4>
+    <div class="m-row"><p>这个站的每一次迭代都靠真实反馈驱动。解读准不准、哪里用着别扭、想要什么功能——都说来听听。</p></div>
+    <div style="display:flex;gap:14px;justify-content:center;margin-top:22px;flex-wrap:wrap">
+      <a class="btn" href="mailto:${FEEDBACK_EMAIL}?subject=${encodeURIComponent("[塔塔反馈] 我想说说")}&body=${encodeURIComponent(fb)}" style="text-decoration:none">✉ 邮件反馈</a>
+      <button class="btn ghost" id="fb-copy" type="button">📋 复制反馈模板</button>
+    </div>
+    <p class="note" style="margin-top:14px;text-align:center">邮件直达站长；微信场景可复制模板后粘贴给站长。<br>涉及个人隐私的内容（问题原文等）请自行斟酌是否附上。</p>`);
+  const fbCopy = document.getElementById("fb-copy");
+  if (fbCopy) fbCopy.addEventListener("click", () => {
+    const done = () => { fbCopy.textContent = "已复制 ✓"; setTimeout(() => { fbCopy.textContent = "📋 复制反馈模板"; }, 1600); };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(fb).then(done, () => fallbackCopy(fb, done));
+    else fallbackCopy(fb, done);
+  });
 });
 
 /* F-004: PWA Service Worker 注册（离线缓存 + 可安装） */
