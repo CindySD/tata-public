@@ -1,7 +1,7 @@
 /* 塔塔🔮の心灵疗愈室 Service Worker
  * 策略：页面导航 network-first（保证更新及时到达），其余 GET 同源资源 cache-first。
  * 更新版本时递增 VER 即可淘汰旧缓存。 */
-const VER = 'tata-v20260906c';
+const VER = 'tata-v20260906d';
 const CORE = ['./', './index.html', './manifest.json'];
 
 self.addEventListener('install', (e) => {
