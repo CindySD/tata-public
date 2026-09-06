@@ -479,6 +479,15 @@ footer .gold{color:var(--gold)}
 .coach-tips{display:flex;flex-direction:column;gap:6px;margin-top:10px}
 .coach-tip{font-size:12.5px;color:var(--ink-dim);background:rgba(201,168,106,.05);border-left:2px solid var(--gold-faint);padding:8px 12px;line-height:1.8;letter-spacing:.03em;text-align:left}
 
+/* Bunning 行动指引 + 牌阵联动 */
+.rc-actions{margin-top:16px;font-size:13px;color:var(--gold-hi);background:rgba(201,168,106,.06);border:1px solid var(--gold-faint);border-radius:10px;padding:10px 14px;letter-spacing:.04em;line-height:1.9}
+.links-block{margin-top:26px;border:1px solid var(--gold-dim);border-radius:14px;padding:20px 24px;background:rgba(201,168,106,.03)}
+.link-line{display:flex;align-items:center;gap:10px;font-size:13.5px;padding:7px 0;border-bottom:1px solid rgba(201,168,106,.08)}
+.link-line:last-of-type{border-bottom:none}
+.link-line .l-icon{flex:none}
+.link-line .l-label{color:var(--gold);letter-spacing:.15em;flex:none}
+.link-line .l-pair{color:var(--ink);letter-spacing:.04em}
+
 </style>
 </head>
 <body>
@@ -1192,6 +1201,15 @@ if (typeof window !== "undefined") {
   window.tarotCards = tarotCards;
 }
 
+</script>
+<script>
+/* 牌阵联动数据 —— 来源：Joan Bunning《Learning the Tarot》官方 Opposing/Reinforcing Cards 配对与行动词库
+ * 中文提炼归档见 knowledge/sources/2026-09-06-bunning-*.md（© Joan Bunning, learntarot.com，内部研究用重述） */
+const CARD_ACTIONS = {"愚人":["开启新阶段、走上新路","活在当下、不预设结局","凭冲动做意外之举、给人惊喜","信任生命的流动、放下担忧","重拾天真赤子心"],"魔术师":["立即行动、做该做的事","实现潜能、把可能做实","言行一致、说到做到","清楚自己在做什么、为何而做","专注如一、排除干扰","运用意志、精力充沛","创造奇迹般的成果"],"女祭司":["不介入、让事态自行发展","静候、保持接纳","向内求指引、信内在之声","向梦与想象开放","看见可能、让潜藏的才能发芽","探入隐秘未知、承认阴影"],"皇后":["滋养生命、温柔照料","迎接丰盛、享受富足","给取欢愉、珍爱身体","欣赏美、活力健康","亲近自然、与大地节律合拍","以慷慨之心受用财富"],"皇帝":["定方向与基调、护佑指引","化混沌为秩序","系统化、有条理","担当领导、展现权威","立法定规、依理而行","按章执行、遵循常规"],"教皇":["求学问知、寻更深意义","传承文化与传统、遵行仪式","确立世界观、安放信仰","循规蹈矩、按部就班","融入体制、做分内之事"],"恋人":["建立联结、感到爱、成家结盟","亲密靠近、感同身受","体验欲望、身心相许","质疑既有观点、立自己之见","忠于自己、按自己的标准行事","直面道德抉择、拒绝不义之利"],"战车":["达成胜利、出人头地","意志笃定、专注不可动摇","超越诱惑、持续发力","确立自我、自信满满","驭服情绪、压住冲动","夺取主导、展现威仪"],"力量":["确信能熬过去、韧如磐石","平心化解挫折、不动怒","包容宽恕、给人空间","以柔劝导、间接引导","以爱显力、温而有界"],"隐士":["内省静心、向内找答案","求真不惜代价、踏上个人求索","拜师/为师、给受明智建议","退隐独处、弃绝干扰"],"命运之轮":["善用机缘、把意外变成机会","逆转改道、时来运转","生活提速、被卷入新局","重新入世、投入其中","见模式与循环、扩大格局","发现自身角色与使命"],"正义":["坚持公正、诚信待人","清偿旧账、承担后果","承认真相、认领自身干系","权衡诸方、定未来方向","全然知情地抉择"],"倒吊人":["情感释放、接受现状","终止挣扎、交出控制","暂停蓄势、活在当下","舍小我、退一步进两步","为更大的目标让路"],"死神":["关门启新章、了结未竟","告别过去、各奔前程","由已知入未知、悬于过渡态","删繁就简、回归根本","迎不可挡之势、骑乘命运"],"节制":["取中道、戒极端","调和折冲、促成妥协","平衡有据、协调合作","疗愈复元、恢复元气","整合资源、找到对的配方"],"恶魔":["沉溺感官与获取","只见物质、遗忘灵性","困于一隅、惧怕未知","信最坏之事、绝望怀疑"],"高塔":["剧变骤临、计划瓦解","情绪爆发、怒气外泄","击穿自我防线与伪装","跌落自高、遭挫蒙羞","顿悟见真相、一闪而解"],"星星":["重燃信念、向好处想","见隧道尽头之光、满怀期待","重获动力、见内在力量","慷慨给予、毫无保留","敞开心让爱流动","静心安然、处变不惊"],"月亮":["释放心中之魔、无名不安","自欺、接受假象、追逐幻梦","想象力活跃、梦境鲜活","潜入潜意识、念头离奇","迷失方向、徘徊无措"],"太阳":["顿悟真理、直指核心","卓越出众、成为焦点","精力焕发、热忱喜悦","确信必成、信任自身能力","忠于并荣耀真实自我、宽恕自己"],"审判":["清算甄别、去芜存菁","不再骑墙、表态决断","重生焕新、看一切如新","听见召唤、认出使命","决意有所作为","宽恕赎罪、卸下重负"],"世界":["体验完整、动态平衡","综合聚合、同频协作","达成心愿、梦想成真","施展天赋、服务贡献","投入参与、行动起来","品味当下、知足感恩"],"权杖王牌":[],"权杖二":[],"权杖三":[],"权杖四":[],"权杖五":[],"权杖六":[],"权杖七":[],"权杖八":[],"权杖九":[],"权杖十":[],"权杖侍从":[],"权杖骑士":[],"权杖王后":[],"权杖国王":[],"圣杯王牌":[],"圣杯二":[],"圣杯三":[],"圣杯四":[],"圣杯五":[],"圣杯六":[],"圣杯七":[],"圣杯八":[],"圣杯九":[],"圣杯十":[],"圣杯侍从":[],"圣杯骑士":[],"圣杯王后":[],"圣杯国王":[],"宝剑王牌":[],"宝剑二":[],"宝剑三":[],"宝剑四":[],"宝剑五":[],"宝剑六":[],"宝剑七":[],"宝剑八":[],"宝剑九":[],"宝剑十":[],"宝剑侍从":[],"宝剑骑士":[],"宝剑王后":[],"宝剑国王":[],"星币王牌":[],"星币二":[],"星币三":[],"星币四":[],"星币五":[],"星币六":[],"星币七":[],"星币八":[],"星币九":[],"星币十":[],"星币侍从":[],"星币骑士":[],"星币王后":[],"星币国王":[]};
+const CARD_PAIRS = {
+  opposite: [["愚人","教皇"],["愚人","死神"],["恶魔","愚人"],["宝剑二","愚人"],["愚人","星币四"],["女祭司","魔术师"],["倒吊人","魔术师"],["圣杯七","魔术师"],["宝剑四","魔术师"],["宝剑八","魔术师"],["女祭司","权杖二"],["女祭司","权杖七"],["女祭司","权杖八"],["皇后","皇帝"],["死神","皇后"],["星币四","皇后"],["星币九","皇后"],["圣杯七","皇帝"],["宝剑五","皇帝"],["恋人","教皇"],["教皇","权杖二"],["宝剑七","教皇"],["教皇","星币二"],["恋人","隐士"],["圣杯五","恋人"],["宝剑三","恋人"],["力量","战车"],["倒吊人","战车"],["战车","高塔"],["宝剑八","战车"],["宝剑十","战车"],["力量","圣杯八"],["力量","宝剑六"],["力量","星币五"],["世界","隐士"],["圣杯二","隐士"],["圣杯三","隐士"],["圣杯九","隐士"],["命运之轮","宝剑二"],["命运之轮","宝剑四"],["命运之轮","星币四"],["命运之轮","星币七"],["宝剑二","正义"],["宝剑五","正义"],["宝剑七","正义"],["倒吊人","权杖七"],["倒吊人","权杖十"],["倒吊人","星币四"],["审判","死神"],["节制","高塔"],["权杖五","节制"],["圣杯七","节制"],["宝剑五","节制"],["星币五","节制"],["恶魔","星星"],["恶魔","权杖四"],["圣杯六","恶魔"],["圣杯十","恶魔"],["星星","高塔"],["权杖六","高塔"],["圣杯十","高塔"],["星星","月亮"],["宝剑二","星星"],["宝剑九","星星"],["太阳","月亮"],["圣杯八","太阳"],["太阳","宝剑六"],["太阳","星币五"],["圣杯五","审判"],["宝剑九","审判"],["世界","圣杯四"],["世界","权杖五"]],
+  reinforce: [["倒吊人","愚人"],["愚人","星星"],["审判","愚人"],["愚人","权杖三"],["战车","魔术师"],["权杖二","魔术师"],["权杖八","魔术师"],["星币八","魔术师"],["女祭司","隐士"],["倒吊人","女祭司"],["女祭司","宝剑四"],["恋人","皇后"],["星星","皇后"],["圣杯九","皇后"],["星币七","皇后"],["星币十","皇后"],["教皇","皇帝"],["正义","皇帝"],["权杖二","皇帝"],["权杖三","皇帝"],["星币四","皇帝"],["圣杯三","教皇"],["教皇","星币三"],["教皇","星币八"],["教皇","星币十"],["圣杯二","恋人"],["圣杯九","恋人"],["圣杯十","恋人"],["恋人","星币十"],["战车","权杖二"],["战车","权杖六"],["战车","星币四"],["战车","星币九"],["倒吊人","力量"],["力量","权杖九"],["圣杯四","隐士"],["圣杯八","隐士"],["宝剑四","隐士"],["宝剑七","隐士"],["审判","正义"],["权杖十","正义"],["宝剑九","正义"],["星币七","正义"],["倒吊人","宝剑四"],["倒吊人","宝剑十"],["死神","高塔"],["权杖八","死神"],["圣杯五","死神"],["圣杯八","死神"],["世界","节制"],["圣杯二","节制"],["圣杯三","节制"],["星币二","节制"],["星币三","节制"],["圣杯七","恶魔"],["宝剑八","恶魔"],["宝剑九","恶魔"],["太阳","高塔"],["星币五","高塔"],["圣杯六","星星"],["圣杯十","星星"],["圣杯七","月亮"],["宝剑二","月亮"],["宝剑八","月亮"],["世界","太阳"],["太阳","权杖二"],["太阳","权杖六"],["审判","星币七"],["世界","圣杯九"],["世界","圣杯十"],["世界","星币十"]]
+};
 </script>
 <script>
 /* ============================================================
@@ -2483,7 +2501,16 @@ async function renderReading() {
       <div class="rc-block psy" id="psy-${i}"><div class="bk-label">心 灵 回 声 · 精神分析视角</div><p>${r.psy}</p></div>`;
     if (r.example) html += `<div class="rc-block example"><div class="bk-label">生 活 里 的 样 子</div><p>${r.example}</p></div>`;
     html += `
-      <div class="rc-block"><div class="bk-label">塔 塔 的 具 体 建 议</div><p>${r.advice}</p></div>
+      <div class="rc-block"><div class="bk-label">塔 塔 的 具 体 建 议</div><p>${r.advice}</p></div>`;
+    /* Bunning 行动词库：把牌义转成可执行的行动 */
+    const acts = (typeof CARD_ACTIONS !== "undefined" && CARD_ACTIONS[c.name]) ? CARD_ACTIONS[c.name] : [];
+    if (acts.length) {
+      const a1 = acts[state.seed % acts.length];
+      const a2 = acts[(state.seed + Math.floor(acts.length / 2)) % acts.length];
+      const uniq2 = a1 === a2 ? [a1] : [a1, a2];
+      html += `<div class="rc-actions">🎯 行动指引：${uniq2.join("　·　")}</div>`;
+    }
+    html += `
       <button class="rc-deep" type="button" data-i="${i}">✦ 深读这张牌</button>
       <button class="rc-collapse" type="button">${isMobile ? "展开深层解读 ↓" : "收起深层解读 ↑"}</button>`;
     art.innerHTML = html;
@@ -2621,8 +2648,40 @@ async function renderReading() {
     renderSynthesisRule();
     go("reading");
   }
+  renderLinks();
   renderTiming();
   setTimeout(() => document.getElementById("reading-spread-name")?.scrollIntoView({ block: "start" }), 60);
+}
+
+/* ---------- Bunning 配对：牌阵联动（对冲/共振） ---------- */
+function renderLinks() {
+  document.querySelectorAll(".links-block").forEach(b => b.remove());
+  const synEl = document.getElementById("synthesis");
+  if (!synEl || state.draws.length < 2) return;
+  const names = state.draws.map(d => d.card.name);
+  const lines = [];
+  const check = (list, icon, label, note) => {
+    for (const [a, b] of list) {
+      if (names.includes(a) && names.includes(b)) {
+        lines.push(`<div class="link-line"><span class="l-icon">${icon}</span><span class="l-label">${label}</span><span class="l-pair">${a} ↔ ${b}</span></div>`);
+      }
+    }
+  };
+  check((typeof CARD_PAIRS !== "undefined" ? CARD_PAIRS.opposite : []), "⚖", "对冲", "");
+  check((typeof CARD_PAIRS !== "undefined" ? CARD_PAIRS.reinforce : []), "✦", "共振", "");
+  /* 宫廷牌同现：人物互动提示 */
+  const courts = names.filter(n => /侍从|骑士|王后|国王/.test(n));
+  if (courts.length >= 2) {
+    lines.push(`<div class="link-line"><span class="l-icon">👥</span><span class="l-label">宫廷同现</span><span class="l-pair">${courts.join(" ↔ ")}</span></div>`);
+  }
+  if (!lines.length) return;
+  const block = document.createElement("div");
+  block.className = "links-block";
+  block.innerHTML = `
+    <div class="tb-title">🔗 牌阵联动</div>
+    ${lines.join("")}
+    <p class="tb-note">对冲组合=阵中互相拉扯的矛盾点；共振组合=被反复强化的课题（Bunning 配对法）。</p>`;
+  synEl.parentNode.insertBefore(block, synEl.nextSibling);
 }
 
 /* ---------- 阶段④-1: 应期推断（《塔罗葵花宝典》时间对应法） ---------- */
@@ -2673,8 +2732,18 @@ function renderTiming() {
   });
   const block = document.createElement("div");
   block.className = "timing-block";
+  let dailyLine = "";
+  if (state.dailyMode && state.dailyCard) {
+    const acts = (typeof CARD_ACTIONS !== "undefined" && CARD_ACTIONS[state.dailyCard.name]) ? CARD_ACTIONS[state.dailyCard.name] : [];
+    if (acts.length) {
+      const t = new Date();
+      const act = acts[(t.getFullYear() * 372 + t.getMonth() * 31 + t.getDate()) % acts.length];
+      dailyLine = `<div class="timing-line"><span class="t-card">🎯 今日行动</span><span class="t-time">${act}</span></div>`;
+    }
+  }
   block.innerHTML = `
     <div class="tb-title">⏳ 应期参考</div>
+    ${dailyLine}
     ${lines.join("")}
     <p class="tb-note">应期出自传统时间对应法，仅按牌面推演大致区间——时机终究操之在己，不是注定。</p>`;
   synEl.parentNode.insertBefore(block, synEl.nextSibling);
