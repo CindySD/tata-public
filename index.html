@@ -499,6 +499,20 @@ footer .gold{color:var(--gold)}
   border:1px solid var(--gold-dim);border-radius:999px;padding:8px 20px;transition:border-color .3s,box-shadow .3s}
 .footer-feedback:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(201,168,106,.25)}
 
+/* ---------- P0-C 追问闭环 ---------- */
+.followup-block{margin-top:18px}
+.followup-block .sb-label{font-size:11.5px;letter-spacing:.3em;color:var(--gold);margin-bottom:8px}
+.fu-btn{display:inline-block;margin:0 8px 8px 0;padding:8px 16px;font-size:13px;color:var(--ink);letter-spacing:.05em;font-family:inherit;
+  background:transparent;border:1px solid var(--gold-dim);border-radius:999px;cursor:pointer;transition:border-color .3s,box-shadow .3s,opacity .3s}
+.fu-btn:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(201,168,106,.25)}
+.fu-btn:disabled{opacity:.45;cursor:wait}
+.followup-round{margin:16px auto 0;max-width:560px;padding:16px 18px;border:1px solid var(--gold-dim);border-radius:14px;background:rgba(201,168,106,.04)}
+.followup-round .fr-q{font-size:13.5px;color:var(--gold-hi);letter-spacing:.05em;margin-bottom:8px}
+.followup-round .fr-body p{font-size:14px;line-height:2.05;color:var(--ink);letter-spacing:.03em}
+.followup-round .fr-load,.followup-round .fr-err{color:var(--ink-dim);font-size:13px}
+.followup-round .fr-act{margin-top:8px;color:var(--gold);font-size:13.5px}
+.followup-round .fr-sov{margin-top:10px;font-size:12px;color:var(--ink-faint);letter-spacing:.12em;text-align:center}
+
 </style>
 </head>
 <body>
@@ -1233,6 +1247,117 @@ const CARD_PAIRS = {
   opposite: [["愚人","教皇"],["愚人","死神"],["恶魔","愚人"],["宝剑二","愚人"],["愚人","星币四"],["女祭司","魔术师"],["倒吊人","魔术师"],["圣杯七","魔术师"],["宝剑四","魔术师"],["宝剑八","魔术师"],["女祭司","权杖二"],["女祭司","权杖七"],["女祭司","权杖八"],["皇后","皇帝"],["死神","皇后"],["星币四","皇后"],["星币九","皇后"],["圣杯七","皇帝"],["宝剑五","皇帝"],["恋人","教皇"],["教皇","权杖二"],["宝剑七","教皇"],["教皇","星币二"],["恋人","隐士"],["圣杯五","恋人"],["宝剑三","恋人"],["力量","战车"],["倒吊人","战车"],["战车","高塔"],["宝剑八","战车"],["宝剑十","战车"],["力量","圣杯八"],["力量","宝剑六"],["力量","星币五"],["世界","隐士"],["圣杯二","隐士"],["圣杯三","隐士"],["圣杯九","隐士"],["命运之轮","宝剑二"],["命运之轮","宝剑四"],["命运之轮","星币四"],["命运之轮","星币七"],["宝剑二","正义"],["宝剑五","正义"],["宝剑七","正义"],["倒吊人","权杖七"],["倒吊人","权杖十"],["倒吊人","星币四"],["审判","死神"],["节制","高塔"],["权杖五","节制"],["圣杯七","节制"],["宝剑五","节制"],["星币五","节制"],["恶魔","星星"],["恶魔","权杖四"],["圣杯六","恶魔"],["圣杯十","恶魔"],["星星","高塔"],["权杖六","高塔"],["圣杯十","高塔"],["星星","月亮"],["宝剑二","星星"],["宝剑九","星星"],["太阳","月亮"],["圣杯八","太阳"],["太阳","宝剑六"],["太阳","星币五"],["圣杯五","审判"],["宝剑九","审判"],["世界","圣杯四"],["世界","权杖五"]],
   reinforce: [["倒吊人","愚人"],["愚人","星星"],["审判","愚人"],["愚人","权杖三"],["战车","魔术师"],["权杖二","魔术师"],["权杖八","魔术师"],["星币八","魔术师"],["女祭司","隐士"],["倒吊人","女祭司"],["女祭司","宝剑四"],["恋人","皇后"],["星星","皇后"],["圣杯九","皇后"],["星币七","皇后"],["星币十","皇后"],["教皇","皇帝"],["正义","皇帝"],["权杖二","皇帝"],["权杖三","皇帝"],["星币四","皇帝"],["圣杯三","教皇"],["教皇","星币三"],["教皇","星币八"],["教皇","星币十"],["圣杯二","恋人"],["圣杯九","恋人"],["圣杯十","恋人"],["恋人","星币十"],["战车","权杖二"],["战车","权杖六"],["战车","星币四"],["战车","星币九"],["倒吊人","力量"],["力量","权杖九"],["圣杯四","隐士"],["圣杯八","隐士"],["宝剑四","隐士"],["宝剑七","隐士"],["审判","正义"],["权杖十","正义"],["宝剑九","正义"],["星币七","正义"],["倒吊人","宝剑四"],["倒吊人","宝剑十"],["死神","高塔"],["权杖八","死神"],["圣杯五","死神"],["圣杯八","死神"],["世界","节制"],["圣杯二","节制"],["圣杯三","节制"],["星币二","节制"],["星币三","节制"],["圣杯七","恶魔"],["宝剑八","恶魔"],["宝剑九","恶魔"],["太阳","高塔"],["星币五","高塔"],["圣杯六","星星"],["圣杯十","星星"],["圣杯七","月亮"],["宝剑二","月亮"],["宝剑八","月亮"],["世界","太阳"],["太阳","权杖二"],["太阳","权杖六"],["审判","星币七"],["世界","圣杯九"],["世界","圣杯十"],["世界","星币十"]]
 };
+/* ---------- P0-A 泛化牌间关系引擎 ----------
+ * 规则来源：daman-ovo-0404/tarot-skill references/card-relations.md（A1-A3/B1-B3）+ SKILL.md 统计阈值；
+ * 经典组合话术为站内自研改写（COMBOS，由调用方传入以免跨文件词法依赖）。
+ * 判定位阶：Bunning CARD_PAIRS 静态配对 > 经典组合 > 泛化规则；逆位不参与判定，仅附加固定注记。 */
+const REL_ELEMENTS = { "权杖": "火", "圣杯": "水", "宝剑": "风", "星币": "土" };
+const REL_A3 = {
+  "火风": ["互助", "两种能量互相增强，想法与行动同频"], "风火": ["互助", "两种能量互相增强，想法与行动同频"],
+  "水土": ["互助", "感受与落地互相滋养"], "土水": ["互助", "感受与落地互相滋养"],
+  "火水": ["蒸发", "行动热力和情绪潮汐互相消耗，能量容易散"], "水火": ["蒸发", "行动热力和情绪潮汐互相消耗，能量容易散"],
+  "风土": ["僵化", "想法与现实互相牵制，容易停滞"], "土风": ["僵化", "想法与现实互相牵制，容易停滞"],
+  "火土": ["需落地", "有能量缺执行，推动力需要具体步骤"], "土火": ["需落地", "有能量缺执行，推动力需要具体步骤"],
+  "水风": ["情绪化思考", "感受与念头互相搅动，先分清情绪和事实"], "风水": ["情绪化思考", "感受与念头互相搅动，先分清情绪和事实"]
+};
+const REL_ACTS = [[0, 7, "建立身份"], [8, 14, "内在修正"], [15, 21, "阴影、崩塌、疗愈与整合"]];
+const REL_COURT_KEYS = ["侍从", "骑士", "王后", "国王"];
+/* 大牌序号：数据 number 为罗马数字（I..XXI，愚人 0 例外），以 id "major-XX" 为准，罗马映射兜底 */
+const REL_ROMAN = { I: 1, II: 2, III: 3, IV: 4, V: 5, VI: 6, VII: 7, VIII: 8, IX: 9, X: 10, XI: 11, XII: 12, XIII: 13, XIV: 14, XV: 15, XVI: 16, XVII: 17, XVIII: 18, XIX: 19, XX: 20, XXI: 21 };
+function relMajorIdx(card) {
+  const m = String(card.id || "").match(/major[-_](\d+)/);
+  if (m) return parseInt(m[1], 10);
+  const n = String(card.number || "").trim().toUpperCase();
+  if (/^\d+$/.test(n)) return parseInt(n, 10);
+  return REL_ROMAN[n] !== undefined ? REL_ROMAN[n] : null;
+}
+function relCardMeta(card) {
+  const major = card.group === "major";
+  const court = !major && REL_COURT_KEYS.some(k => String(card.name).includes(k));
+  const ns = String(card.number || "");
+  const num = !major && !court ? (/^\d+$/.test(ns) ? parseInt(ns, 10) : (/^ace$/i.test(ns) ? 1 : null)) : null;
+  const el = major ? null : (REL_ELEMENTS[card.suitName] || null);
+  return { major, court, idx: major ? relMajorIdx(card) : null, num, suit: major ? null : card.suitName, el, act: null };
+}
+function relActOf(idx) { if (idx === null || idx === undefined) return null; const a = REL_ACTS.find(x => idx >= x[0] && idx <= x[1]); return a ? a[2] : null; }
+/* 相邻一对牌的泛化规则判定（不含静态表/经典组合），返回 {rel,src,note} 或 null */
+function analyzeRelPair(ca, cb) {
+  const A = relCardMeta(ca), B = relCardMeta(cb);
+  if (A.court !== B.court) {
+    const who = A.court ? ca.name : cb.name, what = A.court ? cb.name : ca.name;
+    return { rel: "因果", src: "B2·宫廷=角色×事件", note: who + " 是这场戏里的角色——" + what + " 正是该角色面对的事件" };
+  }
+  if (A.court && B.court) return { rel: "对话", src: "B2·双宫廷同台", note: "两种行事风格同时在场：留意谁主导、谁被影响" };
+  if (A.major && B.major) {
+    if (A.idx === null || B.idx === null) return null; /* 编号异常时不硬判，退回 A3/空 */
+    if (A.idx + B.idx === 21) return { rel: "对话", src: "B1·镜像对位", note: "编号和为21的镜像牌对——同一课题的正反两面在对话" };
+    const actA = relActOf(A.idx), actB = relActOf(B.idx);
+    if (actA && actB && actA !== actB) return { rel: "转折", src: "A1·愚人之旅跨幕", note: "从「" + actA + "」的课题跨进「" + actB + "」，跨度大，人生场景正在切换" };
+    if (A.idx < B.idx) return { rel: "递进", src: "A1·愚人之旅", note: "沿愚人之旅顺序前进，同一幕内的课题在推进" };
+    return { rel: "对话", src: "A1·愚人之旅·补课", note: "逆着愚人之旅回序——旧课题回来补课，先补完再上路" };
+  }
+  if (!A.major && !B.major && A.suit === B.suit && A.num !== null && B.num !== null && A.num !== B.num) {
+    if (A.num === 5 || B.num === 5) return { rel: "转折", src: "A2·数字旅程·危机节点", note: "五号牌的冲突能量进入这条数字线，是这段旅程的考验点" };
+    return A.num < B.num
+      ? { rel: "递进", src: "A2·数字旅程", note: "同花色数字递增，能量在这条线上向前推进" }
+      : { rel: "转折", src: "A2·数字旅程·重启", note: "同花色数字回序，旧阶段需要回到起点重新出发" };
+  }
+  if (!A.major && !B.major && A.num !== null && A.num === B.num) {
+    return { rel: "递进", src: "B3·阶段共振", note: "同一数字在不同花色回响：同一个课题在多个领域同时上演" };
+  }
+  if (A.el && B.el && REL_A3[A.el + B.el]) {
+    const r = REL_A3[A.el + B.el];
+    const rel = r[0] === "互助" ? "递进" : (r[0] === "蒸发" || r[0] === "情绪化思考" ? "对话" : r[0] === "需落地" ? "因果" : "转折");
+    return { rel, src: "A3·牌性(元素尊严)", note: A.el + "×" + B.el + "：" + r[1] };
+  }
+  return null;
+}
+/* 主入口：draws=[{card,reversed,...}] 按牌阵阅读顺序；combos=站内经典组合表（可选） */
+function analyzeRelations(draws, combos) {
+  const out = { pairs: [], stats: null };
+  const seq = (draws || []).map(d => d.card).filter(Boolean);
+  if (seq.length < 2) return out;
+  for (let i = 0; i < seq.length - 1; i++) {
+    const a = seq[i], b = seq[i + 1];
+    let hit = null;
+    if (typeof CARD_PAIRS !== "undefined" && CARD_PAIRS) {
+      const inList = (l) => Array.isArray(l) && l.some(p => Array.isArray(p) && ((p[0] === a.name && p[1] === b.name) || (p[0] === b.name && p[1] === a.name)));
+      if (inList(CARD_PAIRS.opposite)) hit = { rel: "对话", src: "Bunning·对冲", note: "相邻两张在互相拉扯，是这一段的矛盾点" };
+      else if (inList(CARD_PAIRS.reinforce)) hit = { rel: "递进", src: "Bunning·共振", note: "相邻两张互相加强，这个课题被反复强调" };
+    }
+    if (!hit && Array.isArray(combos)) {
+      const c = combos.find(x => Array.isArray(x) && ((x[0] === a.name && x[1] === b.name) || (x[0] === b.name && x[1] === a.name)));
+      if (c) hit = { rel: "转折", src: "经典组合", note: c[2] };
+    }
+    if (!hit) hit = analyzeRelPair(a, b);
+    if (!hit) continue; /* 上游纪律：只输出结论，不产出"无传统对位"占位话术 */
+    const hasRev = !!(draws[i].reversed || draws[i + 1].reversed);
+    if (hasRev && hit.src.indexOf("Bunning") !== 0 && hit.src !== "经典组合") hit.note += "（含逆位：关系成立但表达受阻，张力转向内部）";
+    out.pairs.push({ a: a.name, b: b.name, rel: hit.rel, src: hit.src, note: hit.note });
+  }
+  const majors = seq.filter(c => c.group === "major").length;
+  const suitCount = { "权杖": 0, "圣杯": 0, "宝剑": 0, "星币": 0 };
+  seq.forEach(c => { if (suitCount[c.suitName] !== undefined) suitCount[c.suitName]++; });
+  const majorTier = majors / seq.length > 0.5 ? "重大转折期" : majors / seq.length >= 0.3 ? "命运与选择并存" : "日常选择主导";
+  out.stats = {
+    majors, total: seq.length,
+    dom: Object.keys(suitCount).filter(k => suitCount[k] >= 3).map(k => k + "×" + suitCount[k]),
+    absent: Object.keys(suitCount).filter(k => suitCount[k] === 0),
+    majorTier
+  };
+  return out;
+}
+/* 注入 AI prompt 的紧凑文本（两段：相邻关系 + 能量分布） */
+function relationsPromptLine(rel) {
+  if (!rel || !rel.pairs || !rel.pairs.length) return "";
+  const lines = rel.pairs.map((p, i) => (i + 1) + "→" + (i + 2) + "：" + p.a + "+" + p.b + "＝" + p.rel + "·" + p.src).join("\n");
+  const s = rel.stats;
+  const bits = ["大牌 " + s.majors + "/" + s.total + " → " + s.majorTier];
+  if (s.dom.length) bits.push(s.dom.join("、") + " 为元素主导");
+  if (s.absent.length) bits.push("缺席 " + s.absent.join("、") + "（被忽视的能量）");
+  return "\n【牌间关系（系统按A1愚人之旅/A2数字旅程/A3元素尊严/B1镜像/B2宫廷/B3共振规则预计算；synthesis.tension/turn 优先引用并展开理由，不得推翻判定）】\n" + lines + "\n【能量分布】" + bits.join("；") + "。";
+}
+
 </script>
 <script>
 /* ============================================================
@@ -1282,10 +1407,10 @@ const LLM_SYSTEM_PROMPT = `你是塔塔🔮の心灵疗愈室的首席解牌师�
 
 【解牌原则】
 1. 结论先行：先回答用户最想知道的答案（一句话），再逐牌展开。不要让用户读完三张牌才看到方向。
-2. 每张牌三层解读：① 牌面核心含义（1句，简短）② 对应到用户具体处境的分析（2-3句，扎进去）③ 一个生活化的比喻或例子（1句，像隔壁发生的事）
+2. 每张牌三层解读：① 牌面核心含义（1句，简短）② 对应到用户具体处境的分析（2-3句，扎进去）③ 一个生活化的比喻或例子（1句，像隔壁发生的事）。psy 必须结合**该牌位的职能**下结论（"过去"位讲已成的格局、"行动"位讲可操作的事项、"结果"位讲走向条件）——同一张牌落在不同位置，结论允许不同。
 3. 问题背后的问题：每张牌的分析都要回到用户提的问题本身——这个问题背后藏着什么心理需求、恐惧或冲突。比如"要不要联系他"背后可能是放不下依恋而非真的想沟通，"该不该跳槽"背后可能是对自我价值的不确定。
 4. 心理动力学视角：用荣格原型（阴影/投射/自性化）和防御机制（理智化/否认/投射/退行）做分析框架，但说人话——不用"投射""防御机制"这些词的原话，用"你可能在用……来保护自己""你不自觉地把……"这样的大白话。
-5. 反巴纳姆：建议必须具体到相对时间+动作（如"48小时内""今晚睡前""本周找一个状态好的日子"），禁止"注意沟通""保持平衡"等万能废话。禁止绝对日期，只用相对时间。
+5. 反巴纳姆：建议必须具体到相对时间+动作（如"48小时内""今晚睡前""本周找一个状态好的日子"），禁止"注意沟通""保持平衡"等万能废话。禁止绝对日期，只用相对时间。对照示例：❌"宇宙会指引你""你会遇到重要的人"（被动/断言）→ ✅"设两周决策期限，先写下三条选择标准""约他谈一次，只谈事实不翻旧账"（可验证、主动权在人）。
 6. 牌是镜子不是水晶球——不说"你一定会"，提醒"牌显示的是当下能量，你的选择随时可以改变走向"。
 7. 不做评分/概率——塔罗不是测量工具，不给"1-10分"或"80%概率"，用判断性语言代替伪精度。
 8. 安全边界：检测到自伤信号时暂停占卜，建议联系心理援助热线 400-161-9995。不做医疗/法律/投资建议。
@@ -1308,6 +1433,9 @@ const LLM_SYSTEM_PROMPT = `你是塔塔🔮の心灵疗愈室的首席解牌师�
 - 结合法：把整阵牌当作一个完整故事讲出来——起点、冲突、走向，而不是一张张孤立的牌。
 - 比较法：主动找出阵中互相呼应（相似牌=症结强化）或互相矛盾（相反牌=内在拉扯）的组合并点明。
 - 行动词参考已随牌附上：advice 的 step 要尽量承接这些动词的质感，把牌义翻译成本周可执行的动作，而不是复述牌义。
+- 若请求中附有【牌间关系】预计算数据：synthesis 的 tension/turn 优先引用其中的组合与来源（可补充你的观察，但不得推翻其关系判定）；没有附数据时不要虚构官方对位关系。
+
+【预测问题重构】问题含"会不会/能不能/何时"等预测式措辞时：不预测确定结果，先用半句说明塔罗无法决定答案，再把问题重构为六个层面作答——①相关因素 ②可能的方向 ③你能掌控的选择 ④预警信号或机会 ⑤值得自问的问题 ⑥可执行的下一步；保留用户原话里的意图。措辞白名单："可能暗示""一种可能是""邀请你思考""如果……则更顺"；黑名单（禁用）："牌面显示你会""注定""一定会""命中注定"。
 
 【职业操守】
 - 只分析情势与选项，绝不替问者做决定（不说"你应该分手"），决定权归问者。
@@ -1333,9 +1461,22 @@ const LLM_SYSTEM_PROMPT = `你是塔塔🔮の心灵疗愈室的首席解牌师�
     {"step": "具体操作", "why": "为什么这样做"},
     {"step": "具体操作", "why": "为什么这样做"}
   ],
+  "followups": ["邀请用户继续追问的问题1（每条≤24字，问句）", "追问问题2", "追问问题3（可选）"],
   "closing": "情绪性收束，温暖但不煽情，2-3句，把分析拉回温度",
   "energy": "能量之词（1-2字）"
 }`;
+
+/* P0-A3 单点组装：解读请求的数据块（callLLM/callLLMStream/追问共用一份模板，杜绝双份漂移） */
+function readingDataBlocks(question, spreadName, draws) {
+  const now = new Date();
+  const dateStr = `${now.getFullYear()}年${now.getMonth() + 1}月${now.getDate()}日`;
+  const cardLines = draws.map((d, i) => { const kw = (d.reversed ? d.card.reversed : d.card.upright).keywords.join("、"); const acts = (typeof CARD_ACTIONS !== "undefined" && CARD_ACTIONS[d.card.name]) ? CARD_ACTIONS[d.card.name].slice(0, 4).join("、") : ""; return `${i + 1}. ${d.pos.n}位置：${d.card.name}${d.reversed ? "（逆位）" : ""}——关键词：${kw}${acts ? `\n   行动词参考：${acts}` : ""}`; }).join("\n");
+  let rel = "";
+  try {
+    if (typeof analyzeRelations === "function" && draws.length > 1) rel = relationsPromptLine(analyzeRelations(draws, typeof COMBOS !== "undefined" ? COMBOS : null));
+  } catch (e) { /* 关系引擎异常不阻断解读：退回无关系层的原请求 */ }
+  return `当前日期：${dateStr}\n问题：${question}\n牌阵：${spreadName}\n抽到的牌：\n${cardLines}${rel}`;
+}
 
 async function llmFetch(url, options, timeoutMs) {
   /* 带超时的 fetch：旧浏览器无 AbortController 时退化为普通 fetch */
@@ -1346,19 +1487,17 @@ async function llmFetch(url, options, timeoutMs) {
     return await fetch(url, { ...options, signal: ctrl.signal });
   } finally { clearTimeout(timer); }
 }
-async function callLLM(question, spreadName, draws) {
+async function callLLM(question, spreadName, draws, userContentOverride) {
   const cfg = loadLLMConfig();
   if (!cfg.apiKey || !cfg.baseURL) return null;
-  const now = new Date();
-  const dateStr = `${now.getFullYear()}年${now.getMonth() + 1}月${now.getDate()}日`;
-  const userContent = `当前日期：${dateStr}\n问题：${question}\n牌阵：${spreadName}\n抽到的牌：\n${draws.map((d, i) => { const kw = (d.reversed ? d.card.reversed : d.card.upright).keywords.join("、"); const acts = (typeof CARD_ACTIONS !== "undefined" && CARD_ACTIONS[d.card.name]) ? CARD_ACTIONS[d.card.name].slice(0, 4).join("、") : ""; return `${i + 1}. ${d.pos.n}位置：${d.card.name}${d.reversed ? "（逆位）" : ""}——关键词：${kw}${acts ? `\n   行动词参考：${acts}` : ""}`; }).join("\n")}\n\n请按指定JSON格式输出解读。`;
+  const userContent = userContentOverride || readingDataBlocks(question, spreadName, draws) + "\n\n请按指定JSON格式输出解读。";
   const reqOpts = {
     method: "POST",
     headers: { "Content-Type": "application/json", "Authorization": "Bearer " + cfg.apiKey },
     body: JSON.stringify({
       model: cfg.model || "qwen-turbo",
       messages: [{ role: "system", content: LLM_SYSTEM_PROMPT }, { role: "user", content: userContent }],
-      temperature: 0.8, max_tokens: 2000
+      temperature: 0.8, max_tokens: 2600
     })
   };
   const url = cfg.baseURL.replace(/\/$/, "") + "/chat/completions";
@@ -1384,6 +1523,39 @@ async function callLLM(question, spreadName, draws) {
     if (!jsonMatch) return { error: "AI 返回格式异常" };
     return { data: JSON.parse(jsonMatch[0]) };
   } catch (e) { return { error: e.message || "AI 返回解析失败" }; }
+}
+
+/* ---------- P0-C: 追问轮（followup 按钮 → 二轮聚焦解读，复用 callLLM 覆盖入口） ---------- */
+let fuGen = 0;          /* 追问代际令牌：新解读/新追问作废迟到的旧结果 */
+let lastAiBrief = null; /* 首轮解读摘要缓存（只存文本字段，不落历史） */
+async function runFollowup(fq) {
+  const cfg = loadLLMConfig();
+  if (!cfg.apiKey || !cfg.baseURL) return;
+  const synEl = $("#synthesis");
+  if (!synEl) return;
+  const gen = ++fuGen;
+  let round = document.querySelector(".followup-round");
+  if (!round) { round = document.createElement("div"); round.className = "followup-round"; synEl.parentNode.insertBefore(round, synEl.nextSibling); }
+  round.innerHTML = `<div class="fr-q">💬 ${escHtml(fq)}</div><div class="fr-body"><p class="fr-load">塔塔沉吟中……</p></div>`;
+  document.querySelectorAll(".fu-btn").forEach(b => { b.disabled = true; });
+  const brief = lastAiBrief || {};
+  const content = readingDataBlocks(state.question, SPREADS[state.spreadKey].name, state.draws)
+    + `\n【已有解读摘要】结论：${brief.conclusion || "无"}；概览：${brief.overview || "无"}；判断：${brief.judgment || "无"}`
+    + `\n【用户的追问】${fq}\n\n请聚焦回答这条追问（沿用同一套职业操守、预测重构与措辞政策），输出严格JSON：{"answer": "直接回应追问，4-6句大白话", "action": "一个具体可验证的小动作（相对时间+动作）"}`;
+  const res = await callLLM(state.question, SPREADS[state.spreadKey].name, state.draws, content);
+  if (gen !== fuGen) return; /* 已被新一轮解读或新追问作废 */
+  document.querySelectorAll(".fu-btn").forEach(b => { b.disabled = false; });
+  const body = round.querySelector(".fr-body");
+  if (!body) return;
+  const data = res && res.data;
+  if (!data || res.error || typeof data.answer !== "string" || !data.answer.trim()) {
+    body.innerHTML = `<p class="fr-err">追问没有得到回应（${escHtml((res && res.error) || "回答格式异常")}）。可以再点一次，或稍后再试。</p>`;
+    return;
+  }
+  body.innerHTML = `<p>${escHtml(data.answer.trim())}</p>`
+    + (typeof data.action === "string" && data.action.trim() ? `<p class="fr-act">🎯 ${escHtml(data.action.trim())}</p>` : "")
+    + `<p class="fr-sov">这是照目前状况的推演，不是注定。</p>`;
+  round.scrollIntoView({ behavior: "smooth", block: "nearest" });
 }
 
 /* ---------- F-001: AI 流式解读（SSE 增量渲染，失败自动回落一次性请求） ---------- */
@@ -1442,9 +1614,7 @@ function unescapeJson(raw) {
 async function callLLMStream(question, spreadName, draws, onPart) {
   const cfg = loadLLMConfig();
   if (!cfg.apiKey || !cfg.baseURL) return null;
-  const now = new Date();
-  const dateStr = `${now.getFullYear()}年${now.getMonth() + 1}月${now.getDate()}日`;
-  const userContent = `当前日期：${dateStr}\n问题：${question}\n牌阵：${spreadName}\n抽到的牌：\n${draws.map((d, i) => { const kw = (d.reversed ? d.card.reversed : d.card.upright).keywords.join("、"); const acts = (typeof CARD_ACTIONS !== "undefined" && CARD_ACTIONS[d.card.name]) ? CARD_ACTIONS[d.card.name].slice(0, 4).join("、") : ""; return `${i + 1}. ${d.pos.n}位置：${d.card.name}${d.reversed ? "（逆位）" : ""}——关键词：${kw}${acts ? `\n   行动词参考：${acts}` : ""}`; }).join("\n")}\n\n请按指定JSON格式输出解读。`;
+  const userContent = readingDataBlocks(question, spreadName, draws) + "\n\n请按指定JSON格式输出解读。";
   const url = cfg.baseURL.replace(/\/$/, "") + "/chat/completions";
   const STREAM_TIMEOUT = 60000; /* 全程上限（含逐字生成与流式读取） */
   /* 自有 controller：超时覆盖到流式 body 读取全程（llmFetch 的计时只到响应头） */
@@ -1461,7 +1631,7 @@ async function callLLMStream(question, spreadName, draws, onPart) {
       body: JSON.stringify({
         model: cfg.model || "qwen-turbo",
         messages: [{ role: "system", content: LLM_SYSTEM_PROMPT }, { role: "user", content: userContent }],
-        temperature: 0.8, max_tokens: 2000,
+        temperature: 0.8, max_tokens: 2600,
         stream: true
       }),
       signal: ctrl ? ctrl.signal : undefined
@@ -1932,6 +2102,9 @@ function synthesize() {
   };
 }
 const SAFETY_RE = /自杀|轻生|自残|不想活|活不下去|结束生命|想死|了结自己/;
+/* P0-D 高危预测分级：预测措辞 × 健康生死/官司判决/买卖涨跌主题 双命中才拦截（普通"会不会复合"不拦截，交给提示词重构） */
+const PREDICTIVE_RE = /会不会|能不能|能否|何时|什么时候|结果会|有没有可能|命中注定|是不是会|会好[吗呢]|能好[吗呢]|还有救吗|还有希望吗|会[^？?]{0,6}[吗呢]/;
+const HIGH_STAKES_RE = /癌症|肿瘤|绝症|病危|重病|会不会死|死了没有|活不过|活不成了|离世|病故|坐牢|判刑|刑罚|死刑|官司.{0,10}(赢|输|结果|怎么)|起诉.{0,10}(赢|结果)|判决|涨停|涨跌|股票.{0,8}(买|卖|涨|赔|亏)|币价|期货|投资.{0,8}(回本|赚|亏|赔|打水漂)/;
 
 /* ============================================================
    UI
@@ -2184,6 +2357,13 @@ $("#btn-ask").addEventListener("click", () => {
     setTimeout(() => { errEl.textContent = ""; }, 4000);
   }
   if (SAFETY_RE.test(q)) { qEl.value = ""; go("care"); return; }
+  /* P0-D：关乎健康生死/官司判决/买卖涨跌的预测式提问不进抽牌，引导重构问题（普通"会不会复合"不拦截） */
+  if (PREDICTIVE_RE.test(q) && HIGH_STAKES_RE.test(q)) {
+    errEl.textContent = "牌阵不回答健康生死、官司判决、买卖涨跌这类预测——这不是塔罗能负责的事。换个问法我随时接住：比如「在这件事里，我能看清什么、能做些什么」。";
+    qEl.focus();
+    setTimeout(() => { errEl.textContent = ""; }, 10000);
+    return;
+  }
   state.question = q || (state.dailyMode ? "今日指引" : q); state.numbers = nums; state.number = nums[0];
   state.domain = detectDomain(q);
   if (!state.spreadManual) state.spreadKey = pickSpread(q);
@@ -2575,8 +2755,9 @@ async function renderReading() {
   if (!__restoreMode) saveHistory();
   __restoreMode = false;
   const spread = SPREADS[state.spreadKey];
-  /* 新一轮解读开始：无条件清除上一轮可能残留的直觉横幅与 AI 失败提示（规则引擎路径也要清） */
-  document.querySelectorAll(".conclusion-banner,.ai-fail-notice").forEach(b => b.remove());
+  /* 新一轮解读开始：无条件清除上一轮可能残留的直觉横幅、AI 失败提示与追问轮（均为解读容器的兄弟节点） */
+  document.querySelectorAll(".conclusion-banner,.ai-fail-notice,.followup-round").forEach(b => b.remove());
+  fuGen++; /* 作废进行中的追问请求，防止旧轮结果迟到覆盖新解读 */
   $("#reading-spread-name").textContent = spread.name;
   $("#reading-q").innerHTML = `你问：「<b>${escapeHtml(state.question)}</b>」`;
   const h = new Date().getHours();
@@ -2760,9 +2941,18 @@ async function renderReading() {
       if (d.closing) {
         synHTML += `<div class="closing-block"><p>${escHtml(d.closing)}</p></div>`;
       }
+      /* P0-C 追问建议：结构化校验（类型/长度/条数）后渲染，模型漏输出 followups 时整块自动缺席 */
+      const fuList = Array.isArray(d.followups) ? d.followups.filter(x => typeof x === "string" && x.trim().length >= 4 && x.trim().length <= 40).map(x => x.trim()).slice(0, 3) : [];
+      lastAiBrief = { conclusion: d.conclusion || "", overview: syn.overview || "", judgment: syn.judgment || "" };
+      if (fuList.length) {
+        synHTML += `<div class="followup-block"><div class="sb-label">想 继 续 问</div>${fuList.map((q2, i) => `<button class="fu-btn" type="button" data-fu="${i}">💬 ${escHtml(q2)}</button>`).join("")}</div>`;
+      }
       synHTML += `<p class="sovereign">牌显示的是当下的能量，不是注定的结局。<br>你的选择，随时可以改变走向。</p>`;
       synHTML += `<p class="ai-note">✦ 本段解读由 AI 生成，仅供自我觉察参考，不构成任何专业建议</p>`;
       synEl.innerHTML = synHTML;
+      if (fuList.length) {
+        synEl.querySelectorAll(".fu-btn").forEach(b => b.addEventListener("click", () => runFollowup(fuList[+b.dataset.fu])));
+      }
     } else {
       /* #2 AI 失败：回落规则引擎 + 用户可见提示（同时清掉流式阶段可能残留的横幅） */
       document.querySelectorAll(".conclusion-banner").forEach(b => b.remove());
@@ -2832,13 +3022,22 @@ function renderLinks() {
       lines.push('<div class="link-line"><span class="l-icon">👥</span><span class="l-label">宫廷同现</span><span class="l-pair">' + courts.join(" ↔ ") + "</span></div>");
     }
   }
+  /* P0-A：相邻牌泛化关系（Bunning 静态表已展示的对跳过，避免同对重复出现） */
+  try {
+    if (typeof analyzeRelations === "function") {
+      const rel = analyzeRelations(state.draws, typeof COMBOS !== "undefined" ? COMBOS : null);
+      rel.pairs.filter(p => p.src.indexOf("Bunning") !== 0).forEach(p => {
+        lines.push('<div class="link-line"><span class="l-icon">🧭</span><span class="l-label">' + p.rel + '</span><span class="l-pair">' + p.a + " ↔ " + p.b + '</span></div><div class="link-sub">' + p.src + "｜" + p.note + "</div>");
+      });
+    }
+  } catch (e) { /* 泛化引擎异常：维持原联动区块 */ }
   if (!lines.length) return;
   const block = document.createElement("div");
   block.className = "links-block";
   block.innerHTML = `
     <div class="tb-title">🔗 牌阵联动</div>
     ${lines.join("")}
-    <p class="tb-note">对冲组合=阵中互相拉扯的矛盾点；共振组合=被反复强化的课题（Bunning 配对法）。</p>`;
+    <p class="tb-note">⚖ 对冲 / ✦ 共振＝Bunning 配对法；🧭 ＝相邻两牌的泛化关系（愚人之旅·数字旅程·元素尊严·镜像·宫廷事件）。</p>`;
   synEl.parentNode.insertBefore(block, synEl.nextSibling);
 }
 
