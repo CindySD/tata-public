@@ -513,6 +513,19 @@ footer .gold{color:var(--gold)}
 .followup-round .fr-act{margin-top:8px;color:var(--gold);font-size:13.5px}
 .followup-round .fr-sov{margin-top:10px;font-size:12px;color:var(--ink-faint);letter-spacing:.12em;text-align:center}
 
+/* ---------- S0.5 静心引导（开牌前沉浸片刻） ---------- */
+.serene-wrap{max-width:640px;margin:9vh auto 0;text-align:center;padding:0 18px}
+.serene-breath{width:118px;height:118px;margin:0 auto 40px;border-radius:50%;border:1px solid var(--gold-dim);position:relative;animation:sereneBreath 8s ease-in-out infinite}
+.serene-breath span{position:absolute;left:50%;top:50%;width:12px;height:12px;margin:-6px 0 0 -6px;border-radius:50%;background:var(--gold);box-shadow:0 0 22px rgba(201,168,106,.6)}
+@keyframes sereneBreath{0%,100%{transform:scale(.62);opacity:.35}45%,55%{transform:scale(1.14);opacity:.95}}
+.serene-line{font-family:var(--serif);font-size:clamp(17px,2.6vw,21px);line-height:2.2;letter-spacing:.14em;color:var(--ink-dim);opacity:0;transform:translateY(14px);animation:sereneIn 2.6s ease forwards}
+.serene-line.l1{animation-delay:.3s}
+.serene-line.l2{animation-delay:3.1s}
+.serene-line.l3{animation-delay:5.9s}
+@keyframes sereneIn{to{opacity:1;transform:none}}
+.serene-cta{margin-top:46px;display:flex;flex-direction:column;gap:14px;align-items:center;opacity:0;animation:sereneIn 1.4s ease 8.6s forwards}
+.serene-cta .btn{min-width:230px}
+
 </style>
 </head>
 <body>
@@ -538,6 +551,21 @@ footer .gold{color:var(--gold)}
       <button class="btn ghost" id="btn-settings" type="button">⚙ AI 设置</button>
     </div>
     <button class="btn ghost demo-entry" id="btn-demo" type="button">第一次来？✦ 试试演示占卜</button>
+  </section>
+
+  <!-- ===== S0.5 静心引导（开牌前的沉浸片刻） ===== -->
+  <section class="stage" id="stage-serene">
+    <div class="kicker">静 心</div>
+    <div class="serene-wrap">
+      <div class="serene-breath" aria-hidden="true"><span></span></div>
+      <p class="serene-line l1">欢迎来到塔塔🔮の心灵疗愈室。</p>
+      <p class="serene-line l2">请闭上眼睛，深呼吸三次，将你的问题在心中默念三遍。</p>
+      <p class="serene-line l3">然后，凭直觉告诉我你想的 1 到 78 之间的数字。</p>
+      <div class="serene-cta">
+        <button class="btn" id="btn-serene-next" type="button">我准备好了 · 输入问题 →</button>
+        <button class="btn ghost" id="btn-serene-back" type="button">← 返回</button>
+      </div>
+    </div>
   </section>
 
   <!-- ===== S1 提问 ===== -->
@@ -1961,7 +1989,8 @@ const state = {
   question: "", number: 0, numbers: [], spreadKey: "three_time", spreadManual: false,
   draws: [], revealed: 0, seed: 0, domain: "general",
   deck: [], offer: [], markedCards: [],
-  dailyMode: false, dailyCard: null, dailyReversed: false, cutCard: null
+  dailyMode: false, dailyCard: null, dailyReversed: false, cutCard: null,
+  shareSnapshot: null, lastHistT: 0
 };
 
 function buildDraws() {
@@ -1988,10 +2017,11 @@ function buildDraws() {
     const t = new Date();
     const dayKey = `daily|${t.getFullYear()}-${t.getMonth() + 1}-${t.getDate()}`;
     const ds = hashStr(dayKey);
-    const idx = ds % deck.length;
-    state.dailyCard = deck[idx];
+    state.dailyCard = deck[ds % deck.length];
     state.dailyReversed = ((ds >>> 8) % 100) < REVERSED_CHANCE;
-    state.markedCards = [{ card: state.dailyCard, idx, order: 0 }];
+    /* 修复：标记徽章必须落在用户给的那个数字对应的牌面上（任选揭开的内容仍是同频今日之牌） */
+    const dIdx = (Math.min(Math.max(state.numbers[0] || 1, 1), 78) - 1) % deck.length;
+    state.markedCards = [{ card: deck[dIdx], idx: dIdx, order: 0 }];
   }
   state.draws = [];
   state.seed = ((state.numbers[0] * 2654435761) ^ hashStr(state.question) ^ (Date.now() & 0xFFFFF)) >>> 0;
@@ -2110,7 +2140,7 @@ const HIGH_STAKES_RE = /癌症|肿瘤|绝症|病危|重病|会不会死|死了�
    UI
    ============================================================ */
 const $ = s => document.querySelector(s);
-const stages = { cover: $("#stage-cover"), ask: $("#stage-ask"), ritual: $("#stage-ritual"), reading: $("#stage-reading"), care: $("#stage-care"), history: $("#stage-history") };
+const stages = { cover: $("#stage-cover"), serene: $("#stage-serene"), ask: $("#stage-ask"), ritual: $("#stage-ritual"), reading: $("#stage-reading"), care: $("#stage-care"), history: $("#stage-history") };
 function go(name) {
   Object.values(stages).forEach(s => s.classList.remove("active"));
   stages[name].classList.add("active");
@@ -2243,7 +2273,9 @@ refreshChips();
 refreshNumHint();
 reasonEl.textContent = "";
 
-$("#btn-start").addEventListener("click", () => { state.dailyMode = false; go("ask"); });
+$("#btn-start").addEventListener("click", () => { state.dailyMode = false; go("serene"); });
+$("#btn-serene-next").addEventListener("click", () => { go("ask"); qEl.focus(); });
+$("#btn-serene-back").addEventListener("click", () => go("cover"));
 $("#btn-care-back").addEventListener("click", () => go("ask"));
 
 /* AI 设置弹窗 */
@@ -2757,6 +2789,7 @@ async function renderReading() {
   const spread = SPREADS[state.spreadKey];
   /* 新一轮解读开始：无条件清除上一轮可能残留的直觉横幅、AI 失败提示与追问轮（均为解读容器的兄弟节点） */
   document.querySelectorAll(".conclusion-banner,.ai-fail-notice,.followup-round").forEach(b => b.remove());
+  state.shareSnapshot = null; /* 分享卡/历史能量词的跨轮残留防护 */
   fuGen++; /* 作废进行中的追问请求，防止旧轮结果迟到覆盖新解读 */
   $("#reading-spread-name").textContent = spread.name;
   $("#reading-q").innerHTML = `你问：「<b>${escapeHtml(state.question)}</b>」`;
@@ -2944,6 +2977,13 @@ async function renderReading() {
       /* P0-C 追问建议：结构化校验（类型/长度/条数）后渲染，模型漏输出 followups 时整块自动缺席 */
       const fuList = Array.isArray(d.followups) ? d.followups.filter(x => typeof x === "string" && x.trim().length >= 4 && x.trim().length <= 40).map(x => x.trim()).slice(0, 3) : [];
       lastAiBrief = { conclusion: d.conclusion || "", overview: syn.overview || "", judgment: syn.judgment || "" };
+      /* 解读快照：分享卡与历史能量词的唯一数据源（#1/#3），字段全部结构校验 */
+      state.shareSnapshot = {
+        energy: typeof d.energy === "string" && d.energy.trim() ? d.energy.trim().slice(0, 8) : energyWord(),
+        conclusion: typeof d.conclusion === "string" ? d.conclusion.slice(0, 120) : "",
+        judgment: typeof syn.judgment === "string" ? syn.judgment.slice(0, 120) : ""
+      };
+      updateHistoryEnergy();
       if (fuList.length) {
         synHTML += `<div class="followup-block"><div class="sb-label">想 继 续 问</div>${fuList.map((q2, i) => `<button class="fu-btn" type="button" data-fu="${i}">💬 ${escHtml(q2)}</button>`).join("")}</div>`;
       }
@@ -3126,6 +3166,7 @@ function renderSynthesisRule() {
     <div class="energy-word"><div class="ew">${energyWord()}</div><div class="ew-sub">本 次 能 量 之 词 · 如果它击中了你，就多停留一会儿</div></div>
     <div class="syn-block"><div class="sb-label">回 响</div><p>${syn.echo}</p></div>
     <p class="sovereign">牌显示的是当下的能量，不是注定的结局。<br>你的选择，随时可以改变走向。</p>`;
+  state.shareSnapshot = { energy: energyWord(), conclusion: syn.overview, judgment: syn.exit };
 }
 function escapeHtml(s) { return s.replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
 
@@ -3320,7 +3361,8 @@ function fallbackCopy(txt, done) {
 }
 
 /* ---------- F-003: 分享图片卡片（Canvas 手绘，零依赖零后端） ---------- */
-const SHARE_W = 1080, SHARE_H = 1440;
+const SHARE_W = 1080;
+let SHARE_H = 1440;
 function loadCardImg(src) {
   return new Promise(resolve => {
     const im = new Image();
@@ -3342,6 +3384,9 @@ function wrapText(ctx, text, x, y, maxW, lineH, maxLines) {
   if (line) { lines++; ctx.fillText(line, x, y + (lines - 1) * lineH); }
 }
 async function buildShareCard() {
+  const snap = state.shareSnapshot;
+  const hasRead = !!(snap && (((snap.conclusion || "").trim()) || ((snap.judgment || "").trim())));
+  SHARE_H = hasRead ? 1700 : 1440;
   const cv = document.createElement("canvas");
   cv.width = SHARE_W; cv.height = SHARE_H;
   const ctx = cv.getContext("2d");
@@ -3414,9 +3459,29 @@ async function buildShareCard() {
     ctx.fillStyle = "#d8d2c2"; ctx.font = `24px ${SANS}`;
     wrapText(ctx, `${d.pos.n}. ${d.card.name}`, x, rowY + imgH + 44, size + 60, 32, 1);
   }
-  /* 能量之词 */
+  /* 解读快照（#1/#3）：结论先行 + 综合判断，与页面所读同源 */
+  const cardBot = rowY + Math.round(size * 1.72);
+  if (hasRead) {
+    ctx.strokeStyle = "rgba(201,168,106,.25)"; ctx.beginPath();
+    ctx.moveTo(300, cardBot + 110); ctx.lineTo(SHARE_W - 300, cardBot + 110); ctx.stroke();
+    ctx.fillStyle = "#c9a86a"; ctx.font = `600 24px ${SANS}`;
+    ctx.fillText("塔 塔 的 直 觉", CX, cardBot + 158);
+    let yy = cardBot + 212;
+    const concl = (snap.conclusion || "").trim();
+    if (concl) {
+      ctx.fillStyle = "#e8e2d4"; ctx.font = `30px ${SANS}`;
+      wrapText(ctx, `「${concl}」`, CX, yy, 780, 46, 3);
+      yy += 46 * Math.min(3, Math.max(1, Math.ceil(concl.length / 24))) + 36;
+    }
+    const judg = (snap.judgment || "").trim();
+    if (judg) {
+      ctx.fillStyle = "#b3a992"; ctx.font = `25px ${SANS}`;
+      wrapText(ctx, judg, CX, yy, 780, 38, 3);
+    }
+  }
+  /* 能量之词（与解读页显示同源：AI 能量词优先，规则版兜底） */
   ctx.fillStyle = "#c9a86a"; ctx.font = `600 72px ${SERIF}`;
-  ctx.fillText(energyWord(), CX, SHARE_H - 280);
+  ctx.fillText(snap && snap.energy ? snap.energy : energyWord(), CX, SHARE_H - 280);
   ctx.fillStyle = "#847c6a"; ctx.font = `22px ${SANS}`;
   ctx.fillText("本 次 能 量 之 词", CX, SHARE_H - 232);
   /* 水印 */
@@ -3460,12 +3525,24 @@ function loadHistory() { try { return JSON.parse(localStorage.getItem(HKEY) || "
 function saveHistory() {
   try {
     const h = loadHistory();
+    const now = Date.now();
     h.unshift({
-      t: Date.now(), q: state.question, n: state.number, sp: state.spreadKey, seed: state.seed,
-      d: state.draws.map(x => ({ id: x.card.id, r: x.reversed })), e: energyWord()
+      t: now, q: state.question, n: state.number, sp: state.spreadKey, seed: state.seed,
+      d: state.draws.map(x => ({ id: x.card.id, r: x.reversed })), e: (state.shareSnapshot && state.shareSnapshot.energy) || energyWord()
     });
+    state.lastHistT = now;
     localStorage.setItem(HKEY, JSON.stringify(h.slice(0, 20)));
   } catch (e) { /* 存储不可用时静默跳过，占卜流程不受影响 */ }
+}
+/* AI 解读完成后能量词才定稿：回写本次刚入档的那条记录（时间戳匹配，绝不碰旧记录） */
+function updateHistoryEnergy() {
+  try {
+    const h = loadHistory();
+    if (h.length && state.lastHistT && h[0].t === state.lastHistT && state.shareSnapshot) {
+      h[0].e = state.shareSnapshot.energy;
+      localStorage.setItem(HKEY, JSON.stringify(h));
+    }
+  } catch (e) { /* 静默 */ }
 }
 function fmtTime(ts) {
   const dt = new Date(ts), p = x => String(x).padStart(2, "0");
