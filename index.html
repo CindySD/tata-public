@@ -1375,15 +1375,18 @@ function analyzeRelations(draws, combos) {
   };
   return out;
 }
-/* 注入 AI prompt 的紧凑文本（两段：相邻关系 + 能量分布） */
+/* 注入 AI prompt 的紧凑文本（两段：相邻关系 + 能量分布；0 命中时仅缺席关系段，统计段仍注入） */
 function relationsPromptLine(rel) {
-  if (!rel || !rel.pairs || !rel.pairs.length) return "";
-  const lines = rel.pairs.map((p, i) => (i + 1) + "→" + (i + 2) + "：" + p.a + "+" + p.b + "＝" + p.rel + "·" + p.src).join("\n");
+  if (!rel || !rel.stats) return "";
+  const pairLines = (rel.pairs || []).length
+    ? "\n【牌间关系（系统按A1愚人之旅/A2数字旅程/A3元素尊严/B1镜像/B2宫廷/B3共振规则预计算；synthesis.tension/turn 优先引用并展开理由，不得推翻判定）】\n"
+      + rel.pairs.map((p, i) => (i + 1) + "→" + (i + 2) + "：" + p.a + "+" + p.b + "＝" + p.rel + "·" + p.src).join("\n")
+    : "";
   const s = rel.stats;
   const bits = ["大牌 " + s.majors + "/" + s.total + " → " + s.majorTier];
   if (s.dom.length) bits.push(s.dom.join("、") + " 为元素主导");
   if (s.absent.length) bits.push("缺席 " + s.absent.join("、") + "（被忽视的能量）");
-  return "\n【牌间关系（系统按A1愚人之旅/A2数字旅程/A3元素尊严/B1镜像/B2宫廷/B3共振规则预计算；synthesis.tension/turn 优先引用并展开理由，不得推翻判定）】\n" + lines + "\n【能量分布】" + bits.join("；") + "。";
+  return pairLines + "\n【能量分布】" + bits.join("；") + "。";
 }
 
 </script>
@@ -2373,7 +2376,14 @@ $("#llm-test").addEventListener("click", async () => {
 $("#sfx-toggle").checked = sfxOn();
 $("#sfx-toggle").addEventListener("change", function () { setSfx(this.checked); if (this.checked) playSfx("flip"); });
 
+let errTimer = 0; /* P0.1：ask 页提示条统一计时器句柄，防止旧定时器擦除新提示 */
+function flashErr(msg, ms) {
+  if (errTimer) { clearTimeout(errTimer); errTimer = 0; }
+  errEl.textContent = msg;
+  if (ms) errTimer = setTimeout(() => { errTimer = 0; if (errEl.textContent === msg) errEl.textContent = ""; }, ms);
+}
 $("#btn-ask").addEventListener("click", () => {
+  if (errTimer) { clearTimeout(errTimer); errTimer = 0; }
   errEl.textContent = "";
   /* 注意：此处不得重置 dailyMode——「今日一牌」经由此入口提交，重置已前移到 btn-start/btn-again 等入口 */
   const q = qEl.value.trim();
@@ -2385,15 +2395,13 @@ $("#btn-ask").addEventListener("click", () => {
   if (nums.length < 1) { errEl.textContent = `凭直觉给我 ${total} 个 1 到 78 之间的数字（空格分隔）。`; numEl.focus(); return; }
   if (nums.length < total) {
     while (nums.length < total) nums.push(Math.floor(Math.random() * 78) + 1);
-    errEl.textContent = `你输入了 ${numsRaw.length} 个数字，剩余 ${total - numsRaw.length} 个已凭天意补齐：${nums.join(" ")}`;
-    setTimeout(() => { errEl.textContent = ""; }, 4000);
+    flashErr(`你输入了 ${numsRaw.length} 个数字，剩余 ${total - numsRaw.length} 个已凭天意补齐：${nums.join(" ")}`, 4000);
   }
   if (SAFETY_RE.test(q)) { qEl.value = ""; go("care"); return; }
   /* P0-D：关乎健康生死/官司判决/买卖涨跌的预测式提问不进抽牌，引导重构问题（普通"会不会复合"不拦截） */
   if (PREDICTIVE_RE.test(q) && HIGH_STAKES_RE.test(q)) {
-    errEl.textContent = "牌阵不回答健康生死、官司判决、买卖涨跌这类预测——这不是塔罗能负责的事。换个问法我随时接住：比如「在这件事里，我能看清什么、能做些什么」。";
+    flashErr("牌阵不回答健康生死、官司判决、买卖涨跌这类预测——这不是塔罗能负责的事。换个问法我随时接住：比如「在这件事里，我能看清什么、能做些什么」。", 10000);
     qEl.focus();
-    setTimeout(() => { errEl.textContent = ""; }, 10000);
     return;
   }
   state.question = q || (state.dailyMode ? "今日指引" : q); state.numbers = nums; state.number = nums[0];
@@ -3040,6 +3048,8 @@ function renderLinks() {
     return FLOW[a + "|" + b] || "性质并立·维持现状";
   };
   const courts = names.filter(n => /侍从|骑士|王后|国王/.test(n));
+  const courtShown = new Set(); /* P0.1：已展示宫廷对，🧭 行据此去重 */
+  const pairKey = (a, b) => (a < b ? a + "|" + b : b + "|" + a);
   if (courts.length >= 2) {
     let combos = 0;
     for (let i = 0; i < courts.length && combos < 2; i++) {
@@ -3055,18 +3065,20 @@ function renderLinks() {
           ? "同一元素（" + SUIT_META[suitA][0] + "·" + SUIT_META[suitA][1] + "）的两个阶段：" + RANK_META[rankA] + " 与 " + RANK_META[rankB] + "——课题是该以哪种成熟度行事"
           : "不同元素同台（" + flow + "）：" + RANK_META[rankA] + "（" + suitA + "）与 " + RANK_META[rankB] + "（" + suitB + "）——留意谁主导、谁被影响";
         lines.push('<div class="link-line"><span class="l-icon">👥</span><span class="l-label">宫廷组合</span><span class="l-pair">' + A + " ↔ " + B + '</span></div><div class="link-sub">' + note + "</div>");
+        courtShown.add(pairKey(A, B));
         combos++;
       }
     }
     if (combos === 0) {
       lines.push('<div class="link-line"><span class="l-icon">👥</span><span class="l-label">宫廷同现</span><span class="l-pair">' + courts.join(" ↔ ") + "</span></div>");
+      for (let i = 0; i < courts.length; i++) for (let j = i + 1; j < courts.length; j++) courtShown.add(pairKey(courts[i], courts[j]));
     }
   }
-  /* P0-A：相邻牌泛化关系（Bunning 静态表已展示的对跳过，避免同对重复出现） */
+  /* P0-A：相邻牌泛化关系（Bunning 静态表与 👥 宫廷组合已展示的对跳过，避免同对重复出现） */
   try {
     if (typeof analyzeRelations === "function") {
       const rel = analyzeRelations(state.draws, typeof COMBOS !== "undefined" ? COMBOS : null);
-      rel.pairs.filter(p => p.src.indexOf("Bunning") !== 0).forEach(p => {
+      rel.pairs.filter(p => p.src.indexOf("Bunning") !== 0 && !courtShown.has(pairKey(p.a, p.b))).forEach(p => {
         lines.push('<div class="link-line"><span class="l-icon">🧭</span><span class="l-label">' + p.rel + '</span><span class="l-pair">' + p.a + " ↔ " + p.b + '</span></div><div class="link-sub">' + p.src + "｜" + p.note + "</div>");
       });
     }
@@ -3374,19 +3386,36 @@ function loadCardImg(src) {
 }
 function wrapText(ctx, text, x, y, maxW, lineH, maxLines) {
   let line = "", lines = 0;
+  const NO_HEAD = "。，、；：？！…）』」—"; /* 禁则：行首不落的标点 */
   for (const ch of text) {
     if (ctx.measureText(line + ch).width > maxW || ch === "\n") {
+      if (line && ch !== "\n" && NO_HEAD.indexOf(ch) !== -1) { line += ch; continue; }
+      if (lines + 1 >= maxLines) { /* 末行截断：省略号并入行尾，不孤起一行 */
+        let l2 = line;
+        while (l2 && ctx.measureText(l2 + "…").width > maxW) l2 = l2.slice(0, -1);
+        lines++; ctx.fillText(l2 + "…", x, y + (lines - 1) * lineH);
+        return lines;
+      }
       lines++; ctx.fillText(line, x, y + (lines - 1) * lineH);
       line = ch === "\n" ? "" : ch;
-      if (lines >= maxLines) { ctx.fillText("…", x, y + (lines - 1) * lineH + lineH); return; }
     } else line += ch;
   }
   if (line) { lines++; ctx.fillText(line, x, y + (lines - 1) * lineH); }
+  return lines;
 }
 async function buildShareCard() {
   const snap = state.shareSnapshot;
   const hasRead = !!(snap && (((snap.conclusion || "").trim()) || ((snap.judgment || "").trim())));
-  SHARE_H = hasRead ? 1700 : 1440;
+  /* 布局预计算（移动端目检修复）：>6 牌自动双行防牌名重叠；画布高度随行数与解读区动态伸缩 */
+  const n = state.draws.length;
+  const gap = 26;
+  const rows = n > 6 ? 2 : 1;
+  const perRow = Math.ceil(n / rows);
+  const size = Math.min(240, Math.floor((SHARE_W - 240 - (perRow - 1) * gap) / perRow));
+  const imgH = Math.round(size * 1.72);
+  const rowPitch = imgH + 96;
+  const cardBot = 520 + (rows - 1) * rowPitch + imgH + 44;
+  SHARE_H = Math.max(1440, cardBot + (hasRead ? 840 : 460));
   const cv = document.createElement("canvas");
   cv.width = SHARE_W; cv.height = SHARE_H;
   const ctx = cv.getContext("2d");
@@ -3425,42 +3454,39 @@ async function buildShareCard() {
   /* 牌阵名 */
   ctx.fillStyle = "#c9a86a"; ctx.font = `26px ${SANS}`;
   ctx.fillText(`——「${SPREADS[state.spreadKey].name}」——`, CX, 436);
-  /* 牌缩略图 + 牌名 */
-  const n = state.draws.length;
-  const gap = 26;
-  const size = Math.min(240, Math.floor((SHARE_W - 240 - (n - 1) * gap) / n));
+  /* 牌缩略图 + 牌名（>6 牌双行，行内居中） */
   const rowY = 520;
-  const startX = CX - (n * size + (n - 1) * gap) / 2 + size / 2;
   for (let i = 0; i < n; i++) {
     const d = state.draws[i];
-    const x = startX + i * (size + gap);
-    const imgH = Math.round(size * 1.72);
+    const r = Math.floor(i / perRow), c = i % perRow;
+    const rowCount = r === rows - 1 ? n - r * perRow : perRow;
+    const x = CX - (rowCount * size + (rowCount - 1) * gap) / 2 + c * (size + gap) + size / 2;
+    const y = rowY + r * rowPitch;
     let im = await loadCardImg(IMG_BASE + d.card.image);
     if (!im && CDN_BASE) im = await loadCardImg(CDN_BASE + d.card.image);
     ctx.save();
     if (d.reversed) { /* 逆位：绕图片几何中心旋转 180°（中心必须取 imgH/2，否则牌图会错位） */
-      ctx.translate(x, rowY + imgH / 2); ctx.rotate(Math.PI); ctx.translate(-x, -(rowY + imgH / 2));
+      ctx.translate(x, y + imgH / 2); ctx.rotate(Math.PI); ctx.translate(-x, -(y + imgH / 2));
     }
     if (im) {
-      ctx.drawImage(im, x - size / 2, rowY, size, imgH);
+      ctx.drawImage(im, x - size / 2, y, size, imgH);
     } else {
-      ctx.strokeStyle = "rgba(201,168,106,.5)"; ctx.strokeRect(x - size / 2, rowY, size, imgH);
-      ctx.fillStyle = "#c9a86a"; ctx.font = `60px ${SERIF}`; ctx.fillText("✶", x, rowY + imgH / 2 + 20);
+      ctx.strokeStyle = "rgba(201,168,106,.5)"; ctx.strokeRect(x - size / 2, y, size, imgH);
+      ctx.fillStyle = "#c9a86a"; ctx.font = `60px ${SERIF}`; ctx.fillText("✶", x, y + imgH / 2 + 20);
     }
     ctx.restore();
     if (d.reversed) {
-      const bx = x + size / 2 - 8, by = rowY + 10;
+      const bx = x + size / 2 - 8, by = y + 10;
       ctx.fillStyle = "#07070e"; ctx.beginPath(); ctx.arc(bx, by, 20, 0, 7); ctx.fill();
       ctx.strokeStyle = "#c9a86a"; ctx.lineWidth = 2; ctx.stroke();
       ctx.fillStyle = "#c9a86a"; ctx.font = `24px ${SANS}`; ctx.textBaseline = "middle";
       ctx.fillText("逆", bx, by + 2);
       ctx.textBaseline = "alphabetic";
     }
-    ctx.fillStyle = "#d8d2c2"; ctx.font = `24px ${SANS}`;
-    wrapText(ctx, `${d.pos.n}. ${d.card.name}`, x, rowY + imgH + 44, size + 60, 32, 1);
+    ctx.fillStyle = "#d8d2c2"; ctx.font = `${rows > 1 ? 22 : 24}px ${SANS}`;
+    wrapText(ctx, `${d.pos.n}. ${d.card.name}`, x, y + imgH + 44, size + gap, 32, rows > 1 ? 2 : 1);
   }
   /* 解读快照（#1/#3）：结论先行 + 综合判断，与页面所读同源 */
-  const cardBot = rowY + Math.round(size * 1.72);
   if (hasRead) {
     ctx.strokeStyle = "rgba(201,168,106,.25)"; ctx.beginPath();
     ctx.moveTo(300, cardBot + 110); ctx.lineTo(SHARE_W - 300, cardBot + 110); ctx.stroke();
@@ -3470,8 +3496,7 @@ async function buildShareCard() {
     const concl = (snap.conclusion || "").trim();
     if (concl) {
       ctx.fillStyle = "#e8e2d4"; ctx.font = `30px ${SANS}`;
-      wrapText(ctx, `「${concl}」`, CX, yy, 780, 46, 3);
-      yy += 46 * Math.min(3, Math.max(1, Math.ceil(concl.length / 24))) + 36;
+      yy += 46 * wrapText(ctx, `「${concl}」`, CX, yy, 780, 46, 3) + 36;
     }
     const judg = (snap.judgment || "").trim();
     if (judg) {
