@@ -1470,7 +1470,7 @@ const LLM_SYSTEM_PROMPT = `你是塔塔🔮の心灵疗愈室的首席解牌师�
 7. 不做评分/概率——塔罗不是测量工具，不给"1-10分"或"80%概率"，用判断性语言代替伪精度。
 8. 安全边界：检测到自伤信号时暂停占卜，建议联系心理援助热线 400-161-9995。不做医疗/法律/投资建议。
 
-【逆位总纲】逆位不是"坏牌"——它是正位的能量受阻或失衡的状态，牌的原义仍然存在，不会变成另一张牌。解读逆位时按牌类型择用角度：①数字牌看程度——能量"过度"或"不足"（如圣杯三逆=欢乐过度乐极生悲）；②大牌看内心——被压抑否认的情绪、或牌面图景倒转的演绎（如塔逆=骤变来自内在）；③宫廷牌逆位一律看"过度或不足"的人物化表达（如钱币骑士逆=工作狂或闲混，权杖国王逆=暴君或懦夫）。
+【逆位总纲】逆位不是"坏牌"——它是正位的能量受阻或失衡的状态，牌的原义仍然存在，不会变成另一张牌。解读逆位时按牌类型择用角度：①数字牌看程度——能量"过度"或"不足"（如圣杯三逆=欢乐过度乐极生悲）；②大牌看内心——被压抑否认的情绪、或牌面图景倒转的演绎（如塔逆=骤变来自内在）；③宫廷牌逆位一律看"过度或不足"的人物化表达（如星币骑士逆=工作狂或闲混，权杖国王逆=暴君或懦夫）。
 
 【大牌补注】三张大牌容易被解"偏"，遇到时按以下视角校准：
 - 月亮：不只是恐惧与幻象——它同样是想象力与灵感的领域（"所想皆可成"）。解读时先问用户此刻的迷雾里是否也藏着创造力的萌芽，再谈不安。
@@ -1481,10 +1481,10 @@ const LLM_SYSTEM_PROMPT = `你是塔塔🔮の心灵疗愈室的首席解牌师�
 
 【阵面统整心法】（写进 overview 和 judgment，这是综合解读的灵魂，禁止逐牌复述）
 - 大小牌比例：大牌占比明显高于常态（约每2.5张小牌配1张大牌）时，事件影响深远、多关乎内心且可控性低；几乎全小牌=短期具体事务、可改变空间大。
-- 牌组比例：权杖=行动创造、圣杯=情感人际、宝剑=冲突思考、钱币=金钱现实。问感情而阵中无圣杯，点破"感情成分已所剩不多"；宝剑云集要点出"伤害与思虑过载"。
+- 牌组比例：权杖=行动创造、圣杯=情感人际、宝剑=冲突思考、星币=金钱现实。问感情而阵中无圣杯，点破"感情成分已所剩不多"；宝剑云集要点出"伤害与思虑过载"。
 - 正逆位比例：逆位压倒性多数时，提示"事情并非自然发展"——有回避、有暗流、或事态艰难。
 - 同号牌呼应：多张同号小牌（如两张五号）是该阵的主旋律（五号=冲突与失落）。
-- 四要素流向：权杖(火)与宝剑(风)同现、或圣杯(水)与钱币(土)同现=能量相生、情况改善；火水同现、风土同现=能量相克、事态易恶化；缺哪个元素=缺哪种性质（问事业缺钱币=现实基础薄弱）。
+- 四要素流向：权杖(火)与宝剑(风)同现、或圣杯(水)与星币(土)同现=能量相生、情况改善；火水同现、风土同现=能量相克、事态易恶化；缺哪个元素=缺哪种性质（问事业缺星币=现实基础薄弱）。
 - 结合法：把整阵牌当作一个完整故事讲出来——起点、冲突、走向，而不是一张张孤立的牌。
 - 比较法：主动找出阵中互相呼应（相似牌=症结强化）或互相矛盾（相反牌=内在拉扯）的组合并点明。
 - 行动词参考已随牌附上：advice 的 step 要尽量承接这些动词的质感，把牌义翻译成本周可执行的动作，而不是复述牌义。
@@ -2428,16 +2428,15 @@ function flashErr(msg, ms) {
   if (ms) errTimer = setTimeout(() => { errTimer = 0; if (errEl.textContent === msg) errEl.textContent = ""; }, ms);
 }
 $("#btn-ask").addEventListener("click", () => {
-  if (errTimer) { clearTimeout(errTimer); errTimer = 0; }
-  errEl.textContent = "";
+  flashErr("");
   /* 注意：此处不得重置 dailyMode——「今日一牌」经由此入口提交，重置已前移到 btn-start/btn-again 等入口 */
   const q = qEl.value.trim();
   /* 每日一牌允许空问题：轻量定位，默认记为「今日指引」 */
-  if (!q && !state.dailyMode) { errEl.textContent = "请先写下你的问题，再开启仪式。"; qEl.focus(); return; }
+  if (!q && !state.dailyMode) { flashErr("请先写下你的问题，再开启仪式。"); qEl.focus(); return; }
   const numsRaw = numEl.value.trim().split(/[\s,，]+/).filter(s => s.length > 0);
   const nums = numsRaw.map(s => parseInt(s, 10)).filter(n => Number.isFinite(n) && n >= 1 && n <= 78);
   const total = SPREADS[state.spreadKey || pickSpread(q)].positions.length;
-  if (nums.length < 1) { errEl.textContent = `凭直觉给我 ${total} 个 1 到 78 之间的数字（空格分隔）。`; numEl.focus(); return; }
+  if (nums.length < 1) { flashErr(`凭直觉给我 ${total} 个 1 到 78 之间的数字（空格分隔）。`); numEl.focus(); return; }
   if (nums.length < total) {
     while (nums.length < total) nums.push(Math.floor(Math.random() * 78) + 1);
     flashErr(`你输入了 ${numsRaw.length} 个数字，剩余 ${total - numsRaw.length} 个已凭天意补齐：${nums.join(" ")}`, 4000);
@@ -2454,7 +2453,7 @@ $("#btn-ask").addEventListener("click", () => {
   if (!state.spreadManual) state.spreadKey = pickSpread(q);
   /* 不变量兜底：每日一牌只允许单牌阵。任何路径组合出 dailyMode+多张阵都会让 dailyCard 劫持全部翻牌（同牌 bug），一律自动退出 */
   if (state.dailyMode && SPREADS[state.spreadKey].positions.length > 1) state.dailyMode = false;
-  try { buildDraws(); } catch(e) { errEl.textContent = "抽牌出错: " + e.message; return; }
+  try { buildDraws(); } catch(e) { flashErr("抽牌出错: " + e.message); return; }
   startRitual();
 });
 
@@ -3359,14 +3358,14 @@ qEl.addEventListener("input", renderCoach);
     numEl.value = "37 12 55";
     state.spreadManual = true; state.spreadKey = "three_time";
     refreshChips(); reasonEl.textContent = "";
-    errEl.textContent = "";
+    flashErr("");
     $("#btn-ask").click(); /* 走与真实占卜完全相同的流程 */
   });
 })();
 
 /* 重新抽牌 */
 $("#btn-again").addEventListener("click", () => {
-  qEl.value = ""; numEl.value = ""; errEl.textContent = "";
+  qEl.value = ""; numEl.value = ""; flashErr("");
   state.dailyMode = false;
   state.spreadManual = false; state.spreadKey = "three_time";
   refreshChips(); reasonEl.textContent = "";
@@ -3810,7 +3809,7 @@ function restoreReading(rec) {
 $("#btn-hist").addEventListener("click", renderHistory);
 $("#btn-hist-2").addEventListener("click", renderHistory);
 $("#hist-search").addEventListener("input", renderHistList);
-$("#btn-hist-new").addEventListener("click", () => { qEl.value = ""; numEl.value = ""; errEl.textContent = ""; state.dailyMode = false; state.spreadManual = false; state.spreadKey = "three_time"; refreshChips(); reasonEl.textContent = ""; go("ask"); });
+$("#btn-hist-new").addEventListener("click", () => { qEl.value = ""; numEl.value = ""; flashErr(""); state.dailyMode = false; state.spreadManual = false; state.spreadKey = "three_time"; refreshChips(); reasonEl.textContent = ""; go("ask"); });
 $("#btn-hist-clear").addEventListener("click", () => {
   if (confirm("确定清空全部占卜记录吗？此操作不可恢复。")) { try { localStorage.removeItem(HKEY); } catch (e) {} renderHistory(); }
 });
