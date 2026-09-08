@@ -209,6 +209,10 @@ textarea{min-height:96px}
 .fan .fcard.marked::after{content:attr(data-mark-badge);position:absolute;top:-11px;left:50%;transform:translateX(-50%);width:21px;height:21px;line-height:19px;border-radius:50%;background:#0b0917;border:1px solid var(--mk,var(--gold-hi));color:var(--mk,var(--gold-hi));font-size:11px;text-align:center;text-shadow:none;z-index:7}
 @keyframes markPulse{0%,100%{box-shadow:0 0 5px rgba(201,168,106,.25)}50%{box-shadow:0 0 14px rgba(201,168,106,.6)}}
 @keyframes fanIn{from{opacity:0;transform:rotate(var(--tilt,0deg)) scale(.6)}to{opacity:1;transform:rotate(var(--tilt,0deg)) scale(1)}}
+/* 严格按序抽牌：当前"该翻的下一张"高亮（金色描边+抬起+辉光），其余牌背不可翻 */
+.fan .fcard.next{outline:2px solid var(--gold-hi);outline-offset:2px;z-index:9;transform:rotate(var(--tilt,0deg)) translateY(-12px);box-shadow:0 0 18px rgba(201,168,106,.8);cursor:pointer}
+.fan .fcard.next-pulse{animation:nextPulse .5s ease}
+@keyframes nextPulse{0%{box-shadow:0 0 6px rgba(201,168,106,.4)}50%{box-shadow:0 0 30px rgba(201,168,106,1)}100%{box-shadow:0 0 18px rgba(201,168,106,.8)}}
 
 /* 已翻开的小牌行 */
 .revealed-row{display:flex;justify-content:center;gap:16px;margin-top:24px;min-height:100px;flex-wrap:wrap}
@@ -2050,17 +2054,14 @@ function buildDraws() {
   }
   /* 逆位预分配：开牌前整副 deck 正逆已定，翻牌只是揭示（保证可复现） */
   state.deckRev = deck.map(() => rng() < REVERSED_CHANCE);
-  /* 多数字标记：每个数字标记一张牌（不同序号颜色），不足的自动补随机 */
+  /* 多数字标记：每个数字标记一张牌（不同序号颜色），严格按顺序对应牌阵位置 */
   state.deck = deck;
-  const numCount = Math.min(state.numbers.length, spread.positions.length);
-  state.markedCards = [];
-  const usedIdx = new Set();
-  for (let i = 0; i < numCount; i++) {
-    let idx = (state.numbers[i] - 1) % deck.length;
-    while (usedIdx.has(idx)) idx = (idx + 1) % deck.length;
-    usedIdx.add(idx);
-    state.markedCards.push({ card: deck[idx], idx, order: i });
-  }
+  /* 严格按数字顺序抽牌：第 i 个数字 → 洗牌后牌堆的第 num 张 → 落在牌阵第 i 个位置。
+     数字已在入口校验为「个数=位置数、互不相同、1~78」，故不再补随机、不再顺延去重。 */
+  state.markedCards = state.numbers.map((num, i) => {
+    const idx = (num - 1) % deck.length;
+    return { card: deck[idx], idx, order: i };
+  });
   /* F-009 每日一牌·全站同频：以本地日期为种子固定"今日之牌"，任选一张揭开的都是它 */
   if (state.dailyMode) {
     const t = new Date();
@@ -2439,14 +2440,15 @@ $("#btn-ask").addEventListener("click", () => {
   const q = qEl.value.trim();
   /* 每日一牌允许空问题：轻量定位，默认记为「今日指引」 */
   if (!q && !state.dailyMode) { flashErr("请先写下你的问题，再开启仪式。"); qEl.focus(); return; }
-  const numsRaw = numEl.value.trim().split(/[\s,，]+/).filter(s => s.length > 0);
-  const nums = numsRaw.map(s => parseInt(s, 10)).filter(n => Number.isFinite(n) && n >= 1 && n <= 78);
+  const tokens = numEl.value.trim().split(/[\s,，]+/).filter(s => s.length > 0);
   const total = SPREADS[state.spreadKey || pickSpread(q)].positions.length;
-  if (nums.length < 1) { flashErr(`凭直觉给我 ${total} 个 1 到 78 之间的数字（空格分隔）。`); numEl.focus(); return; }
-  if (nums.length < total) {
-    while (nums.length < total) nums.push(Math.floor(Math.random() * 78) + 1);
-    flashErr(`你输入了 ${numsRaw.length} 个数字，剩余 ${total - numsRaw.length} 个已凭天意补齐：${nums.join(" ")}`, 4000);
-  }
+  /* 严格按数字抽牌：数字个数必须等于牌阵位置数，每个 1~78，且互不相同（不再随机补齐） */
+  if (tokens.length < 1) { flashErr(`凭直觉给我 ${total} 个 1 到 78 之间的数字（空格分隔），抽牌会严格按这些数字、按顺序进行。`); numEl.focus(); return; }
+  const badTok = tokens.find(s => !/^\d+$/.test(s) || +s < 1 || +s > 78);
+  if (badTok !== undefined) { flashErr(`每个数字都要是 1 到 78 之间的整数（发现「${badTok}」不合规）。`); numEl.focus(); return; }
+  const nums = tokens.map(s => +s);
+  if (nums.length !== total) { flashErr(`这个牌阵需要正好 ${total} 个数字（对应 ${total} 个位置），你给了 ${nums.length} 个。请按抽牌顺序给满 ${total} 个，空格分隔。`); numEl.focus(); return; }
+  if (new Set(nums).size !== nums.length) { flashErr("数字不能重复——每个位置请给一个不同的数字。"); numEl.focus(); return; }
   if (SAFETY_RE.test(q)) { qEl.value = ""; go("care"); return; }
   /* P0-D：关乎健康生死/官司判决/买卖涨跌的预测式提问不进抽牌，引导重构问题（普通"会不会复合"不拦截） */
   if (PREDICTIVE_RE.test(q) && HIGH_STAKES_RE.test(q)) {
@@ -2643,14 +2645,15 @@ function showSpread() {
   void fanEl.offsetWidth;
   const numsStr = state.numbers.join(" ");
   statusEl.textContent = "78 张牌已铺成一排。";
-  subEl.textContent = `你的数字 ${numsStr} 标记了 ${state.markedCards.length} 张牌。滑动牌桌找到它们，或凭直觉另选。`;
+  subEl.textContent = `你的数字 ${numsStr} 已锁定 ${state.markedCards.length} 张牌。请按顺序翻开它们——不能抽别的牌。`;
   arenaHint.textContent = "← 滑 动 牌 桌 →";
   holdLabel.textContent = "凝神聚气";
-  holdTip.textContent = "可选 · 也可直接选牌";
+  holdTip.textContent = "可选 · 也可直接翻开";
   holdWrap.classList.add("show");
   void holdWrap.offsetWidth; /* #10 强制重排 */
   skipBtn.style.display = "none"; /* 牌已铺好，无仪式可跳——隐藏入口防止误触重铺 */
   updateProgress();
+  highlightNextMark();
 }
 function updateProgress() {
   const total = SPREADS[state.spreadKey].positions.length;
@@ -2658,14 +2661,24 @@ function updateProgress() {
 }
 function pickFromSpread(el) {
   if (ritualBusy || el.classList.contains("picked")) return;
-  if (state.draws.length >= SPREADS[state.spreadKey].positions.length) return; /* 已抽满：防止误触剩余牌背导致越界 */
+  const total = SPREADS[state.spreadKey].positions.length;
+  if (state.draws.length >= total) return; /* 已抽满：防止误触剩余牌背导致越界 */
   const idx = state.deck.indexOf(el.__card);
   if (idx < 0) return;
+  /* 严格按数字顺序抽牌：只允许翻开"下一个数字标记的牌"，不允许抽别的牌（每日一牌的同频揭示除外） */
+  if (!state.dailyMode) {
+    const nextMark = state.markedCards[state.draws.length];
+    if (!nextMark || el.__card !== nextMark.card) {
+      subEl.textContent = `请按顺序翻开第 ${state.draws.length + 1} 张（数字 ${state.numbers[state.draws.length]} 标记的牌）——不能抽别的牌。`;
+      highlightNextMark(true);
+      return;
+    }
+  }
   ritualBusy = true;
   const card = state.deck.splice(idx, 1)[0];
   el.classList.add("picked");
   /* 移除标记（数据驱动方案：单一类 + data 属性，任意张数牌阵通用） */
-  el.classList.remove("marked");
+  el.classList.remove("marked", "next");
   delete el.dataset.markBadge;
   /* 隐藏定位按钮 */
   const locBtns = document.querySelectorAll("[id^='btn-locate-']");
@@ -2721,7 +2734,7 @@ function completeHold() {
   /* 视觉增强：牌背金光 */
   fanEl.classList.add("blessed");
   statusEl.textContent = "能量已汇聚。";
-  subEl.textContent = "凭直觉选牌——标记牌或任意一张都可以。";
+  subEl.textContent = "牌已苏醒——按数字顺序，从第 1 个标记的牌开始翻开。";
   holdTip.textContent = "✦ 凝神完成 · 牌已苏醒";
   playSfx("done");
   /* 多定位按钮（与跳过仪式路径共用 addLocateButtons，防止重复创建） */
@@ -2749,6 +2762,19 @@ function addLocateButtons() {
     skipBtn.parentNode.insertBefore(lb, skipBtn);
     lb.style.display = "inline-block";
   });
+}
+/* 高亮"下一个该翻的数字标记牌"（严格按序抽牌）；pulse=true 时附带一次强调闪烁 */
+function highlightNextMark(pulse) {
+  fanEl.querySelectorAll(".fcard.next").forEach(f => f.classList.remove("next"));
+  if (state.dailyMode) return; /* 每日一牌任选揭示，无需锁定顺序 */
+  const nextMark = state.markedCards[state.draws.length];
+  if (!nextMark) return;
+  const el = [...fanEl.querySelectorAll(".fcard")].find(f => f.__card === nextMark.card && !f.classList.contains("picked"));
+  if (!el) return;
+  el.classList.add("next");
+  if (pulse) { el.classList.remove("next-pulse"); void el.offsetWidth; el.classList.add("next-pulse"); }
+  const target = Math.max(0, el.offsetLeft - fanEl.clientWidth / 2 + el.offsetWidth / 2);
+  fanEl.scrollTo({ left: target, behavior: "smooth" });
 }
 holdBtn.addEventListener("pointerdown", startHold);
 /* #7 移动端长按容差：pointerleave 改为仅 pointerup/pointercancel，且加 40px 容差区域 */
@@ -2825,8 +2851,9 @@ function revealChosen(card, reversed) {
           ritualBusy = false;
           const total = SPREADS[state.spreadKey].positions.length;
           if (state.draws.length < total) {
-            statusEl.textContent = `还有 ${total - state.draws.length} 个位置空着。`;
-            subEl.textContent = "继续，凭直觉轻触下一张牌背。";
+            statusEl.textContent = `已按数字翻开 ${state.draws.length} 张。`;
+            subEl.textContent = `请翻开第 ${state.draws.length + 1} 个数字（${state.numbers[state.draws.length]}）标记的牌。`;
+            highlightNextMark();
           } else {
             statusEl.textContent = "所有的牌，都已翻开。";
             subEl.textContent = "指引已经就位，让我们开始解读。";
