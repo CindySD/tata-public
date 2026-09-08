@@ -2266,7 +2266,13 @@ function makeCardEl(card, reversed) {
   img.referrerPolicy = "no-referrer";
   img.loading = "lazy";
   img.src = IMG_BASE + card.image;
-  img.onload = () => img.classList.add("ld");
+  img.onload = () => {
+    const w = img.naturalWidth, h = img.naturalHeight, ar = h ? w / h : 0;
+    if (!w || !h || h < 500 || ar < 0.5 || ar > 0.75) {
+      console.warn("[牌面守卫] 图片尺寸异常，疑似错位/来源不符:", card.name, card.image, w + "x" + h);
+    }
+    img.classList.add("ld");
+  };
   if (img.complete && img.naturalWidth > 0) img.classList.add("ld");
   img.onerror = () => {
     if (!img.dataset.fb) { img.dataset.fb = "1"; img.src = CDN_BASE + card.image; return; }
