@@ -656,7 +656,7 @@ footer .gold{color:var(--gold)}
         </div>
       </div>
 
-      <div class="ask-err" id="ask-err"></div>
+      <div class="ask-err" id="ask-err" role="alert" aria-live="assertive"></div>
       <div class="ask-submit">
         <button class="btn" id="btn-ask" type="button">默 念 毕 · 开 启 仪 式</button>
       </div>
@@ -802,7 +802,8 @@ footer .gold{color:var(--gold)}
       不填则使用内置规则引擎解读（即时）。<br>
       <span style="color:var(--gold)">推荐</span>：DeepSeek（便宜+支持CORS）、本地 Ollama（免费+零延迟）<br>
       <span style="color:var(--gold)">注意</span>：通义/OpenAI 默认不允许浏览器跨域，需配 CORS 代理<br>
-      配置仅存本机浏览器（localStorage 明文保存），不上传任何服务器。<br>
+      配置与 API Key 只存本机浏览器，本站不收集、不上传任何数据；但<b>启用 AI 后，你的问题原文与所抽牌面会发送给你所配置的那家 AI 服务商 API</b>（由其处理），请选用可信服务商。<br>
+      希望数据完全不出本机：用「本地 Ollama」预设，或留空配置直接走内置规则引擎解读。<br>
       <span style="color:#d98f7a">⚠️ 安全提示</span>：API Key 以明文形式保存在本机，请勿在公共或共用设备上填写；使用后可在公共设备上点「清除配置」。
     </p>
   </div>
@@ -2212,7 +2213,7 @@ function synthesize() {
     "如果不再害怕，你会怎么选？",
     "这次牌面里，你最想对自己承认的是哪一句？"
   ];
-  const echo = echoPool[(state.seed >> 3) % echoPool.length];
+  const echo = echoPool[(state.seed >>> 3) % echoPool.length];
   const startText = composeReading(start, state.domain).face.replace(/^这张牌是[^：:]*：/, "");
   return {
     overview: [majorLine, suitLine, revLine].filter(Boolean).join(" "),
@@ -2290,11 +2291,14 @@ $("#float-home").addEventListener("click", () => go("cover"));
       ctx.beginPath(); ctx.arc(d.x, d.y, d.r, 0, 7);
       ctx.fillStyle = `rgba(201,168,106,${d.a})`; ctx.fill();
     }
-    if (!document.hidden && !reduced) requestAnimationFrame(frame);
+    if (!document.hidden && !reduced) { rafOn = true; requestAnimationFrame(frame); } else { rafOn = false; }
   }
+  let rafOn = false;
+  function kickStars() { if (!reduced && !document.hidden && !rafOn) { rafOn = true; requestAnimationFrame(frame); } }
   addEventListener("resize", resize);
   resize();
-  if (reduced) frame(0); else requestAnimationFrame(frame);
+  if (reduced) frame(0); else { rafOn = true; requestAnimationFrame(frame); }
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) kickStars(); });
 })();
 
 /* ---------- 牌元素工厂 ---------- */
@@ -2385,6 +2389,8 @@ $("#btn-care-back").addEventListener("click", () => go("ask"));
 const settingsMask = $("#settings-mask");
 /* #8 弹窗焦点陷阱：Tab 键不跳出弹窗 */
 function trapFocus(container) {
+  if (container._trapBound) return;
+  container._trapBound = true;
   container.addEventListener("keydown", e => {
     if (e.key !== "Tab") return;
     const focusable = container.querySelectorAll('button, input, textarea, [tabindex]:not([tabindex="-1"])');
@@ -2409,6 +2415,7 @@ function openSettings() {
   trapFocus(settingsMask);
 }
 function closeSettings() {
+  if (!settingsMask.classList.contains("show")) return;
   settingsMask.classList.remove("show");
   document.body.style.cssText = bodyOverflowSaved || "";
   window.scrollTo(0, savedScrollY);
@@ -3114,8 +3121,9 @@ async function renderReading() {
         readingHead?.parentNode.insertBefore(banner, readingHead.nextSibling);
       }
       /* 覆盖逐牌：core + psy + example */
-      if (d.cards) {
+      if (Array.isArray(d.cards)) {
         d.cards.forEach((c, i) => {
+          if (!c || typeof c !== "object") return;
           const psyEl = $("#psy-" + i);
           if (psyEl) {
             let html = "";
@@ -3136,9 +3144,10 @@ async function renderReading() {
       if (syn.judgment) synHTML += `<div class="syn-block"><div class="sb-label">综 合 判 断</div><p style="color:var(--gold-hi)">${escHtml(syn.judgment)}</p></div>`;
       synHTML += `<div class="energy-word"><div class="ew">${d.energy ? escHtml(d.energy) : energyWord()}</div><div class="ew-sub">本 次 能 量 之 词</div></div>`;
       /* 建议步骤 */
-      if (d.advice && d.advice.length) {
+      if (Array.isArray(d.advice) && d.advice.length) {
         synHTML += `<div class="syn-block"><div class="sb-label">塔 塔 的 行 动 建 议</div>`;
         d.advice.forEach((a, i) => {
+          if (!a || typeof a !== "object") return;
           synHTML += `<div class="advice-step"><span class="as-num">${i + 1}</span><div><p class="as-step">${escHtml(a.step)}</p>${a.why ? `<p class="as-why">${escHtml(a.why)}</p>` : ""}</div></div>`;
         });
         synHTML += `</div>`;
@@ -3156,9 +3165,11 @@ async function renderReading() {
         conclusion: typeof d.conclusion === "string" ? d.conclusion.slice(0, 120) : "",
         judgment: typeof syn.judgment === "string" ? syn.judgment.slice(0, 120) : ""
       };
-      updateHistoryEnergy();
-      const shrunk = shrinkAi(d);
-      if (shrunk && state.lastHistT) updateHistoryRecord(state.lastHistT, { a: shrunk });
+      if (!wasRestore) {
+        updateHistoryEnergy();
+        const shrunk = shrinkAi(d);
+        if (shrunk && state.lastHistT) updateHistoryRecord(state.lastHistT, { a: shrunk });
+      }
       if (fuList.length) {
         synHTML += `<div class="followup-block"><div class="sb-label">想 继 续 问</div>${fuList.map((q2, i) => `<button class="fu-btn" type="button" data-fu="${i}">💬 ${escHtml(q2)}</button>`).join("")}</div>`;
       }
@@ -3174,6 +3185,7 @@ async function renderReading() {
       renderSynthesisRule();
       const notice = document.createElement("div");
       notice.className = "ai-fail-notice";
+      notice.setAttribute("role", "status");
       notice.style.cssText = "text-align:center;padding:10px 16px;margin:12px auto;max-width:420px;font-size:12.5px;color:#d98f7a;border:1px solid rgba(217,143,122,.3);border-radius:10px;letter-spacing:.06em";
       notice.textContent = `AI 连接失败（${aiResult.error}）· 已使用内置解读。可点 ⚙ 检查 API 设置。`;
       synEl.parentNode.insertBefore(notice, synEl);
@@ -3218,7 +3230,7 @@ function renderReadingNav() {
     const y = window.pageYOffset + 150;
     let cur = 0;
     for (let i = 0; i < secs.length; i++) if (pos(secs[i]) <= y) cur = i;
-    btns.forEach((b, i) => b.classList.toggle("on", i === cur));
+    btns.forEach((b, i) => { b.classList.toggle("on", i === cur); b.setAttribute("aria-current", i === cur ? "true" : "false"); });
   };
   readingNavScroll = setActive;
   window.addEventListener("scroll", setActive, { passive: true });
@@ -3385,7 +3397,7 @@ function renderSynthesisRule() {
     <p class="sovereign">牌显示的是当下的能量，不是注定的结局。<br>你的选择，随时可以改变走向。</p>`;
   state.shareSnapshot = { energy: energyWord(), conclusion: syn.overview, judgment: syn.exit };
 }
-function escapeHtml(s) { return s.replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
+function escapeHtml(s) { return escHtml(s); }
 
 /* 切牌（心态牌）：meta 行可点击查看 + 综合解读开头关联一句 */
 function cutLine() {
@@ -3436,7 +3448,7 @@ function openDeep(i) {
   document.body.style.top = `-${savedScrollY}px`;
   trapFocus(mask);
 }
-function closeDeep() { mask.classList.remove("show"); document.body.style.cssText = bodyOverflowSaved || ""; window.scrollTo(0, savedScrollY); }
+function closeDeep() { if (!mask.classList.contains("show")) return; mask.classList.remove("show"); document.body.style.cssText = bodyOverflowSaved || ""; window.scrollTo(0, savedScrollY); }
 mask.addEventListener("click", e => { if (e.target === mask) closeDeep(); });
 addEventListener("keydown", e => { if (e.key === "Escape") { closeDeep(); closeSettings(); } });
 
@@ -3944,7 +3956,7 @@ function renderHistList() {
     return;
   }
   let recs = kw ? h.filter(rec => {
-    const cards = rec.d.map(x => { const c = cardById[x.id]; return c ? c.name : ""; }).join(" ");
+    const cards = rec.d.map(x => { const c = x && cardById[x.id]; return c ? c.name : ""; }).join(" ");
     return ((rec.q || "") + " " + cards + " " + (SPREADS[rec.sp] ? SPREADS[rec.sp].name : (rec.sp || "")) + " " + (rec.e || "")).toLowerCase().includes(kw);
   }) : h;
   if (histSortMemory) recs = recs.slice().sort((a, b) => memScore(b) - memScore(a));
@@ -3957,7 +3969,7 @@ function renderHistList() {
     const it = document.createElement("div");
     it.className = "hist-item";
     it.tabIndex = 0; it.setAttribute("role", "button"); it.setAttribute("aria-label", `回看 ${fmtTime(rec.t)} 的占卜记录`);
-    const cards = rec.d.map(x => { const c = cardById[x.id]; return c ? `${c.name}${x.r ? "·逆" : ""}` : "？"; }).join(" / ");
+    const cards = rec.d.map(x => { const c = x && cardById[x.id]; return c ? `${c.name}${x.r ? "·逆" : ""}` : "？"; }).join(" / ");
     const chkOK = rec.check && ["met", "part", "miss"].indexOf(rec.check.s) >= 0; /* R2：渲染位白名单，防存量脏数据属性注入 */
     const chkBadge = chkOK ? `<span class="hist-badge ${rec.check.s}">${{ met: "✅ 应验", part: "◐ 部分", miss: "⏳ 未应验" }[rec.check.s] || ""}</span>` : "";
     const moodBadge = rec.mood ? `<span class="hist-badge mood">${escapeHtml(rec.mood)}</span>` : "";
@@ -4036,6 +4048,13 @@ $("#hist-import-file").addEventListener("change", (e) => {
         r.t = (+r.t > 0) ? +r.t : Date.now();
         if (r.seed !== undefined) r.seed = (+r.seed > 0) ? +r.seed : 0;
         if (r.seen !== undefined) r.seen = (+r.seen > 0) ? Math.floor(+r.seen) : 0;
+        /* C-4：元素级三防——r.d 只留有 id 的对象元素、r 布尔化；e/mood 非字符串删（会进 innerHTML）；a 非对象删 */
+        r.d = r.d.filter(x => x && typeof x === "object" && x.id !== undefined);
+        if (!r.d.length) continue;
+        r.d.forEach(x => { x.r = !!x.r; });
+        if (r.e !== undefined && typeof r.e !== "string") delete r.e;
+        if (r.mood !== undefined && typeof r.mood !== "string") delete r.mood;
+        if (r.a !== undefined && (typeof r.a !== "object" || r.a === null)) delete r.a;
         const key = `${r.t}|${r.q}|${r.seed || 0}`;
         if (seen.has(key)) continue;
         seen.add(key); cur.push(r); added++;
