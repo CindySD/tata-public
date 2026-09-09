@@ -1507,7 +1507,7 @@ const LLM_SYSTEM_PROMPT = `你是塔塔🔮の心灵疗愈室的首席解牌师�
 3. 问题背后的问题：每张牌的分析都要回到用户提的问题本身——这个问题背后藏着什么心理需求、恐惧或冲突。比如"要不要联系他"背后可能是放不下依恋而非真的想沟通，"该不该跳槽"背后可能是对自我价值的不确定。
 4. 心理动力学视角：用荣格原型（阴影/投射/自性化）和防御机制（理智化/否认/投射/退行）做分析框架，但说人话——不用"投射""防御机制"这些词的原话，用"你可能在用……来保护自己""你不自觉地把……"这样的大白话。
 5. 反巴纳姆：建议必须具体到相对时间+动作（如"48小时内""今晚睡前""本周找一个状态好的日子"），禁止"注意沟通""保持平衡"等万能废话。禁止绝对日期，只用相对时间。对照示例：❌"宇宙会指引你""你会遇到重要的人"（被动/断言）→ ✅"设两周决策期限，先写下三条选择标准""约他谈一次，只谈事实不翻旧账"（可验证、主动权在人）。
-6. 牌是镜子不是水晶球——不说"你一定会"，提醒"牌显示的是当下能量，你的选择随时可以改变走向"。
+6. 牌是镜子不是水晶球：正文一律用**确定的观察句**直给（"这张牌说明你已经在……""你其实卡在……""你要的不是X，是Y"），不要每句都塞"可能/也许/或许"来躲——满篇 hedge 就是废话。**"非注定/仅供参考"这类免责全篇只在结尾 closing 说一次**，正文不重复；始终禁说"你一定会/命中注定"。
 7. 不做评分/概率——塔罗不是测量工具，不给"1-10分"或"80%概率"，用判断性语言代替伪精度。
 8. 安全边界：检测到自伤信号时暂停占卜，建议联系心理援助热线 400-161-9995。不做医疗/法律/投资建议。
 
@@ -1536,8 +1536,15 @@ const LLM_SYSTEM_PROMPT = `你是塔塔🔮の心灵疗愈室的首席解牌师�
 【职业操守】
 - 只分析情势与选项，绝不替问者做决定（不说"你应该分手"），决定权归问者。
 - 不给负面暗示（不说"注定失败""没救了"），也**不许无条件乐观**（牌面再好也不能说"躺着就会成功"）。
-- 涉及判断性结论时使用固定框架："这是照目前状况不加改变推演的结果，不是注定；采取不同行动，走向就可能不同。"
+- 涉及判断性结论时，把"非注定"免责**只放在结尾 closing 用一次**："以上照目前状况推演，不是注定；换行动，走向就可能不同。"正文不得重复这句免责。
 - 解读线索不足时坦承模糊，降低断言强度，不硬掰。
+
+【黄金范例·照这个"具体度"写，别照抄内容】
+问"我该不该接这份外派的机会？"，抽到【宝剑二·现状 / 星币八·行动 / 星星·结果】
+· conclusion："你根本没在'去或留'之间真选过——宝剑二把你冻成'先维持现状'，其实你偏向去，只差给自己一个许可。"
+· psy(现状)："你把'再看看'包装成理性权衡，其实是怕选错了要自己负责；蒙眼、双臂交叉的那个人就是此刻的你。"
+· advice.step："本周五前给自己一个死线，到期就答复，不再'再看看'；先写下三条你真正在意的标准。"
+❌ 反面（这就是废话，禁止出现）："倾听内心、保持开放、宇宙自有安排、注意工作与生活平衡、可能会有新的机会。"
 
 【输出格式】严格JSON，不要markdown代码块：
 {
@@ -1566,7 +1573,17 @@ const LLM_SYSTEM_PROMPT = `你是塔塔🔮の心灵疗愈室的首席解牌师�
 function readingDataBlocks(question, spreadName, draws) {
   const now = new Date();
   const dateStr = `${now.getFullYear()}年${now.getMonth() + 1}月${now.getDate()}日`;
-  const cardLines = draws.map((d, i) => { const kw = (d.reversed ? d.card.reversed : d.card.upright).keywords.join("、"); const acts = (typeof CARD_ACTIONS !== "undefined" && CARD_ACTIONS[d.card.name]) ? CARD_ACTIONS[d.card.name].slice(0, 4).join("、") : ""; return `${i + 1}. ${d.pos.n}位置：${d.card.name}${d.reversed ? "（逆位）" : ""}——关键词：${kw}${acts ? `\n   行动词参考：${acts}` : ""}`; }).join("\n");
+  const cardLines = draws.map((d, i) => {
+    const o = d.reversed ? d.card.reversed : d.card.upright;
+    const kw = (o.keywords || []).join("、");
+    const acts = (typeof CARD_ACTIONS !== "undefined" && CARD_ACTIONS[d.card.name]) ? CARD_ACTIONS[d.card.name].slice(0, 4).join("、") : "";
+    const scene = (d.card.symbolism || "").replace(/【[^】]*】/g, "").replace(/\s+/g, " ").trim().slice(0, 90);
+    return `${i + 1}. ${d.pos.n}位置：${d.card.name}${d.reversed ? "（逆位）" : ""}` +
+      (o.meaning ? `\n   牌义：${o.meaning}` : "") +
+      (scene ? `\n   画面：${scene}` : "") +
+      (kw ? `\n   关键词：${kw}` : "") +
+      (acts ? `\n   行动词参考：${acts}` : "");
+  }).join("\n");
   let rel = "";
   try {
     if (typeof analyzeRelations === "function" && draws.length > 1) rel = relationsPromptLine(analyzeRelations(draws, typeof COMBOS !== "undefined" ? COMBOS : null));
@@ -2171,6 +2188,8 @@ function energyWord() {
 }
 function synthesize() {
   const ds = state.draws, q = state.question;
+  const qCore = (q || "").replace(/\s+/g, " ").trim().replace(/[？?。.!！]+$/g, "");
+  const qShort = qCore.length > 30 ? qCore.slice(0, 30) + "…" : qCore;
   const majors = ds.filter(d => d.card.group === "major");
   const revs = ds.filter(d => d.reversed);
   const suitCount = { "权杖": 0, "圣杯": 0, "宝剑": 0, "星币": 0 };
@@ -2217,12 +2236,13 @@ function synthesize() {
   const startText = composeReading(start, state.domain).face.replace(/^这张牌是[^：:]*：/, "");
   return {
     overview: [majorLine, suitLine, revLine].filter(Boolean).join(" "),
-    relation: comboLine || (ds.length > 1 ? "牌与牌之间在互相呼应：把它们当成一场对话来读，而不是一堆孤立的答案。" : ""),
-    start: startText,
+    relation: comboLine,
+    start: (qShort ? "回到你问的「" + qShort + "」——" : "") + startText,
     tension: tensionCard ? `「${tensionCard.card.name}${tensionCard.reversed ? "·逆" : ""}」${tensionCard.pos.n === "核心" ? "落在核心" : "在" + tensionCard.pos.n + "的位置"}，是这次牌阵的张力所在——${(tensionCard.reversed ? tensionCard.card.reversed : tensionCard.card.upright).keywords.slice(0, 2).join("与")}，正是你需要正视的地方。` : "",
     turn: turnCard ? `转机藏在「${turnCard.card.name}${turnCard.reversed ? "·逆" : ""}」里：${(turnCard.reversed ? turnCard.card.reversed : turnCard.card.upright).meaning}` : "",
     exit: `${exitBase.advice} 把它安放在${anchor}，先做起来，再看反馈。`,
-    echo
+    echo,
+    q: qShort
   };
 }
 const SAFETY_RE = /自杀|轻生|自残|不想活|活不下去|结束生命|想死|了结自己/;
@@ -3385,6 +3405,7 @@ function renderSynthesisRule() {
   const synEl = $("#synthesis");
   synEl.innerHTML = `
     <h3>综 合 解 读</h3>
+    ${syn.q ? `<div class="syn-block q-echo"><div class="sb-label">回 应 你 的 问 题</div><p>你问的是「${escHtml(syn.q)}」。牌不替${DOMAIN_NAME[state.domain]}给"是/否"，但它把这件事此刻真正在动的东西摆到你面前——</p></div>` : ""}
     ${cutLine()}
     <div class="syn-block"><div class="sb-label">能 量 概 览</div><p>${syn.overview}</p></div>
     ${syn.relation ? `<div class="syn-block"><div class="sb-label">牌 与 牌 之 间</div><p>${syn.relation}</p></div>` : ""}
