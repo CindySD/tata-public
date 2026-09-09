@@ -2074,7 +2074,9 @@ function buildDraws() {
     const dayKey = `daily|${t.getFullYear()}-${t.getMonth() + 1}-${t.getDate()}`;
     const ds = hashStr(dayKey);
     state.dailyCard = deck[ds % deck.length];
-    state.dailyReversed = ((ds >>> 8) % 100) < REVERSED_CHANCE;
+    /* BUG-1 修复：(ds>>>8)%100 是 0~99 整数，不能直接和 0.34 小数比较（此前仅 0 命中，逆位率≈1%，
+       与非 daily 路径 rng()<REVERSED_CHANCE 的 34% 相差约 34 倍）。按整数百分比阈值对齐量纲。 */
+    state.dailyReversed = ((ds >>> 8) % 100) < Math.round(REVERSED_CHANCE * 100);
     /* 修复：标记徽章必须落在用户给的那个数字对应的牌面上（任选揭开的内容仍是同频今日之牌） */
     const dIdx = (Math.min(Math.max(state.numbers[0] || 1, 1), 78) - 1) % deck.length;
     state.markedCards = [{ card: deck[dIdx], idx: dIdx, order: 0 }];
