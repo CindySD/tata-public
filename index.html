@@ -2376,7 +2376,7 @@ refreshChips();
 refreshNumHint();
 reasonEl.textContent = "";
 
-$("#btn-start").addEventListener("click", () => { state.dailyMode = false; go("serene"); });
+$("#btn-start").addEventListener("click", () => { state.dailyMode = false; state.spreadManual = false; go("serene"); });
 $("#btn-serene-next").addEventListener("click", () => { go("ask"); qEl.focus(); });
 $("#btn-serene-back").addEventListener("click", () => go("cover"));
 $("#btn-care-back").addEventListener("click", () => go("ask"));
@@ -3870,6 +3870,7 @@ function computeTrend(h) {
     if (r.sp) t.spread[r.sp] = (t.spread[r.sp] || 0) + 1;
     if (r.mood) t.mood[r.mood] = (t.mood[r.mood] || 0) + 1;
     r.d.forEach(x => {
+      if (!x || x.id === undefined) return; /* 脏/导入历史里的空元素守卫 */
       const c = cardById[x.id]; if (!c) return;
       t.draws++; if (x.r) t.rev++;
       t.card[c.name] = (t.card[c.name] || 0) + 1;
