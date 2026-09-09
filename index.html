@@ -118,16 +118,21 @@ textarea{min-height:96px}
 .num-wrap{flex:0 0 150px}
 .num-input{height:52px;text-align:center;font-family:var(--serif);font-size:20px;letter-spacing:.1em}
 .ask-hint{margin-top:12px;font-size:13px;color:var(--ink-faint);letter-spacing:.05em}
-/* 牌阵 chips */
-.spread-chips{display:flex;flex-wrap:wrap;gap:10px;margin-top:4px}
+/* 牌阵 chips：网格化，便于横向对比 */
+.spread-chips{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:6px}
 .chip{
-  font-size:13px;letter-spacing:.14em;color:var(--ink-dim);padding:8px 16px;border-radius:999px;
-  border:1px solid var(--panel-line);cursor:pointer;transition:all .3s;background:transparent;font-family:var(--sans);
+  position:relative;text-align:left;font-size:13px;letter-spacing:.1em;color:var(--ink-dim);padding:11px 14px;border-radius:14px;
+  border:1px solid var(--panel-line);cursor:pointer;transition:all .3s;background:rgba(255,255,255,.015);font-family:var(--sans);line-height:1.35;
 }
+.chip-top{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.chip-n{font-style:normal;font-size:10px;color:var(--ink-faint);letter-spacing:.04em;flex:0 0 auto}
+.chip-rec{display:none;position:absolute;top:-8px;right:8px;font-style:normal;font-size:10px;color:#0b0917;background:var(--gold);border-radius:20px;padding:1px 8px;letter-spacing:.06em;font-weight:600}
+.chip.rec .chip-rec{display:inline-block}
 .chip:hover{border-color:var(--gold-dim);color:var(--gold-hi)}
-.chip.on{border-color:var(--gold);color:var(--gold-hi);background:rgba(201,168,106,.1)}
-.chip small{display:block;font-size:11px;color:var(--ink-faint);letter-spacing:.05em;margin-top:2px}
+.chip.on{border-color:var(--gold);color:var(--gold-hi);background:rgba(201,168,106,.12);box-shadow:inset 0 0 0 1px var(--gold)}
+.chip small{display:block;font-size:11px;color:var(--ink-faint);letter-spacing:.04em;margin-top:3px}
 .chip.on small{color:rgba(238,224,178,.75)}
+@media(min-width:560px){.spread-chips{grid-template-columns:repeat(3,1fr)}}
 .spread-reason{margin-top:16px;font-size:13px;color:var(--gold);letter-spacing:.08em;min-height:22px;font-family:var(--serif)}
 .ask-submit{margin-top:32px;text-align:center}
 .ask-err{color:#d98f7a;font-size:13px;text-align:center;min-height:20px;margin-top:10px;letter-spacing:.06em}
@@ -221,6 +226,11 @@ textarea{min-height:96px}
 .mini-revealed .tcard .back::before{inset:4px}
 .mini-revealed .tcard .back .sigil{font-size:14px}
 .mini-revealed .pos-name{font-size:11px;color:var(--ink-dim);letter-spacing:.1em;margin-top:8px;text-align:center}
+.mini-revealed .pos-name .mini-cn{display:block;color:var(--gold);font-size:11px;letter-spacing:.08em;margin-top:2px}
+.reveal-cap{position:absolute;left:50%;bottom:-6px;transform:translateX(-50%);z-index:14;pointer-events:none;
+  white-space:nowrap;font-size:13px;letter-spacing:.08em;color:var(--gold-hi);text-shadow:0 1px 8px #000,0 0 2px #000;
+  opacity:0;animation:revealCap .7s ease .15s forwards}
+@keyframes revealCap{to{opacity:1;bottom:4px}}
 
 /* 凝神聚气按钮（叠加在 arena 底部，跟牌桌一起在视野内） */
 .hold-wrap{position:absolute;left:50%;bottom:6px;transform:translateX(-50%);z-index:15;
@@ -254,6 +264,15 @@ textarea{min-height:96px}
 /* ---------- S3 解读 ---------- */
 #stage-reading{padding-top:7vh}
 .reading-head{text-align:center;margin-bottom:8px}
+/* Feature B：解读页章节导航（粘性） */
+.reading-nav{position:sticky;top:0;z-index:30;display:flex;gap:8px;overflow-x:auto;padding:10px 2px;margin:6px 0 4px;
+  background:rgba(7,7,14,.82);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border-bottom:1px solid var(--panel-line);scrollbar-width:none}
+.reading-nav::-webkit-scrollbar{display:none}
+.rn-btn{flex:0 0 auto;font-size:12px;letter-spacing:.14em;color:var(--ink-faint);background:transparent;border:1px solid var(--panel-line);
+  border-radius:999px;padding:5px 14px;cursor:pointer;transition:all .25s;font-family:var(--sans);white-space:nowrap}
+.rn-btn:hover{color:var(--gold-hi);border-color:var(--gold-dim)}
+.rn-btn.on{color:#0b0917;background:var(--gold);border-color:var(--gold)}
+#reading-list,.synthesis,.timing-block,.links-block,.ending{scroll-margin-top:64px}
 .reading-q{font-family:var(--serif);font-size:16px;color:var(--ink-dim);letter-spacing:.1em;margin-top:10px;line-height:2}
 .reading-q b{color:var(--gold-hi);font-weight:600}
 .reading-meta{font-size:11.5px;color:var(--ink-faint);letter-spacing:.26em;margin-top:12px}
@@ -543,6 +562,23 @@ footer .gold{color:var(--gold)}
 .hist-sortbtn{font:inherit;font-size:12px;letter-spacing:.1em;color:var(--gold);background:transparent;border:1px solid var(--gold-dim);border-radius:999px;padding:6px 14px;cursor:pointer;transition:border-color .3s}
 .hist-sortbtn:hover{border-color:var(--gold)}
 .hist-summary{font-size:12.5px;color:var(--ink-dim);letter-spacing:.05em;line-height:1.9;border:1px solid var(--panel-line);border-radius:12px;padding:10px 14px;margin-bottom:12px;background:rgba(201,168,106,.03)}
+/* Feature D：我的牌镜（抽牌趋势） */
+.trend-panel{border:1px solid var(--gold-faint);border-radius:14px;padding:16px 16px 15px;margin:2px 0 16px;background:rgba(201,168,106,.04)}
+.tp-head{display:flex;flex-direction:column;gap:5px;margin-bottom:6px}
+.tp-title{font-family:var(--serif);letter-spacing:.22em;color:var(--gold-hi);font-size:14px}
+.tp-sub{font-size:11.5px;color:var(--ink-faint);letter-spacing:.04em}
+.tp-insight{font-family:var(--serif);font-size:12.5px;color:var(--ink-dim);line-height:1.95;margin:6px 0 12px;letter-spacing:.03em}
+.tp-bars{display:flex;flex-direction:column;gap:8px;margin:4px 0 2px}
+.tp-bar{display:flex;align-items:center;gap:10px}
+.tp-lab{flex:0 0 58px;font-size:11px;color:var(--ink-faint);letter-spacing:.06em}
+.tp-track{flex:1;height:6px;border-radius:6px;background:rgba(201,168,106,.12);overflow:hidden}
+.tp-track i{display:block;height:100%;background:linear-gradient(90deg,var(--gold-dim),var(--gold));border-radius:6px;transition:width .6s var(--ease-out)}
+.tp-num{flex:0 0 22px;text-align:right;font-size:11px;color:var(--gold-hi)}
+.tp-sec{margin-top:14px}
+.tp-cap{display:block;font-size:10.5px;letter-spacing:.24em;color:var(--gold);margin-bottom:8px}
+.tp-row{display:flex;flex-wrap:wrap;gap:8px}
+.tp-card,.tp-mood{font-size:11.5px;color:var(--ink-dim);border:1px solid var(--panel-line);border-radius:999px;padding:3px 11px;letter-spacing:.04em}
+.tp-card b,.tp-mood b{color:var(--gold-hi);font-weight:600;margin-left:5px}
 .hist-badge{display:inline-block;font-size:11px;letter-spacing:.06em;border-radius:999px;padding:1px 9px;margin-left:8px;vertical-align:1px;border:1px solid var(--panel-line);color:var(--ink-dim)}
 .hist-badge.met{color:#9ac97c;border-color:rgba(154,201,124,.4)}
 .hist-badge.part{color:#e8c46a;border-color:rgba(232,196,106,.4)}
@@ -599,7 +635,7 @@ footer .gold{color:var(--gold)}
   <section class="stage" id="stage-ask">
     <div class="kicker">提 问</div>
     <div class="ask-panel">
-      <p class="guide-words">欢迎来到塔塔🔮の心灵疗愈室。<br>请闭上眼睛，深呼吸三次，将你的问题在心中默念三遍。<br>然后，凭直觉告诉我你想的 <em>1 到 78</em> 之间的数字。</p>
+      <p class="guide-words">心，沉下来了吗？<br>把此刻<em>最想问的那件事</em>，写在下面就好。<br>不必措辞完美，牌在意的是你真正放不下的那个念头。</p>
 
       <div class="field-label">写下你的问题</div>
       <textarea id="question" maxlength="120" placeholder="例如：我和他之间还有可能吗？／我该不该接受这份新工作？／最近很迷茫，想看看方向……"></textarea>
@@ -2297,12 +2333,16 @@ const chipsBox = $("#spread-chips"), reasonEl = $("#spread-reason"), qEl = $("#q
 SPREAD_ORDER.forEach(k => {
   const b = document.createElement("button");
   b.type = "button"; b.className = "chip"; b.dataset.k = k;
-  b.innerHTML = `${SPREADS[k].name}<small>${SPREAD_HINT[k]}</small>`;
+  b.innerHTML = `<span class="chip-top">${SPREADS[k].name}<i class="chip-n">${SPREADS[k].positions.length} 张</i></span><small>${SPREAD_HINT[k]}</small><i class="chip-rec">✦ 推荐</i>`;
   b.addEventListener("click", () => { state.spreadManual = true; state.dailyMode = false; /* 手动换阵即退出每日一牌模式，防止 dailyCard 劫持多张阵的翻牌 */ state.spreadKey = k; refreshChips(); reasonEl.textContent = "好，就用「" + SPREADS[k].name + "」。" + SPREADS[k].reason; refreshNumHint(); });
   chipsBox.appendChild(b);
 });
 function refreshChips() {
-  chipsBox.querySelectorAll(".chip").forEach(c => c.classList.toggle("on", c.dataset.k === state.spreadKey));
+  const rec = state.spreadManual ? null : pickSpread(qEl.value);
+  chipsBox.querySelectorAll(".chip").forEach(c => {
+    c.classList.toggle("on", c.dataset.k === state.spreadKey);
+    c.classList.toggle("rec", !!rec && c.dataset.k === rec);
+  });
 }
 qEl.addEventListener("input", () => {
   if (state.spreadManual) return;
@@ -2849,6 +2889,10 @@ function revealChosen(card, reversed) {
     setTimeout(() => {
       if (gen !== ritualGen) { el.remove(); ritualBusy = false; return; }
       el.classList.add("flipped");
+      const cap = document.createElement("div");
+      cap.className = "reveal-cap";
+      cap.textContent = card.name + (reversed ? " · 逆" : "");
+      el.appendChild(cap); /* 子节点，随 el 一起 remove，无需单独清理 */
       setTimeout(() => {
         if (gen !== ritualGen) { el.remove(); ritualBusy = false; return; }
         /* 落入已翻开行 */
@@ -2858,7 +2902,7 @@ function revealChosen(card, reversed) {
         mcard.classList.add("flipped");
         const pn = document.createElement("div");
         pn.className = "pos-name";
-        pn.textContent = pos.n + (reversed ? " · 逆" : "");
+        pn.innerHTML = `${pos.n}${reversed ? " · 逆" : ""}<span class="mini-cn">${card.name}</span>`;
         mini.appendChild(mcard); mini.appendChild(pn);
         revealedRow.appendChild(mini);
         el.style.opacity = "0";
@@ -2894,13 +2938,15 @@ function revealChosen(card, reversed) {
 /* ---------- S3 解读 ---------- */
 let __restoreMode = false;
 let aiGen = 0; /* R1：主 AI 流代际令牌——旧轮流式回调校验 gen 后才允许写 DOM，防止迟到帧污染新一轮解读页 */
+let readingNavScroll = null; /* Feature B：解读页章节导航的滚动监听句柄，重渲染前移除避免重复绑定 */
 async function renderReading() {
   const wasRestore = __restoreMode;
   if (!__restoreMode) saveHistory();
   __restoreMode = false;
   const spread = SPREADS[state.spreadKey];
   /* 新一轮解读开始：无条件清除上一轮可能残留的直觉横幅、AI 失败提示与追问轮（均为解读容器的兄弟节点） */
-  document.querySelectorAll(".conclusion-banner,.ai-fail-notice,.followup-round").forEach(b => b.remove());
+  document.querySelectorAll(".conclusion-banner,.ai-fail-notice,.followup-round,.reading-nav").forEach(b => b.remove());
+  if (readingNavScroll) { window.removeEventListener("scroll", readingNavScroll); readingNavScroll = null; }
   state.shareSnapshot = null; /* 分享卡/历史能量词的跨轮残留防护 */
   fuGen++; /* 作废进行中的追问请求，防止旧轮结果迟到覆盖新解读 */
   aiGen++; /* R1：作废上一轮主 AI 流的迟到 onPart/权威渲染 */
@@ -2908,10 +2954,10 @@ async function renderReading() {
   $("#reading-q").innerHTML = `你问：「<b>${escapeHtml(state.question)}</b>」`;
   const h = new Date().getHours();
   const daypart = h >= 6 && h < 12 ? "晨光初启的时分" : h < 18 ? "日光渐沉的时分" : "夜色渐深的时分";
-  $("#reading-meta").innerHTML = `直觉数字 ${state.number} · ${daypart} · 回响码 <button class="echo-code" id="echo-code" type="button" title="本次占卜的唯一印记：由加密随机源与你的问题、数字共同生成。点击复制完整码——同一码+同一问题+同一组数字，牌局可完整重现">${seedHex()}</button>` + (state.cutCard ? ` · <button class="meta-cut" id="meta-cut" type="button" title="点开看这张心态牌的牌义">切牌：${state.cutCard.name}（${state.cutCard.upright.keywords[0]}）</button>` : "");
+  $("#reading-meta").innerHTML = `直觉数字 ${state.number} · ${daypart} · 印记 <button class="echo-code" id="echo-code" type="button" title="这次占卜的唯一印记，点一下即可复制。凭同一个印记 + 同样的问题 + 同一组数字，可以把这副牌原样重现。">${seedHex()}</button>` + (state.cutCard ? ` · <button class="meta-cut" id="meta-cut" type="button" title="点开看这张心态牌的牌义">切牌：${state.cutCard.name}（${state.cutCard.upright.keywords[0]}）</button>` : "");
   $("#meta-cut")?.addEventListener("click", openCutDeep);
   $("#echo-code")?.addEventListener("click", () => {
-    copyToClipboard(`塔塔🔮 占卜回响码：${seedHex()}（${fmtTime(Date.now())} · ${SPREADS[state.spreadKey].name}）`, () => {
+    copyToClipboard(`塔塔🔮 占卜印记：${seedHex()}（${fmtTime(Date.now())} · ${SPREADS[state.spreadKey].name}）`, () => {
       const b = $("#echo-code"); if (!b) return; b.classList.add("copied"); setTimeout(() => b.classList.remove("copied"), 1500);
     });
   });
@@ -3139,7 +3185,44 @@ async function renderReading() {
   renderLinks();
   renderTiming();
   renderReflectBlock(wasRestore);
+  renderReadingNav(); /* Feature B：子块渲染完成后再生成章节导航，能探测到实际存在的锚点 */
   setTimeout(() => document.getElementById("reading-spread-name")?.scrollIntoView({ block: "start" }), 60);
+}
+
+/* ---------- Feature B：解读页章节锚点导航（粘性条 + 当前高亮 + 平滑跳转） ---------- */
+function renderReadingNav() {
+  const head = document.querySelector("#stage-reading .reading-head");
+  if (!head) return;
+  const cand = [
+    ["牌面", "#reading-list"],
+    ["应期", "#stage-reading .timing-block"],
+    ["联动", "#stage-reading .links-block"],
+    ["综合", "#synthesis"],
+    ["复盘", "#synthesis .reflect-block"],
+    ["操作", "#stage-reading .ending"]
+  ];
+  const secs = cand
+    .map(([label, sel]) => ({ label, el: document.querySelector(sel) }))
+    .filter(s => s.el);
+  if (secs.length < 2) return;
+  const pos = s => s.el.getBoundingClientRect().top + window.pageYOffset;
+  secs.sort((a, b) => pos(a) - pos(b));
+  const nav = document.createElement("nav");
+  nav.className = "reading-nav";
+  nav.setAttribute("aria-label", "解读章节导航");
+  nav.innerHTML = secs.map(s => `<button type="button" class="rn-btn" data-i="${s.label}">${s.label}</button>`).join("");
+  head.insertAdjacentElement("afterend", nav);
+  const btns = [].slice.call(nav.querySelectorAll(".rn-btn"));
+  btns.forEach((b, i) => b.addEventListener("click", () => secs[i].el.scrollIntoView({ behavior: "smooth", block: "start" })));
+  const setActive = () => {
+    const y = window.pageYOffset + 150;
+    let cur = 0;
+    for (let i = 0; i < secs.length; i++) if (pos(secs[i]) <= y) cur = i;
+    btns.forEach((b, i) => b.classList.toggle("on", i === cur));
+  };
+  readingNavScroll = setActive;
+  window.addEventListener("scroll", setActive, { passive: true });
+  setActive();
 }
 
 /* ---------- Bunning 配对：牌阵联动（对冲/共振） ---------- */
@@ -3482,7 +3565,7 @@ function buildReadingPrompt() {
   const spread = SPREADS[state.spreadKey];
   return readingDataBlocks(state.question, spread.name, state.draws)
     + "\n\n【解读任务】你是一位反思式塔罗解读顾问（精神分析素养；职业操守：不预测注定、不替第三方下心理结论、不做医疗/法律/投资建议）。请用中文按此结构输出：①结论先行（一句话）②逐张解读＝牌义×该牌位职能×问题语境（同牌异位结论允许不同）③牌阵联动：优先引用上面系统预计算的牌间关系与来源编号展开理由 ④综合判断：说明这是照目前状况不加改变的推演、并非注定 ⑤3-5 条可验证的行动建议（相对时间+具体动作，拒绝万能废话）⑥结尾一句关怀提醒。避免「你一定会/注定/牌面显示你会」这类断言措辞。"
-    + `\n（牌局回响码：${seedHex()} · 出自 塔塔🔮の心灵疗愈室 cindysd.github.io/tata-public）`;
+    + `\n（牌局印记：${seedHex()} · 出自 塔塔🔮の心灵疗愈室 cindysd.github.io/tata-public）`;
 }
 $("#btn-prompt")?.addEventListener("click", () => {
   if (!state.draws.length) return;
@@ -3779,6 +3862,51 @@ function fmtTime(ts) {
   const dt = new Date(ts), p = x => String(x).padStart(2, "0");
   return `${dt.getFullYear()}-${p(dt.getMonth() + 1)}-${p(dt.getDate())} ${p(dt.getHours())}:${p(dt.getMinutes())}`;
 }
+/* ---------- Feature D：抽牌趋势「我的牌镜」——纯从现有历史派生，不新增存储、不动上限 ---------- */
+function computeTrend(h) {
+  const t = { n: h.length, draws: 0, rev: 0, suit: {}, mood: {}, spread: {}, card: {} };
+  h.forEach(r => {
+    if (!r || !Array.isArray(r.d)) return;
+    if (r.sp) t.spread[r.sp] = (t.spread[r.sp] || 0) + 1;
+    if (r.mood) t.mood[r.mood] = (t.mood[r.mood] || 0) + 1;
+    r.d.forEach(x => {
+      const c = cardById[x.id]; if (!c) return;
+      t.draws++; if (x.r) t.rev++;
+      t.card[c.name] = (t.card[c.name] || 0) + 1;
+      const s = c.suitName || c.suit || "其他";
+      t.suit[s] = (t.suit[s] || 0) + 1;
+    });
+  });
+  t.top = Object.entries(t.card).sort((a, b) => b[1] - a[1]).slice(0, 5);
+  return t;
+}
+const TREND_SUIT_ORDER = ["大阿卡纳", "权杖", "圣杯", "宝剑", "星币"];
+const TREND_SUIT_INSIGHT = {
+  "大阿卡纳": "命运级的课题正在你生命里翻页——牌反复引用那些非个人、却必须直面的原型剧本。",
+  "权杖": "火元素偏多：你此刻的行动力与欲望都很旺，缺的往往不是能量，而是方向与耐心。",
+  "圣杯": "水元素偏多：情感与关系正处在敏感期，感受走在判断前面，也容易被感受淹没。",
+  "宝剑": "风元素偏多：头脑很活跃，思辨、焦虑与真相并存，小心别用分析替代了体验。",
+  "星币": "土元素偏多：议题落在现实、身体与资源上，答案常常需要一个具体可行的动作。"
+};
+function trendPanel(t) {
+  if (!t.draws) return "";
+  const suits = TREND_SUIT_ORDER.filter(s => t.suit[s]).map(s => ({ s, c: t.suit[s] }));
+  const mx = suits.reduce((m, x) => Math.max(m, x.c), 0) || 1;
+  const bars = suits.map(x => `<div class="tp-bar"><span class="tp-lab">${x.s}</span><span class="tp-track"><i style="width:${Math.round(x.c / mx * 100)}%"></i></span><span class="tp-num">${x.c}</span></div>`).join("");
+  const topSuit = suits.slice().sort((a, b) => b.c - a.c)[0];
+  const revPct = Math.round(t.rev / t.draws * 100);
+  const topCards = t.top.map(([n, c]) => `<span class="tp-card">${n}<b>×${c}</b></span>`).join("");
+  const moods = REFLECT_MOODS.filter(m => t.mood[m]).map(m => `<span class="tp-mood">${m}<b>${t.mood[m]}</b></span>`).join("");
+  const sp = Object.entries(t.spread).sort((a, b) => b[1] - a[1])[0];
+  const spName = sp && SPREADS[sp[0]] ? SPREADS[sp[0]].name : "";
+  return `<div class="trend-panel" role="region" aria-label="抽牌趋势">
+    <div class="tp-head"><span class="tp-title">🪞 我 的 牌 镜</span><span class="tp-sub">最近 ${t.n} 次 · 共翻开 ${t.draws} 张 · 逆位 ${revPct}%${spName ? ` · 最常用「${spName}」` : ""}</span></div>
+    ${topSuit ? `<p class="tp-insight">${TREND_SUIT_INSIGHT[topSuit.s] || ""}</p>` : ""}
+    ${bars ? `<div class="tp-bars">${bars}</div>` : ""}
+    ${topCards ? `<div class="tp-sec"><span class="tp-cap">最 常 相 见</span><div class="tp-row">${topCards}</div></div>` : ""}
+    ${moods ? `<div class="tp-sec"><span class="tp-cap">情 绪 落 点</span><div class="tp-row">${moods}</div></div>` : ""}
+  </div>`;
+}
 function renderHistory() {
   /* 每次进入历史页重置搜索，展示全部 */
   const si = $("#hist-search");
@@ -3798,6 +3926,7 @@ function renderHistList() {
     : "";
   /* P1-1 复盘小结 + 排序开关 */
   let headHtml = "";
+  if (!kw && h.length) headHtml += trendPanel(computeTrend(h));
   if (!kw && h.length > 1) headHtml += `<div class="hist-tools"><button class="hist-sortbtn" id="btn-hist-sort" type="button">↕ ${histSortMemory ? "按时间排序" : "按记忆强度排序"}</button></div>`;
   if (!kw) {
     const checked = h.filter(r => r && r.check);
