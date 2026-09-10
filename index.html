@@ -3270,7 +3270,7 @@ async function renderReading() {
   renderTiming();
   renderReflectBlock(wasRestore);
   renderReadingNav(); /* Feature B：子块渲染完成后再生成章节导航，能探测到实际存在的锚点 */
-  if (state.dailyMode) renderDailyFortune(); /* 今日一牌专属：多面运势卡 */
+  if (state.dailyMode || spread.positions.length === 1) renderDailyFortune(); /* 今日一牌 & 普通单牌阵：多面运势卡 */
   setTimeout(() => document.getElementById("reading-spread-name")?.scrollIntoView({ block: "start" }), 60);
 }
 
@@ -3453,7 +3453,7 @@ function renderTiming() {
     <p class="tb-note">应期出自传统时间对应法，仅按牌面推演大致区间——时机终究操之在己，不是注定。</p>`;
   synEl.parentNode.insertBefore(block, synEl.nextSibling);
 }
-/* ---------- 今日一牌·今日运势卡（多面分项 + 派生幸运元素；仅 dailyMode 渲染，无星级/无健康断言） ---------- */
+/* ---------- 今日一牌·今日运势卡（多面分项 + 派生幸运；DOM 与分享图共用 fortuneModel，无重复逻辑，无星级/无健康断言） ---------- */
 const FORTUNE_SUIT = {
   "权杖": { colors: ["红色", "橙色"], dir: "南方", el: "火" },
   "圣杯": { colors: ["蓝色", "青色"], dir: "北方", el: "水" },
@@ -3461,31 +3461,42 @@ const FORTUNE_SUIT = {
   "星币": { colors: ["绿色", "大地棕"], dir: "西方", el: "土" },
   "大阿卡纳": { colors: ["金色", "紫色"], dir: "随你所在", el: "命轮" }
 };
+function fortuneModel(card, reversed) {
+  const o = reversed ? card.reversed : card.upright;
+  const suit = FORTUNE_SUIT[card.suitName] || FORTUNE_SUIT["大阿卡纳"];
+  return {
+    name: card.name, reversed: !!reversed,
+    energy: (typeof energyWord === "function" ? energyWord() : ""),
+    keywords: (o.keywords || []).slice(0, 4),
+    suitName: card.suitName || "大阿卡纳",
+    facets: [["💗", "爱情", o.love], ["💼", "事业·学业", o.career], ["💰", "财运", o.finance], ["🤝", "人际", o.relationship]]
+      .filter(x => x[2]).map(x => ({ i: x[0], k: x[1], v: x[2] })),
+    advice: o.advice || "",
+    timing: (typeof timingFor === "function" ? (timingFor(card.name) || "") : ""),
+    colors: suit.colors.join("·"), dir: suit.dir,
+    luckyNum: ((hashStr(card.id || card.name) >>> 4) % 9) + 1   /* 本命吉数：由这张牌本身决定，稳定可复现 */
+  };
+}
 function renderDailyFortune() {
   const d = state.draws[state.draws.length - 1] || state.draws[0];
   if (!d || !d.card) return;
   const head = document.querySelector("#stage-reading .reading-head");
   if (!head) return;
-  const c = d.card, rev = d.reversed, o = rev ? c.reversed : c.upright;
-  const suit = FORTUNE_SUIT[c.suitName] || FORTUNE_SUIT["大阿卡纳"];
-  const facets = [["💗 爱情", o.love], ["💼 事业·学业", o.career], ["💰 财运", o.finance], ["🤝 人际", o.relationship]].filter(x => x[1]);
-  const kw = (o.keywords || []).slice(0, 4);
-  const tmr = (typeof timingFor === "function" ? timingFor(c.name) : null);
-  const luckyNum = ((hashStr(c.id || c.name) >>> 4) % 9) + 1;   /* 本命吉数：由这张牌本身决定，稳定可复现 */
+  const m = fortuneModel(d.card, d.reversed);
   const box = document.createElement("div");
   box.className = "daily-fortune"; box.id = "daily-fortune";
   box.innerHTML = `
     <div class="df-head">
       <div class="df-title">✦ 今 日 运 势</div>
-      <div class="df-theme">今日为你翻到 <b>「${escHtml(c.name)}${rev ? "（逆位）" : ""}」</b><span class="df-energy">${escHtml(energyWord())}</span>${rev ? '<span class="df-revtag">能量内收</span>' : ""}</div>
-      ${kw.length ? `<div class="df-kws">${kw.map(k => `<span class="df-kw">${escHtml(k)}</span>`).join("")}</div>` : ""}
+      <div class="df-theme">今日为你翻到 <b>「${escHtml(m.name)}${m.reversed ? "（逆位）" : ""}」</b><span class="df-energy">${escHtml(m.energy)}</span>${m.reversed ? '<span class="df-revtag">能量内收</span>' : ""}</div>
+      ${m.keywords.length ? `<div class="df-kws">${m.keywords.map(k => `<span class="df-kw">${escHtml(k)}</span>`).join("")}</div>` : ""}
     </div>
-    <div class="df-grid">${facets.map(x => `<div class="df-item"><div class="df-k">${x[0]}</div><p>${escHtml(x[1])}</p></div>`).join("")}</div>
-    ${rev ? `<div class="df-revnote">逆位不是"坏"——它提示「${escHtml(c.name)}」这股能量更多在内在或被卡住，今天先向内看，别只向外求。</div>` : ""}
-    ${o.advice ? `<div class="df-row"><span class="df-k">🧭 今日指引</span><p>${escHtml(o.advice)}</p></div>` : ""}
-    ${tmr ? `<div class="df-row"><span class="df-k">⏳ 有利节奏</span><p>${escHtml(tmr)}</p></div>` : ""}
-    <div class="df-lucky"><span>🎨 幸运色 ${escHtml(suit.colors.join("·"))}</span><span>🔢 本命吉数 ${luckyNum}</span><span>🧭 参考方位 ${escHtml(suit.dir)}</span></div>
-    <p class="df-src">↑ 以上分项、吉数与方位，都由你抽到的这张 <b>${escHtml(c.suitName || "大阿卡纳")}</b> 牌推得。</p>
+    <div class="df-grid">${m.facets.map(x => `<div class="df-item"><div class="df-k">${x.i} ${x.k}</div><p>${escHtml(x.v)}</p></div>`).join("")}</div>
+    ${m.reversed ? `<div class="df-revnote">逆位不是"坏"——它提示「${escHtml(m.name)}」这股能量更多在内在或被卡住，今天先向内看，别只向外求。</div>` : ""}
+    ${m.advice ? `<div class="df-row"><span class="df-k">🧭 今日指引</span><p>${escHtml(m.advice)}</p></div>` : ""}
+    ${m.timing ? `<div class="df-row"><span class="df-k">⏳ 有利节奏</span><p>${escHtml(m.timing)}</p></div>` : ""}
+    <div class="df-lucky"><span>🎨 幸运色 ${escHtml(m.colors)}</span><span>🔢 本命吉数 ${m.luckyNum}</span><span>🧭 参考方位 ${escHtml(m.dir)}</span></div>
+    <p class="df-src">↑ 以上分项、吉数与方位，都由你抽到的这张 <b>${escHtml(m.suitName)}</b> 牌推得。</p>
     <p class="df-note">牌是镜子，不是判决书——这是你此刻能量的一种读法，选择权始终在你手里。</p>`;
   head.insertAdjacentElement("afterend", box);
 }
@@ -3764,6 +3775,9 @@ async function buildShareCard() {
   const rowPitch = imgH + 96;
   const cardBot = 520 + (rows - 1) * rowPitch + imgH + 44;
   SHARE_H = Math.max(1440, cardBot + (hasRead ? 840 : 460));
+  const showFortune = (state.dailyMode || n === 1) && state.draws[0] && state.draws[0].card;
+  const fM = showFortune ? fortuneModel(state.draws[0].card, state.draws[0].reversed) : null;
+  if (fM) SHARE_H += 560 + fM.facets.length * 150 + (fM.advice ? 150 : 0) + (fM.timing ? 160 : 0);
   const cv = document.createElement("canvas");
   cv.width = SHARE_W; cv.height = SHARE_H;
   const ctx = cv.getContext("2d");
@@ -3851,6 +3865,25 @@ async function buildShareCard() {
       ctx.fillStyle = "#b3a992"; ctx.font = `25px ${SANS}`;
       wrapText(ctx, judg, CX, yy, 780, 38, 3);
     }
+  }
+  if (fM) {
+    let fy = cardBot + (hasRead ? 840 : 460) + 40;
+    ctx.textAlign = "center";
+    ctx.strokeStyle = "rgba(201,168,106,.25)"; ctx.beginPath(); ctx.moveTo(150, fy); ctx.lineTo(SHARE_W - 150, fy); ctx.stroke(); fy += 70;
+    ctx.fillStyle = "#c9a86a"; ctx.font = `600 32px ${SANS}`; ctx.fillText("✦ 今 日 运 势", CX, fy); fy += 52;
+    ctx.fillStyle = "#e8e2d4"; ctx.font = `28px ${SANS}`; ctx.fillText("今日为你翻到「" + fM.name + (fM.reversed ? "（逆位）" : "") + "」", CX, fy); fy += 46;
+    ctx.fillStyle = "#8f8877"; ctx.font = `24px ${SANS}`; ctx.fillText("能量关键词：" + (fM.energy ? fM.energy + " ｜ " : "") + fM.keywords.join(" · "), CX, fy); fy += 58;
+    ctx.textAlign = "left"; const fLX = 150, fLW = SHARE_W - 300;
+    fM.facets.forEach(x => {
+      ctx.fillStyle = "#c9a86a"; ctx.font = `600 27px ${SANS}`; ctx.fillText(x.i + " " + x.k, fLX, fy);
+      ctx.fillStyle = "#d8d2c2"; ctx.font = `25px ${SANS}`; fy += 40;
+      fy += 36 * wrapText(ctx, x.v, fLX, fy, fLW, 36, 2) + 26;
+    });
+    ctx.textAlign = "center";
+    if (fM.advice) { ctx.fillStyle = "#c9a86a"; ctx.font = `600 27px ${SANS}`; ctx.fillText("🧭 今日指引", CX, fy); ctx.fillStyle = "#e8e2d4"; ctx.font = `26px ${SANS}`; fy += 42; fy += 40 * wrapText(ctx, fM.advice, CX, fy, SHARE_W - 240, 40, 2) + 22; }
+    if (fM.timing) { ctx.fillStyle = "#c9a86a"; ctx.font = `600 27px ${SANS}`; ctx.fillText("⏳ 有利节奏", CX, fy); ctx.fillStyle = "#b3a992"; ctx.font = `25px ${SANS}`; fy += 40; fy += 38 * wrapText(ctx, fM.timing, CX, fy, SHARE_W - 240, 38, 2) + 20; }
+    ctx.fillStyle = "#c9a86a"; ctx.font = `600 26px ${SANS}`; ctx.fillText("🎨 " + fM.colors + "    🔢 本命吉数 " + fM.luckyNum + "    🧭 " + fM.dir, CX, fy); fy += 40;
+    ctx.fillStyle = "#847c6a"; ctx.font = `22px ${SANS}`; ctx.fillText("以上由你抽到的「" + fM.suitName + "」牌推得 · 牌是镜子，不是判决书", CX, fy);
   }
   /* 能量之词（与解读页显示同源：AI 能量词优先，规则版兜底） */
   ctx.fillStyle = "#c9a86a"; ctx.font = `600 72px ${SERIF}`;
