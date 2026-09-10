@@ -3808,17 +3808,26 @@ $("#btn-card").addEventListener("click", async () => {
   b.disabled = true; b.textContent = "绘制中……";
   try {
     const cv = await buildShareCard();
-    const blob = await new Promise((res, rej) => { try { cv.toBlob(bb => bb ? res(bb) : rej(new Error("导出失败")), "image/png"); } catch (e) { rej(e); } });
-    const url = URL.createObjectURL(blob);
-    const canSysShare = !!(navigator.canShare && window.File && navigator.share);
+    const blob = await new Promise((res, rej) => {
+      if (cv.toBlob) { try { cv.toBlob(bb => bb ? res(bb) : rej(new Error("导出失败")), "image/png"); } catch (e) { rej(e); } }
+      else rej(new Error("no-blob"));
+    }).catch(() => null);
+    let url, mimeOk = true;
+    if (blob) {
+      if (window.__tataShareUrl) { try { URL.revokeObjectURL(window.__tataShareUrl); } catch (e) {} }
+      url = URL.createObjectURL(blob); window.__tataShareUrl = url;
+    } else {
+      url = cv.toDataURL("image/png"); mimeOk = false; /* 老 Safari 无 toBlob：退化为 dataURL，仍可长按保存 */
+    }
+    const canSysShare = !!(!mimeOk ? false : (navigator.canShare && window.File && navigator.share && blob));
     openInfoModal(`
       <h4>分享图已生成</h4>
-      <div style="text-align:center"><img src="${url}" alt="占卜分享卡片" style="max-width:64%;border-radius:12px;border:1px solid var(--gold-dim)"></div>
+      <div style="text-align:center"><img src="${url}" alt="占卜分享卡片" style="max-width:88%;width:520px;border-radius:12px;border:1px solid var(--gold-dim)"></div>
       <div style="display:flex;gap:14px;justify-content:center;margin-top:22px;flex-wrap:wrap">
-        <a class="btn" href="${url}" download="tata-tarot-share.png" style="text-decoration:none">保存图片</a>
+        <a class="btn" href="${url}" ${mimeOk ? 'download="tata-tarot-share.png"' : 'target="_blank" rel="noopener"'} style="text-decoration:none">保存图片</a>
         ${canSysShare ? '<button class="btn ghost" id="share-img" type="button">系统分享</button>' : ""}
       </div>
-      <p class="note" style="margin-top:14px;text-align:center">微信内请长按图片保存，或直接截图发送。</p>`);
+      <p class="note" style="margin-top:14px;text-align:center;line-height:1.9">iPhone／微信：长按上方图片 →「存储到照片」，即可在相册看到。<br>安卓／电脑：点「保存图片」存入相册，或「系统分享」发到微信/QQ。</p>`);
     if (canSysShare) $("#share-img")?.addEventListener("click", async () => {
       try {
         const file = new File([blob], "tata-tarot-share.png", { type: "image/png" });
