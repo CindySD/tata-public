@@ -1506,7 +1506,7 @@ const LLM_SYSTEM_PROMPT = `你是塔塔🔮の心灵疗愈室的首席解牌师�
 2. 每张牌三层解读：① 牌面核心含义（1句，简短）② 对应到用户具体处境的分析（2-3句，扎进去）③ 一个生活化的比喻或例子（1句，像隔壁发生的事）。psy 必须结合**该牌位的职能**下结论（"过去"位讲已成的格局、"行动"位讲可操作的事项、"结果"位讲走向条件）——同一张牌落在不同位置，结论允许不同。
 3. 问题背后的问题：每张牌的分析都要回到用户提的问题本身——这个问题背后藏着什么心理需求、恐惧或冲突。比如"要不要联系他"背后可能是放不下依恋而非真的想沟通，"该不该跳槽"背后可能是对自我价值的不确定。
 4. 心理动力学视角：用荣格原型（阴影/投射/自性化）和防御机制（理智化/否认/投射/退行）做分析框架，但说人话——不用"投射""防御机制"这些词的原话，用"你可能在用……来保护自己""你不自觉地把……"这样的大白话。
-5. 反巴纳姆：建议必须具体到相对时间+动作（如"48小时内""今晚睡前""本周找一个状态好的日子"），禁止"注意沟通""保持平衡"等万能废话。禁止绝对日期，只用相对时间。对照示例：❌"宇宙会指引你""你会遇到重要的人"（被动/断言）→ ✅"设两周决策期限，先写下三条选择标准""约他谈一次，只谈事实不翻旧账"（可验证、主动权在人）。
+5. 反巴纳姆：建议必须具体到相对时间+动作（如"48小时内""今晚睡前""本周找一个状态好的日子"），禁止"注意沟通""保持平衡"等万能废话。禁止绝对日期，只用相对时间。**硬性格式：advice 每条 step 必须"相对时间开头＋动词短语"（例："今晚睡前，写下你最在意的两条"）；做不到就不算合格建议。** 对照示例：❌"宇宙会指引你""你会遇到重要的人"（被动/断言）→ ✅"设两周决策期限，先写下三条选择标准""约他谈一次，只谈事实不翻旧账"（可验证、主动权在人）。
 6. 牌是镜子不是水晶球：正文一律用**确定的观察句**直给（"这张牌说明你已经在……""你其实卡在……""你要的不是X，是Y"），不要每句都塞"可能/也许/或许"来躲——满篇 hedge 就是废话。**"非注定/仅供参考"这类免责全篇只在结尾 closing 说一次**，正文不重复；始终禁说"你一定会/命中注定"。
 7. 不做评分/概率——塔罗不是测量工具，不给"1-10分"或"80%概率"，用判断性语言代替伪精度。
 8. 安全边界：检测到自伤信号时暂停占卜，建议联系心理援助热线 400-161-9995。不做医疗/法律/投资建议。
@@ -1615,7 +1615,7 @@ async function callLLM(question, spreadName, draws, userContentOverride) {
     body: JSON.stringify({
       model: cfg.model || "qwen-turbo",
       messages: [{ role: "system", content: LLM_SYSTEM_PROMPT }, { role: "user", content: userContent }],
-      temperature: 0.8, max_tokens: 2600
+      temperature: 0.7, max_tokens: 2600
     })
   };
   const url = cfg.baseURL.replace(/\/$/, "") + "/chat/completions";
@@ -1754,7 +1754,7 @@ async function callLLMStream(question, spreadName, draws, onPart) {
       body: JSON.stringify({
         model: cfg.model || "qwen-turbo",
         messages: [{ role: "system", content: LLM_SYSTEM_PROMPT }, { role: "user", content: userContent }],
-        temperature: 0.8, max_tokens: 2600,
+        temperature: 0.7, max_tokens: 2600,
         stream: true
       }),
       signal: ctrl ? ctrl.signal : undefined
@@ -2966,6 +2966,36 @@ function revealChosen(card, reversed) {
 let __restoreMode = false;
 let aiGen = 0; /* R1：主 AI 流代际令牌——旧轮流式回调校验 gen 后才允许写 DOM，防止迟到帧污染新一轮解读页 */
 let readingNavScroll = null; /* Feature B：解读页章节导航的滚动监听句柄，重渲染前移除避免重复绑定 */
+/* ---------- 解读·确定性兜底润色（不指望弱模型自觉：保证至少一条"相对时间+动作"、去重复免责） ---------- */
+function polishReading(d) {
+  if (!d || typeof d !== "object") return d;
+  const TIME_RE = /(今晚|今天|明天|后天|本周|这周|周内|一周内|这个月|一个月内|\d+\s*(小时|天|周|个月|号)|死线|期限|下次|睡前|之前|周末|月底前)/;
+  const ACT_RE = /(写下|写出|列[出个]|列出|发出|发给|答复|回复|预约|约[^，。]*谈|找[^，。]*(谈|聊|说)|确认|决定|安排|准备|开始|试[一试]|去做|做[起个]|整理|复盘|问[他她它你]?|给自己|定)/;
+  const BAN_RE = /宇宙|保持平衡|保持开放|注意沟通|倾听内心|顺其自然|相信自己|一切都会?好起来?|放平心态|新的机会|调整心态|积极面对/;
+  const hasConcrete = a => a && TIME_RE.test(a) && ACT_RE.test(a);
+  /* (1) 建议兜底 */
+  if (!Array.isArray(d.advice)) d.advice = [];
+  d.advice = d.advice.filter(a => a && typeof a === "object" && (a.step || "").trim());
+  d.advice = d.advice.filter(a => !(BAN_RE.test(a.step) && !hasConcrete(a.step)));
+  if (!d.advice.some(a => hasConcrete(a.step))) {
+    const last = state.draws[state.draws.length - 1];
+    let verb = "";
+    const acts = (last && typeof CARD_ACTIONS !== "undefined" && CARD_ACTIONS[last.card.name]) || [];
+    for (const v of acts) { if (typeof v === "string" && /^[\u4e00-\u9fa5]{2,8}$/.test(v.trim())) { verb = v.trim(); break; } }
+    const anchor = ["今晚睡前", "明天中午之前", "本周之内", "48 小时之内"][((state.seed >>> 5) % 4 + 4) % 4];
+    const qText = state.question || "";
+    const KW = /(外派|跳槽|工作|事业|项目|升职|加薪|辞职|创业|复合|分手|冷战|暧昧|出轨|婚姻|感情|他|她|钱|财|投资|理财|考试|学业|考研|offer|方向|决定|决心|机会|选择|抉择|迷茫|去留|搬家|房子|健康|身体)/;
+    const km = qText.match(KW);
+    const qWord = km ? km[0] : qText.replace(/\s+/g, "").replace(/[？?。！!，,、]/g, "").slice(-6);
+    const act = verb ? "安排时间" + verb : "先把下一步写下来";
+    d.advice.unshift({
+      step: (qWord ? `${anchor}，就${qWord}：${act}。` : `${anchor}，${act}。`),
+      why: "牌给的是方向；落到一个带期限的小动作，才算真的接住它，而不是读完就忘。"
+    });
+  }
+  /* (2) 去重复免责：谨慎起见不在句中硬删（易把中文删出病句），仅保证结论不被"可能"堆砌——交由提示词与模型，此处不动 */
+  return d;
+}
 async function renderReading() {
   const wasRestore = __restoreMode;
   if (!__restoreMode) saveHistory();
@@ -3130,7 +3160,7 @@ async function renderReading() {
     });
     if (gen !== aiGen) return; /* R1：旧轮结果不得进入权威渲染 */
     if (aiResult.data) {
-      const d = aiResult.data;
+      const d = polishReading(aiResult.data);
       /* 结论先行：顶部 banner（流式阶段可能已插入，先清掉再权威渲染） */
       document.querySelectorAll(".conclusion-banner").forEach(b => b.remove());
       if (d.conclusion) {
