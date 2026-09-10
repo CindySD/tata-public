@@ -3461,6 +3461,7 @@ function openCutDeep() {
   if (!c) return;
   openInfoModal(`
     <div class="m-img"><img src="${IMG_BASE + c.image}" data-fallback="${CDN_BASE + c.image}" alt="${c.name}" referrerpolicy="no-referrer" onerror="if(!this.dataset.fb){this.dataset.fb=1;this.src=this.dataset.fallback}"></div>
+    <div style="text-align:center;font-size:11px;color:var(--ink-faint);letter-spacing:.04em;margin:-2px 0 10px">📱 长按图片可保存到相册</div>
     <h4>切牌 · ${c.name}</h4>
     <div class="m-en">${c.englishName} · 你此刻的心态底色</div>
     <div class="m-row"><div class="m-label">关 键 词</div><p>${c.upright.keywords.join(" / ")}</p></div>
@@ -3478,6 +3479,7 @@ function openDeep(i) {
   modalBody.innerHTML = `
     <button class="modal-close" type="button" aria-label="关闭">✕</button>
     <div class="m-img"><img src="${IMG_BASE + c.image}" data-fallback="${CDN_BASE + c.image}" alt="${c.name}" referrerpolicy="no-referrer" ${d.reversed ? 'style="transform:rotate(180deg)"' : ""} onerror="if(!this.dataset.fb){this.dataset.fb=1;this.src=this.dataset.fallback}"></div>
+    <div style="text-align:center;font-size:11px;color:var(--ink-faint);letter-spacing:.04em;margin:-2px 0 10px">📱 长按图片可保存到相册</div>
     <h4>${c.name}${d.reversed ? "（逆位）" : ""}</h4>
     <div class="m-en">${c.englishName} · ${c.group === "major" ? "大阿卡纳" : c.suitName}</div>
     <div class="m-row"><div class="m-label">本 位 解 读 · ${cur.keywords.join(" / ")}</div><p>${cur.meaning}</p></div>
