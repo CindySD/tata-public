@@ -1798,7 +1798,7 @@ async function callLLMStream(question, spreadName, draws, onPart) {
     /* 该 API 不支持流式：按一次性返回处理（R3：先清超时定时器，两个 return 都不得泄漏） */
     if (streamTimer) clearTimeout(streamTimer);
     try {
-      const data = await resp.json();
+      const data = await Promise.race([resp.json(), new Promise((_, rej) => setTimeout(() => rej(new Error("响应读取超时")), 15000))]);
       const text = data.choices?.[0]?.message?.content || "";
       const jsonMatch = text.match(/\{[\s\S]*\}/);
       if (!jsonMatch) return { error: "AI 返回格式异常" };
@@ -2289,6 +2289,9 @@ function go(name) {
   if (homeBtn) homeBtn.classList.toggle("show", name !== "cover");
   const fbBtn = $("#float-feedback");
   if (fbBtn) fbBtn.classList.toggle("show", name !== "cover");
+  if (name !== "reading" && typeof readingNavScroll !== "undefined" && readingNavScroll) {
+    window.removeEventListener("scroll", readingNavScroll); readingNavScroll = null;
+  }
 }
 $("#float-home").addEventListener("click", () => go("cover"));
 
@@ -3181,7 +3184,7 @@ async function renderReading() {
       resolve(result);
     });
     if (gen !== aiGen) return; /* R1：旧轮结果不得进入权威渲染 */
-    if (aiResult.data) {
+    if (aiResult && aiResult.data) {
       const d = polishReading(aiResult.data);
       /* 结论先行：顶部 banner（流式阶段可能已插入，先清掉再权威渲染） */
       document.querySelectorAll(".conclusion-banner").forEach(b => b.remove());
@@ -3259,7 +3262,7 @@ async function renderReading() {
       notice.className = "ai-fail-notice";
       notice.setAttribute("role", "status");
       notice.style.cssText = "text-align:center;padding:10px 16px;margin:12px auto;max-width:420px;font-size:12.5px;color:#d98f7a;border:1px solid rgba(217,143,122,.3);border-radius:10px;letter-spacing:.06em";
-      notice.textContent = `AI 连接失败（${aiResult.error}）· 已使用内置解读。可点 ⚙ 检查 API 设置。`;
+      notice.textContent = `AI 连接失败（${(aiResult && aiResult.error) || "未知错误"}）· 已使用内置解读。可点 ⚙ 检查 API 设置。`;
       synEl.parentNode.insertBefore(notice, synEl);
     }
   } else {
@@ -3763,10 +3766,14 @@ function wrapText(ctx, text, x, y, maxW, lineH, maxLines) {
   return lines;
 }
 async function buildShareCard() {
+  /* 快照：绘制含多次 await，期间若开新局会读到被改写的 state → 分享图混牌/报错。全程用快照。 */
+  const _draws = state.draws.slice();
+  const _q = state.question;
+  const _spreadName = (SPREADS[state.spreadKey] || {}).name || "";
   const snap = state.shareSnapshot;
   const hasRead = !!(snap && (((snap.conclusion || "").trim()) || ((snap.judgment || "").trim())));
   /* 布局预计算（移动端目检修复）：>6 牌自动双行防牌名重叠；画布高度随行数与解读区动态伸缩 */
-  const n = state.draws.length;
+  const n = _draws.length;
   const gap = 26;
   const rows = n > 6 ? 2 : 1;
   const perRow = Math.ceil(n / rows);
@@ -3812,14 +3819,14 @@ async function buildShareCard() {
   ctx.moveTo(280, 240); ctx.lineTo(SHARE_W - 280, 240); ctx.stroke();
   /* 问题 */
   ctx.fillStyle = "#e8e2d4"; ctx.font = `34px ${SANS}`;
-  wrapText(ctx, `「${state.question}」`, CX, 312, SHARE_W - 360, 52, 2);
+  wrapText(ctx, `「${_q}」`, CX, 312, SHARE_W - 360, 52, 2);
   /* 牌阵名 */
   ctx.fillStyle = "#c9a86a"; ctx.font = `26px ${SANS}`;
-  ctx.fillText(`——「${SPREADS[state.spreadKey].name}」——`, CX, 436);
+  ctx.fillText(`——「${_spreadName}」——`, CX, 436);
   /* 牌缩略图 + 牌名（>6 牌双行，行内居中） */
   const rowY = 520;
   for (let i = 0; i < n; i++) {
-    const d = state.draws[i];
+    const d = _draws[i];
     const r = Math.floor(i / perRow), c = i % perRow;
     const rowCount = r === rows - 1 ? n - r * perRow : perRow;
     const x = CX - (rowCount * size + (rowCount - 1) * gap) / 2 + c * (size + gap) + size / 2;
@@ -4173,14 +4180,15 @@ $("#btn-hist-clear").addEventListener("click", () => {
 
 /* F-005: 历史记录导出/导入（换机迁移，纯本地文件，不上传） */
 $("#btn-hist-export").addEventListener("click", () => {
+  const btn = $("#btn-hist-export"); if (btn.disabled) return; btn.disabled = true;
   const h = loadHistory();
-  if (!h.length) { alert("还没有记录可导出。"); return; }
+  if (!h.length) { alert("还没有记录可导出。"); btn.disabled = false; return; }
   const blob = new Blob([JSON.stringify({ app: "tata-tarot", version: 1, exportedAt: Date.now(), records: h }, null, 2)], { type: "application/json" });
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
   a.download = `tata-history-${new Date().toISOString().slice(0, 10)}.json`;
   a.click();
-  setTimeout(() => URL.revokeObjectURL(a.href), 3000);
+  setTimeout(() => { URL.revokeObjectURL(a.href); btn.disabled = false; }, 1200);
 });
 $("#btn-hist-import").addEventListener("click", () => $("#hist-import-file").click());
 $("#hist-import-file").addEventListener("change", (e) => {
