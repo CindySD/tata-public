@@ -3010,7 +3010,7 @@ async function renderReading() {
   __restoreMode = false;
   const spread = SPREADS[state.spreadKey];
   /* 新一轮解读开始：无条件清除上一轮可能残留的直觉横幅、AI 失败提示与追问轮（均为解读容器的兄弟节点） */
-  document.querySelectorAll(".conclusion-banner,.ai-fail-notice,.followup-round,.reading-nav").forEach(b => b.remove());
+  document.querySelectorAll(".conclusion-banner,.ai-fail-notice,.followup-round,.reading-nav,.daily-fortune").forEach(b => b.remove());
   if (readingNavScroll) { window.removeEventListener("scroll", readingNavScroll); readingNavScroll = null; }
   state.shareSnapshot = null; /* 分享卡/历史能量词的跨轮残留防护 */
   fuGen++; /* 作废进行中的追问请求，防止旧轮结果迟到覆盖新解读 */
@@ -3256,6 +3256,7 @@ async function renderReading() {
   renderTiming();
   renderReflectBlock(wasRestore);
   renderReadingNav(); /* Feature B：子块渲染完成后再生成章节导航，能探测到实际存在的锚点 */
+  if (state.dailyMode) renderDailyFortune(); /* 今日一牌专属：多面运势卡 */
   setTimeout(() => document.getElementById("reading-spread-name")?.scrollIntoView({ block: "start" }), 60);
 }
 
@@ -3437,6 +3438,35 @@ function renderTiming() {
     ${lines.join("")}
     <p class="tb-note">应期出自传统时间对应法，仅按牌面推演大致区间——时机终究操之在己，不是注定。</p>`;
   synEl.parentNode.insertBefore(block, synEl.nextSibling);
+}
+/* ---------- 今日一牌·今日运势卡（多面分项 + 派生幸运元素；仅 dailyMode 渲染，无星级/无健康断言） ---------- */
+const FORTUNE_SUIT = {
+  "权杖": { colors: ["红色", "橙色"], dir: "南方", el: "火" },
+  "圣杯": { colors: ["蓝色", "青色"], dir: "北方", el: "水" },
+  "宝剑": { colors: ["黄色", "银灰"], dir: "东方", el: "风" },
+  "星币": { colors: ["绿色", "大地棕"], dir: "西方", el: "土" },
+  "大阿卡纳": { colors: ["金色", "紫色"], dir: "随你所在", el: "命轮" }
+};
+function renderDailyFortune() {
+  const d = state.draws[state.draws.length - 1] || state.draws[0];
+  if (!d || !d.card) return;
+  const head = document.querySelector("#stage-reading .reading-head");
+  if (!head) return;
+  const c = d.card, o = d.reversed ? c.reversed : c.upright;
+  const suit = FORTUNE_SUIT[c.suitName] || FORTUNE_SUIT["大阿卡纳"];
+  const facets = [["💗 爱情", o.love], ["💼 事业·学业", o.career], ["💰 财运", o.finance], ["🤝 人际", o.relationship]].filter(x => x[1]);
+  const tmr = (typeof timingFor === "function" ? timingFor(c.name) : null);
+  const luckyNum = ((state.seed >>> 4) % 9) + 1;
+  const box = document.createElement("div");
+  box.className = "daily-fortune"; box.id = "daily-fortune";
+  box.innerHTML = `
+    <div class="df-head"><span class="df-title">✦ 今 日 运 势 卡</span><span class="df-sub">${escHtml(energyWord())} ｜ ${escHtml(c.name)}${d.reversed ? "（逆位）" : ""} ｜ 轻松参考</span></div>
+    <div class="df-grid">${facets.map(x => `<div class="df-item"><div class="df-k">${x[0]}</div><p>${escHtml(x[1])}</p></div>`).join("")}</div>
+    ${o.advice ? `<div class="df-row"><span class="df-k">🧭 今日指引</span><p>${escHtml(o.advice)}</p></div>` : ""}
+    ${tmr ? `<div class="df-row"><span class="df-k">⏳ 有利节奏</span><p>${escHtml(tmr)}</p></div>` : ""}
+    <div class="df-lucky"><span>🎨 幸运色 ${suit.colors.join("·")}</span><span>🔢 幸运数 ${luckyNum}</span><span>🧭 参考方位 ${suit.dir}</span></div>
+    <p class="df-note">牌是镜子，不是判决书——这是你此刻能量的一种读法，选择权始终在你手里。</p>`;
+  head.insertAdjacentElement("afterend", box);
 }
 function renderSynthesisRule() {
   const syn = synthesize();
