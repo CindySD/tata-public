@@ -2122,16 +2122,9 @@ function buildDraws() {
     const idx = (num - 1) % deck.length;
     return { card: deck[idx], idx, order: i };
   });
-  /* F-009 每日一牌·全站同频：以本地日期为种子固定"今日之牌"，任选一张揭开的都是它 */
+  /* F-009 今日一牌：每日一次、专属于你的随机单牌（塔罗重在私人机缘，不再宣称"全站同频/所有人同一张"）。
+     沿用个人随机牌序——你凭直觉翻开的那张（或数字标记的这张），就是你今天的牌。 */
   if (state.dailyMode) {
-    const t = new Date();
-    const dayKey = `daily|${t.getFullYear()}-${t.getMonth() + 1}-${t.getDate()}`;
-    const ds = hashStr(dayKey);
-    state.dailyCard = deck[ds % deck.length];
-    /* BUG-1 修复：(ds>>>8)%100 是 0~99 整数，不能直接和 0.34 小数比较（此前仅 0 命中，逆位率≈1%，
-       与非 daily 路径 rng()<REVERSED_CHANCE 的 34% 相差约 34 倍）。按整数百分比阈值对齐量纲。 */
-    state.dailyReversed = ((ds >>> 8) % 100) < Math.round(REVERSED_CHANCE * 100);
-    /* 修复：标记徽章必须落在用户给的那个数字对应的牌面上（任选揭开的内容仍是同频今日之牌） */
     const dIdx = (Math.min(Math.max(state.numbers[0] || 1, 1), 78) - 1) % deck.length;
     state.markedCards = [{ card: deck[dIdx], idx: dIdx, order: 0 }];
   }
@@ -3588,7 +3581,7 @@ $("#btn-daily").addEventListener("click", () => {
   state.spreadManual = true; state.spreadKey = "single";
   state.dailyMode = true;
   refreshChips();
-  reasonEl.textContent = "今日一牌 · 全站同频：今天所有人抽到的是同一张牌。凭直觉选一张，揭开它就是（问题可留空，数字即可）。";
+  reasonEl.textContent = "今日一牌 · 此刻只为你翻：凭直觉选一张，揭开它，就是今天属于你的一张牌（问题可留空，给个数字即可）。";
   go("ask");
   numEl.focus();
 });
