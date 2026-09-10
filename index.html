@@ -275,6 +275,21 @@ textarea{min-height:96px}
 #reading-list,.synthesis,.timing-block,.links-block,.reflect-block,.ending{scroll-margin-top:64px}
 .reading-q{font-family:var(--serif);font-size:16px;color:var(--ink-dim);letter-spacing:.1em;margin-top:10px;line-height:2}
 .reading-q b{color:var(--gold-hi);font-weight:600}
+/* 今日一牌·今日运势卡 */
+.daily-fortune{max-width:560px;margin:18px auto 6px;border:1px solid var(--gold-dim);border-radius:16px;padding:20px 20px 16px;background:linear-gradient(160deg,rgba(201,168,106,.08),rgba(201,168,106,.02));position:relative}
+.daily-fortune::before{content:"✦";position:absolute;top:-12px;left:50%;transform:translateX(-50%);background:var(--bg);padding:0 12px;color:var(--gold);font-size:14px}
+.df-head{text-align:center;margin-bottom:14px}
+.df-title{display:block;font-family:var(--serif);letter-spacing:.22em;color:var(--gold-hi);font-size:16px;font-weight:600}
+.df-sub{display:block;font-size:11.5px;color:var(--ink-faint);letter-spacing:.04em;margin-top:5px}
+.df-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.df-item{border:1px solid var(--panel-line);border-radius:12px;padding:11px 12px;background:rgba(255,255,255,.015)}
+.df-k{display:block;font-size:11.5px;color:var(--gold);letter-spacing:.08em;margin-bottom:4px}
+.df-item p,.df-row p{font-size:12.5px;color:var(--ink-dim);line-height:1.85;margin:0;letter-spacing:.02em}
+.df-row{margin-top:12px;border-top:1px dashed var(--panel-line);padding-top:12px}
+.df-row .df-k{margin-bottom:2px}
+.df-lucky{display:flex;flex-wrap:wrap;gap:8px 18px;justify-content:center;margin-top:14px;font-size:12px;color:var(--gold-hi);letter-spacing:.04em}
+.df-note{font-size:11px;color:var(--ink-faint);text-align:center;line-height:1.8;margin:12px 0 0;letter-spacing:.02em}
+@media(max-width:480px){.df-grid{grid-template-columns:1fr}}
 .reading-meta{font-size:11.5px;color:var(--ink-faint);letter-spacing:.26em;margin-top:12px}
 /* 切牌可点入口 + 回响码（P4/P10：让 meta 行的信息可被使用） */
 .reading-meta .meta-cut{background:none;border:none;border-bottom:1px dashed var(--gold-dim);color:var(--gold);font:inherit;letter-spacing:inherit;padding:0;cursor:pointer}
