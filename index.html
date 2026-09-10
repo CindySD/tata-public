@@ -3466,19 +3466,26 @@ function renderDailyFortune() {
   if (!d || !d.card) return;
   const head = document.querySelector("#stage-reading .reading-head");
   if (!head) return;
-  const c = d.card, o = d.reversed ? c.reversed : c.upright;
+  const c = d.card, rev = d.reversed, o = rev ? c.reversed : c.upright;
   const suit = FORTUNE_SUIT[c.suitName] || FORTUNE_SUIT["大阿卡纳"];
   const facets = [["💗 爱情", o.love], ["💼 事业·学业", o.career], ["💰 财运", o.finance], ["🤝 人际", o.relationship]].filter(x => x[1]);
+  const kw = (o.keywords || []).slice(0, 4);
   const tmr = (typeof timingFor === "function" ? timingFor(c.name) : null);
-  const luckyNum = ((state.seed >>> 4) % 9) + 1;
+  const luckyNum = ((hashStr(c.id || c.name) >>> 4) % 9) + 1;   /* 本命吉数：由这张牌本身决定，稳定可复现 */
   const box = document.createElement("div");
   box.className = "daily-fortune"; box.id = "daily-fortune";
   box.innerHTML = `
-    <div class="df-head"><span class="df-title">✦ 今 日 运 势 卡</span><span class="df-sub">${escHtml(energyWord())} ｜ ${escHtml(c.name)}${d.reversed ? "（逆位）" : ""} ｜ 轻松参考</span></div>
+    <div class="df-head">
+      <div class="df-title">✦ 今 日 运 势</div>
+      <div class="df-theme">今日为你翻到 <b>「${escHtml(c.name)}${rev ? "（逆位）" : ""}」</b><span class="df-energy">${escHtml(energyWord())}</span>${rev ? '<span class="df-revtag">能量内收</span>' : ""}</div>
+      ${kw.length ? `<div class="df-kws">${kw.map(k => `<span class="df-kw">${escHtml(k)}</span>`).join("")}</div>` : ""}
+    </div>
     <div class="df-grid">${facets.map(x => `<div class="df-item"><div class="df-k">${x[0]}</div><p>${escHtml(x[1])}</p></div>`).join("")}</div>
+    ${rev ? `<div class="df-revnote">逆位不是"坏"——它提示「${escHtml(c.name)}」这股能量更多在内在或被卡住，今天先向内看，别只向外求。</div>` : ""}
     ${o.advice ? `<div class="df-row"><span class="df-k">🧭 今日指引</span><p>${escHtml(o.advice)}</p></div>` : ""}
     ${tmr ? `<div class="df-row"><span class="df-k">⏳ 有利节奏</span><p>${escHtml(tmr)}</p></div>` : ""}
-    <div class="df-lucky"><span>🎨 幸运色 ${suit.colors.join("·")}</span><span>🔢 幸运数 ${luckyNum}</span><span>🧭 参考方位 ${suit.dir}</span></div>
+    <div class="df-lucky"><span>🎨 幸运色 ${escHtml(suit.colors.join("·"))}</span><span>🔢 本命吉数 ${luckyNum}</span><span>🧭 参考方位 ${escHtml(suit.dir)}</span></div>
+    <p class="df-src">↑ 以上分项、吉数与方位，都由你抽到的这张 <b>${escHtml(c.suitName || "大阿卡纳")}</b> 牌推得。</p>
     <p class="df-note">牌是镜子，不是判决书——这是你此刻能量的一种读法，选择权始终在你手里。</p>`;
   head.insertAdjacentElement("afterend", box);
 }
