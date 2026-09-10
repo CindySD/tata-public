@@ -3822,12 +3822,13 @@ $("#btn-card").addEventListener("click", async () => {
     const canSysShare = !!(!mimeOk ? false : (navigator.canShare && window.File && navigator.share && blob));
     openInfoModal(`
       <h4>分享图已生成</h4>
+      <div style="margin:2px auto 14px;max-width:460px;text-align:center;font-size:13px;line-height:1.7;color:#0b0917;background:linear-gradient(90deg,#e8c46a,#c9a86a);border-radius:10px;padding:9px 14px;font-weight:600">📱 手机上长按图片 →「存储到照片」，即可在相册看到。</div>
       <div style="text-align:center"><img src="${url}" alt="占卜分享卡片" style="max-width:88%;width:520px;border-radius:12px;border:1px solid var(--gold-dim)"></div>
       <div style="display:flex;gap:14px;justify-content:center;margin-top:22px;flex-wrap:wrap">
         <a class="btn" href="${url}" ${mimeOk ? 'download="tata-tarot-share.png"' : 'target="_blank" rel="noopener"'} style="text-decoration:none">保存图片</a>
         ${canSysShare ? '<button class="btn ghost" id="share-img" type="button">系统分享</button>' : ""}
       </div>
-      <p class="note" style="margin-top:14px;text-align:center;line-height:1.9">iPhone／微信：长按上方图片 →「存储到照片」，即可在相册看到。<br>安卓／电脑：点「保存图片」存入相册，或「系统分享」发到微信/QQ。</p>`);
+      <p class="note" style="margin-top:14px;text-align:center;line-height:1.9">安卓／电脑：点「保存图片」存入相册，或「系统分享」发到微信/QQ。</p>`);
     if (canSysShare) $("#share-img")?.addEventListener("click", async () => {
       try {
         const file = new File([blob], "tata-tarot-share.png", { type: "image/png" });
