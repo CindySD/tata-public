@@ -669,8 +669,9 @@ footer .gold{color:var(--gold)}
 
   <!-- ===== S1 提问 ===== -->
   <section class="stage" id="stage-ask">
-    <div class="kicker">提 问</div>
+    <div class="kicker" id="ask-kicker">提 问</div>
     <div class="ask-panel">
+      <div id="ask-q-block">
       <p class="guide-words">心，沉下来了吗？<br>把此刻<em>最想问的那件事</em>，写在下面就好。<br>不必措辞完美，牌在意的是你真正放不下的那个念头。</p>
 
       <div class="field-label">写下你的问题</div>
@@ -678,6 +679,7 @@ footer .gold{color:var(--gold)}
       <div class="coach-tips" id="coach-tips" aria-live="polite"></div>
       <div class="example-chips" id="example-chips" aria-label="不知道问什么？点一个试试"></div>
       <div class="ask-hint">问题越具体，牌的回答越清晰。避免只问「是或否」，试着问「我该如何面对」。</div>
+      </div>
 
       <div class="ask-row">
         <div class="num-wrap">
@@ -685,7 +687,7 @@ footer .gold{color:var(--gold)}
           <input class="num-input" id="lucky-num" type="text" inputmode="numeric" placeholder="如 37 12 55">
           <div class="ask-hint" id="num-hint" style="margin-top:8px;text-align:center">空格分隔多个数字<br>每个数字标记一张牌</div>
         </div>
-        <div style="flex:1;min-width:220px">
+        <div id="ask-spread-block" style="flex:1;min-width:220px">
           <div class="field-label">我为你挑选的牌阵</div>
           <div class="spread-chips" id="spread-chips"></div>
           <div class="spread-reason" id="spread-reason"></div>
@@ -2293,7 +2295,7 @@ function go(name) {
   Object.values(stages).forEach(s => s.classList.remove("active"));
   stages[name].classList.add("active");
   window.scrollTo({ top: 0, behavior: "instant" in document.documentElement ? "instant" : "auto" });
-  if (name === "ask") refreshNumHint(); /* 进提问页同步数字计数提示与牌阵所需个数 */
+  if (name === "ask") { refreshNumHint(); syncAskForDaily(); } /* 进提问页同步数字提示与牌阵所需个数 + 每日一牌入口精简 */
   // 浮动按钮：非封面页显示
   const floatBtn = $("#float-settings");
   if (floatBtn) floatBtn.classList.toggle("show", name !== "cover");
@@ -2398,12 +2400,20 @@ SPREAD_ORDER.forEach(k => {
   b.addEventListener("click", () => { state.spreadManual = true; state.dailyMode = false; /* 手动换阵即退出每日一牌模式，防止单牌揭示逻辑误套多张阵 */ state.spreadKey = k; refreshChips(); reasonEl.textContent = "好，就用「" + SPREADS[k].name + "」。" + SPREADS[k].reason; refreshNumHint(); });
   chipsBox.appendChild(b);
 });
+/* 每日一牌入口精简：隐藏"写下问题"整块与牌阵选择列，只留"给个数字"；非每日一牌恢复原样 */
+function syncAskForDaily() {
+  const on = !!state.dailyMode;
+  const k = document.getElementById("ask-kicker");
+  if (k) k.textContent = on ? "今 日 一 牌" : "提 问";
+  ["ask-q-block", "ask-spread-block"].forEach(id => { const el = document.getElementById(id); if (el) el.style.display = on ? "none" : ""; });
+}
 function refreshChips() {
   const rec = state.spreadManual ? null : pickSpread(qEl.value);
   chipsBox.querySelectorAll(".chip").forEach(c => {
     c.classList.toggle("on", c.dataset.k === state.spreadKey);
     c.classList.toggle("rec", !!rec && c.dataset.k === rec);
   });
+  syncAskForDaily();
 }
 qEl.addEventListener("input", () => {
   if (state.spreadManual) return;
@@ -2419,10 +2429,12 @@ let numScrollFired = false;
 function refreshNumHint() {
   const need = spreadNeed(), got = numTokens();
   const hintEl = document.getElementById("num-hint");
-  if (hintEl) hintEl.innerHTML = got >= need
-    ? `${need} 个数字已齐 ✦ 默念毕即可开启仪式`
-    : `「${SPREADS[state.spreadKey].name}」需 ${need} 个直觉数字 · 已输入 ${got}/${need}<br>1–78 之间，空格分隔`;
-  if (got >= need && qEl.value.trim().length >= 4) {
+  if (hintEl) hintEl.innerHTML = state.dailyMode
+    ? (got >= 1 ? "好，就是它 ✦ 开启今日仪式" : "凭直觉，给我一个 1 到 78 的数字")
+    : (got >= need
+        ? `${need} 个数字已齐 ✦ 默念毕即可开启仪式`
+        : `「${SPREADS[state.spreadKey].name}」需 ${need} 个直觉数字 · 已输入 ${got}/${need}<br>1–78 之间，空格分隔`);
+  if (got >= need && (state.dailyMode || qEl.value.trim().length >= 4)) {
     if (!numScrollFired) {
       numScrollFired = true;
       const submit = document.querySelector(".ask-submit");
