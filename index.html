@@ -218,6 +218,13 @@ textarea{min-height:96px}
 .fan .fcard.next{outline:2px solid var(--gold-hi);outline-offset:2px;z-index:9;transform:rotate(var(--tilt,0deg)) translateY(-12px);box-shadow:0 0 18px rgba(201,168,106,.8);cursor:pointer}
 .fan .fcard.next-pulse{animation:nextPulse .5s ease}
 @keyframes nextPulse{0%{box-shadow:0 0 6px rgba(201,168,106,.4)}50%{box-shadow:0 0 30px rgba(201,168,106,1)}100%{box-shadow:0 0 18px rgba(201,168,106,.8)}}
+/* 今日一牌·引导式揭示（daily）：其余牌淡出、标记牌"命运之光"浮起辉光并轻微起伏；动效由全局 prefers-reduced-motion 块自动降为静态 */
+.fan .fcard.dimming{opacity:.3;transition:opacity 1.1s ease}
+.fan .fcard.destiny{transform:rotate(var(--tilt,0deg)) translateY(-14px) scale(1.12);z-index:12;box-shadow:0 0 26px rgba(201,168,106,.8),0 0 60px rgba(201,168,106,.34)}
+.fan .fcard.destiny.marked{animation:fanIn .4s var(--ease-out) var(--fd) backwards,destinyFloat 2.2s ease-in-out 1.1s infinite alternate}
+@keyframes destinyFloat{from{transform:rotate(var(--tilt,0deg)) translateY(-14px) scale(1.12)}to{transform:rotate(var(--tilt,0deg)) translateY(-20px) scale(1.16)}}
+/* 运势卡·当日锁定 / 连续打卡行 */
+.df-streak{margin:0 0 4px;font-size:12px;letter-spacing:.05em;color:var(--gold);opacity:.92;text-align:center}
 
 /* 已翻开的小牌行 */
 .revealed-row{display:flex;justify-content:center;gap:16px;margin-top:24px;min-height:100px;flex-wrap:wrap}
@@ -2752,6 +2759,16 @@ function showSpread() {
   holdLabel.textContent = "凝神聚气";
   holdTip.textContent = "可选 · 也可直接翻开";
   holdWrap.classList.add("show");
+  /* 今日一牌·引导式揭示：点亮命运那一盏灯（其余淡出、标记牌浮起辉光并居中）——是邀请不是限制，仍可点任意一张 */
+  if (state.dailyMode) {
+    const mk = fanEl.querySelector(".fcard.marked");
+    fanEl.querySelectorAll(".fcard").forEach(f => { if (f !== mk) f.classList.add("dimming"); });
+    if (mk) {
+      mk.classList.add("destiny");
+      const target = Math.max(0, mk.offsetLeft - fanEl.clientWidth / 2 + mk.offsetWidth / 2);
+      setTimeout(() => fanEl.scrollTo({ left: target, behavior: "smooth" }), 650);
+    }
+  }
   void holdWrap.offsetWidth; /* #10 强制重排 */
   skipBtn.style.display = "none"; /* 牌已铺好，无仪式可跳——隐藏入口防止误触重铺 */
   updateProgress();
@@ -2994,6 +3011,7 @@ let __restoreMode = false;
 let aiGen = 0; /* R1：主 AI 流代际令牌——旧轮流式回调校验 gen 后才允许写 DOM，防止迟到帧污染新一轮解读页 */
 let activeCtrl = null; /* 进行中的 AI 流式请求 controller；重开占卜/回首页时 abort 掉，省重复计费 */
 function abortActiveLLM() { if (activeCtrl) { try { activeCtrl.abort(); } catch (e) {} activeCtrl = null; } }
+let dailyReplay = false; /* 今日一牌·当天再点直接回看这张：不重抽、不新增历史、缺缓存也不二次计费 */
 let readingNavScroll = null; /* Feature B：解读页章节导航的滚动监听句柄，重渲染前移除避免重复绑定 */
 /* ---------- 解读·确定性兜底润色（不指望弱模型自觉：保证至少一条"相对时间+动作"、去重复免责） ---------- */
 function polishReading(d) {
@@ -3027,8 +3045,10 @@ function polishReading(d) {
 }
 async function renderReading() {
   const wasRestore = __restoreMode;
+  const isDailyReplay = dailyReplay; dailyReplay = false;   /* 今日一牌·回看今天这张（区别于全新占卜） */
   if (!__restoreMode) saveHistory();
   __restoreMode = false;
+  if (state.dailyMode && !wasRestore && state.draws[0] && state.draws[0].card) saveDailyLock(state.draws[0].card, state.draws[0].reversed); /* 新的一天翻开→当日锁定 + 本机连续打卡 */
   const spread = SPREADS[state.spreadKey];
   /* 新一轮解读开始：无条件清除上一轮可能残留的直觉横幅、AI 失败提示与追问轮（均为解读容器的兄弟节点） */
   document.querySelectorAll(".conclusion-banner,.ai-fail-notice,.followup-round,.reading-nav,.daily-fortune").forEach(b => b.remove());
@@ -3119,7 +3139,7 @@ async function renderReading() {
   const cfg = loadLLMConfig();
   const replayAi = (wasRestore && state.restoreRec && state.restoreRec.a && typeof state.restoreRec.a === "object") ? state.restoreRec.a : null;
   if (!wasRestore) state.restoreRec = null;
-  if (replayAi || (cfg.apiKey && cfg.baseURL)) {
+  if (replayAi || (cfg.apiKey && cfg.baseURL && !isDailyReplay)) {
     /* 显示 AI 加载态（缓存回放跳过） */
     const synEl = $("#synthesis");
     if (!replayAi) {
@@ -3475,12 +3495,50 @@ function fortuneModel(card, reversed) {
     luckyNum: ((hashStr(card.id || card.name) >>> 4) % 9) + 1   /* 本命吉数：由这张牌本身决定，稳定可复现 */
   };
 }
+/* ---------- 今日一牌 · 当日锁定 + 本机连续打卡（纯前端 localStorage：锁的是"你今天亲手抽到的这张"，不是全站同频） ---------- */
+const DAILY_KEY = "tata-daily-v1";
+function _dayStr(d) { d = d || new Date(); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); }
+function _readDaily() { try { return JSON.parse(localStorage.getItem(DAILY_KEY) || "null"); } catch (e) { return null; } }
+function dailyLockedToday() { const r = _readDaily(); return (r && r.day === _dayStr() && r.id && cardById[r.id]) ? r : null; }
+/* 新的一天翻开即锁定：昨天翻过则续上 streak、断签重置为 1、今天已锁保持不变 */
+function saveDailyLock(card, reversed) {
+  try {
+    const prev = _readDaily(), today = _dayStr();
+    let streak = 1;
+    if (prev && prev.day) {
+      const y = _dayStr(new Date(Date.now() - 864e5));
+      if (prev.day === today) streak = Math.max(1, prev.streak || 1);
+      else if (prev.day === y) streak = (prev.streak || 0) + 1;
+      else streak = 1;
+    }
+    localStorage.setItem(DAILY_KEY, JSON.stringify({ day: today, id: card.id, rev: !!reversed, streak, seed: state.seed >>> 0, number: state.numbers[0] || 0, t: Date.now() }));
+    return streak;
+  } catch (e) { return 1; }
+}
+function getDailyStreak() { const r = _readDaily(); return (r && r.day === _dayStr()) ? (r.streak || 1) : 0; }
+/* 当天再点「今日一牌」：直接回看这张，复用回看机制（不重抽、不新增历史）；有当日 AI 缓存则原样回放，缺缓存也不二次计费 */
+function replayDailyFromLock(lock) {
+  const card = cardById[lock.id];
+  if (!card) return false;
+  state.question = "今天我需要留意什么？"; state.numbers = [lock.number || 1]; state.number = lock.number || 1;
+  state.spreadKey = "single"; state.spreadManual = true; state.dailyMode = true;
+  state.domain = detectDomain(state.question); state.seed = lock.seed >>> 0; state.cutCard = null;
+  state.draws = [{ pos: SPREADS.single.positions[0], card, reversed: !!lock.rev }];
+  state.revealed = 1;
+  const cached = loadHistory().find(r => r && r.sp === "single" && (r.seed >>> 0) === (lock.seed >>> 0) && Array.isArray(r.d) && r.d[0] && r.d[0].id === card.id && r.a && typeof r.a === "object");
+  state.restoreRec = cached || null;
+  dailyReplay = true; __restoreMode = true;
+  renderReading();
+  return true;
+}
 function renderDailyFortune() {
   const d = state.draws[state.draws.length - 1] || state.draws[0];
   if (!d || !d.card) return;
   const head = document.querySelector("#stage-reading .reading-head");
   if (!head) return;
   const m = fortuneModel(d.card, d.reversed);
+  const streak = (typeof getDailyStreak === "function") ? getDailyStreak() : 0;
+  const streakLine = state.dailyMode ? `<div class="df-streak">✦ ${streak > 1 ? "连续 " + streak + " 天与你相伴" : "这是今天的第 1 张"} · 今日这张已定，明天再来翻下一张</div>` : "";
   const box = document.createElement("div");
   box.className = "daily-fortune"; box.id = "daily-fortune";
   box.innerHTML = `
@@ -3489,6 +3547,7 @@ function renderDailyFortune() {
       <div class="df-theme">今日为你翻到 <b>「${escHtml(m.name)}${m.reversed ? "（逆位）" : ""}」</b><span class="df-energy">${escHtml(m.energy)}</span>${m.reversed ? '<span class="df-revtag">能量内收</span>' : ""}</div>
       ${m.keywords.length ? `<div class="df-kws">${m.keywords.map(k => `<span class="df-kw">${escHtml(k)}</span>`).join("")}</div>` : ""}
     </div>
+    ${streakLine}
     <div class="df-grid">${m.facets.map(x => `<div class="df-item"><div class="df-k">${x.i} ${x.k}</div><p>${escHtml(x.v)}</p></div>`).join("")}</div>
     ${m.reversed ? `<div class="df-revnote">逆位不是"坏"——它提示「${escHtml(m.name)}」这股能量更多在内在或被卡住，今天先向内看，别只向外求。</div>` : ""}
     ${m.advice ? `<div class="df-row"><span class="df-k">🧭 今日指引</span><p>${escHtml(m.advice)}</p></div>` : ""}
@@ -3651,6 +3710,8 @@ $("#btn-again").addEventListener("click", () => {
 
 /* 今日一牌（竞品通用留存入口：每日一抽） */
 $("#btn-daily").addEventListener("click", () => {
+  const lock = dailyLockedToday();               /* 今日一牌：当天只翻这一张，再点即回看（私人随机单牌的锁定，非全站同频） */
+  if (lock && replayDailyFromLock(lock)) return;
   qEl.value = "今天我需要留意什么？";
   qEl.dispatchEvent(new Event("input", { bubbles: true }));
   numEl.value = "";
@@ -3906,11 +3967,62 @@ async function buildShareCard() {
   ctx.fillText("塔塔🔮の心灵疗愈室 · cindysd.github.io/tata-public", CX, SHARE_H - 120);
   return cv;
 }
+/* 今日一牌·4:5 竖版紧凑分享（社媒信息流友好）；与通用动态长图分开，避免把富信息版硬塞进 1350 高而截断 */
+async function buildDailyShareCard() {
+  const W = 1080, H = 1350, CX = W / 2;
+  const cv = document.createElement("canvas"); cv.width = W; cv.height = H;
+  const ctx = cv.getContext("2d");
+  const SANS = '"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif';
+  const SERIF = '"Cormorant Garamond",Georgia,serif';
+  const d = state.draws[0]; const card = d && d.card;
+  const m = card ? fortuneModel(card, d.reversed) : null;
+  const g = ctx.createLinearGradient(0, 0, 0, H);
+  g.addColorStop(0, "#0d0b19"); g.addColorStop(.55, "#12101f"); g.addColorStop(1, "#07070e");
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  let s = (state.seed || 20260911) >>> 0; const rnd = () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; };
+  for (let i = 0; i < 90; i++) { ctx.globalAlpha = .1 + rnd() * .4; ctx.fillStyle = "#c9a86a"; ctx.beginPath(); ctx.arc(rnd() * W, rnd() * H, rnd() * 1.6 + .4, 0, 7); ctx.fill(); }
+  ctx.globalAlpha = 1;
+  ctx.strokeStyle = "rgba(201,168,106,.5)"; ctx.lineWidth = 2; ctx.strokeRect(34, 34, W - 68, H - 68);
+  ctx.textAlign = "center";
+  ctx.fillStyle = "#c9a86a"; ctx.font = `600 40px ${SANS}`; ctx.fillText("塔塔🔮の心灵疗愈室", CX, 108);
+  const t = new Date();
+  ctx.fillStyle = "#847c6a"; ctx.font = `22px ${SANS}`; ctx.fillText(`${t.getFullYear()} 年 ${t.getMonth() + 1} 月 ${t.getDate()} 日 · 今 日 一 牌`, CX, 150);
+  ctx.strokeStyle = "rgba(201,168,106,.32)"; ctx.beginPath(); ctx.moveTo(300, 182); ctx.lineTo(W - 300, 182); ctx.stroke();
+  const cw = 288, ch = Math.round(cw * 1.72), cx = CX - cw / 2, cy = 206;
+  let im = await loadCardImg(IMG_BASE + (card && card.image));
+  if (!im && CDN_BASE) im = await loadCardImg(CDN_BASE + (card && card.image));
+  ctx.save();
+  if (d && d.reversed) { ctx.translate(CX, cy + ch / 2); ctx.rotate(Math.PI); ctx.translate(-CX, -(cy + ch / 2)); }
+  if (im) ctx.drawImage(im, cx, cy, cw, ch);
+  else { ctx.strokeStyle = "rgba(201,168,106,.5)"; ctx.strokeRect(cx, cy, cw, ch); ctx.fillStyle = "#c9a86a"; ctx.font = `52px ${SERIF}`; ctx.fillText("✶", CX, cy + ch / 2 + 18); }
+  ctx.restore();
+  if (d && d.reversed) { const bx = cx + cw - 6, by = cy + 16; ctx.fillStyle = "#07070e"; ctx.beginPath(); ctx.arc(bx, by, 20, 0, 7); ctx.fill(); ctx.strokeStyle = "#c9a86a"; ctx.lineWidth = 2; ctx.stroke(); ctx.fillStyle = "#c9a86a"; ctx.font = `24px ${SANS}`; ctx.textBaseline = "middle"; ctx.fillText("逆", bx, by + 2); ctx.textBaseline = "alphabetic"; }
+  let y = cy + ch + 50;
+  ctx.fillStyle = "#e8e2d4"; ctx.font = `600 42px ${SANS}`;
+  ctx.fillText((card ? card.name : "") + (d && d.reversed ? "（逆位）" : ""), CX, y); y += 36;
+  if (card && (card.englishName || card.english)) { ctx.fillStyle = "#847c6a"; ctx.font = `24px ${SERIF}`; ctx.fillText(card.englishName || card.english, CX, y); y += 34; }
+  ctx.fillStyle = "#c9a86a"; ctx.font = `600 44px ${SERIF}`;
+  ctx.fillText((state.shareSnapshot && state.shareSnapshot.energy) || (m && m.energy) || energyWord(), CX, y); y += 40;
+  if (m) {
+    ctx.textAlign = "left"; const fx = 118, fmax = W - 236;
+    m.facets.slice(0, 2).forEach(f => {
+      ctx.fillStyle = "#c9a86a"; ctx.font = `600 24px ${SANS}`; ctx.fillText(`${f.i} ${f.k}`, fx, y); y += 30;
+      ctx.fillStyle = "#ddd6c4"; ctx.font = `22px ${SANS}`; y += wrapText(ctx, f.v, fx, y, fmax, 29, 3) * 29 + 12;
+    });
+    if (m.advice) { ctx.fillStyle = "#c9a86a"; ctx.font = `600 24px ${SANS}`; ctx.fillText("🧭 今日指引", fx, y); y += 30; ctx.fillStyle = "#ddd6c4"; ctx.font = `22px ${SANS}`; y += wrapText(ctx, m.advice, fx, y, fmax, 29, 2) * 29 + 10; }
+    ctx.textAlign = "center";
+    ctx.fillStyle = "#847c6a"; ctx.font = `21px ${SANS}`;
+    ctx.fillText(`🎨 ${m.colors}　🔢 吉数 ${m.luckyNum}　🧭 ${m.dir}`, CX, Math.min(y + 8, H - 108));
+  }
+  ctx.fillStyle = "#847c6a"; ctx.font = `20px ${SANS}`;
+  ctx.fillText("牌是镜子，不是判决书 · cindysd.github.io/tata-public", CX, H - 56);
+  return cv;
+}
 $("#btn-card").addEventListener("click", async () => {
   const b = $("#btn-card"); const old = b.textContent;
   b.disabled = true; b.textContent = "绘制中……";
   try {
-    const cv = await buildShareCard();
+    const cv = await (state.dailyMode ? buildDailyShareCard() : buildShareCard());
     const blob = await new Promise((res, rej) => {
       if (cv.toBlob) { try { cv.toBlob(bb => bb ? res(bb) : rej(new Error("导出失败")), "image/png"); } catch (e) { rej(e); } }
       else rej(new Error("no-blob"));
