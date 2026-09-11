@@ -297,7 +297,15 @@ textarea{min-height:96px}
   box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 12px 32px -20px rgba(0,0,0,.75);
   animation:fadeUp .55s var(--ease-out) both;will-change:transform}
 .daily-fortune::before{content:"✦";position:absolute;top:-12px;left:50%;transform:translateX(-50%);background:var(--bg);padding:0 12px;color:var(--gold);font-size:14px}
-.df-head{text-align:center;margin-bottom:16px}
+.df-head{display:flex;gap:16px;align-items:center;text-align:left;margin-bottom:16px}
+.df-art{flex:0 0 auto;width:96px;aspect-ratio:3/5;border-radius:11px;overflow:hidden;position:relative;border:1px solid var(--gold-dim);box-shadow:0 0 0 1px rgba(201,168,106,.12),0 10px 24px -12px rgba(0,0,0,.85),0 0 30px -8px rgba(201,168,106,.5)}
+.df-art img{width:100%;height:100%;object-fit:cover;display:block}
+.df-art.rev img{transform:rotate(180deg)}
+.df-art.rev::after{content:"逆";position:absolute;top:5px;right:5px;font-size:10px;color:#0b0917;background:var(--gold);border-radius:50%;width:18px;height:18px;line-height:18px;text-align:center;font-family:var(--sans)}
+.df-hero-txt{flex:1;min-width:0}
+.df-head .df-title{text-align:left}
+.df-head .df-theme{font-size:18px;text-align:left;margin:6px 0 9px}
+.df-head .df-kws{justify-content:flex-start}
 .df-title{font-family:var(--serif);letter-spacing:.24em;color:var(--gold);font-size:13px;font-weight:600;opacity:.9}
 .df-theme{font-family:var(--serif);font-size:20px;color:var(--ink);line-height:1.5;margin:7px auto 10px;letter-spacing:.02em}
 .df-theme b{color:var(--gold-hi);font-weight:600}
@@ -306,7 +314,7 @@ textarea{min-height:96px}
 .df-kws{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
 .df-kw{font-size:11px;color:var(--ink-dim);border:1px solid var(--panel-line);border-radius:999px;padding:2px 10px;letter-spacing:.05em}
 .df-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
-.df-item{border:1px solid var(--panel-line);border-radius:12px;padding:12px 13px;background:rgba(255,255,255,.02);animation:fadeUp .5s var(--ease-out) both}
+.df-item{border:1px solid var(--panel-line);border-top:1px solid rgba(201,168,106,.3);border-radius:12px;padding:13px 14px;background:linear-gradient(180deg,rgba(201,168,106,.06),rgba(255,255,255,.015));animation:fadeUp .5s var(--ease-out) both}
 .df-grid .df-item:nth-child(1){animation-delay:.05s}.df-grid .df-item:nth-child(2){animation-delay:.11s}.df-grid .df-item:nth-child(3){animation-delay:.17s}.df-grid .df-item:nth-child(4){animation-delay:.23s}
 .df-k{display:block;font-size:11.5px;color:var(--gold);letter-spacing:.08em;margin-bottom:5px}
 .df-item p,.df-row p{font-size:12.5px;color:var(--ink-dim);line-height:1.85;margin:0;letter-spacing:.02em}
@@ -3571,9 +3579,12 @@ function renderDailyFortune() {
   box.className = "daily-fortune"; box.id = "daily-fortune";
   box.innerHTML = `
     <div class="df-head">
-      <div class="df-title">✦ 今 日 运 势</div>
-      <div class="df-theme">今日为你翻到 <b>「${escHtml(m.name)}${m.reversed ? "（逆位）" : ""}」</b><span class="df-energy">${escHtml(m.energy)}</span>${m.reversed ? '<span class="df-revtag">能量内收</span>' : ""}</div>
-      ${m.keywords.length ? `<div class="df-kws">${m.keywords.map(k => `<span class="df-kw">${escHtml(k)}</span>`).join("")}</div>` : ""}
+      <div class="df-art${m.reversed ? " rev" : ""}"><img src="${IMG_BASE}${d.card.image}" alt="${escHtml(m.name)}" loading="lazy" onerror="if(!this.dataset.fb){this.dataset.fb=1;this.src='${CDN_BASE}${d.card.image}'}"></div>
+      <div class="df-hero-txt">
+        <div class="df-title">✦ 今 日 运 势</div>
+        <div class="df-theme">今日为你翻到 <b>「${escHtml(m.name)}${m.reversed ? "（逆位）" : ""}」</b><span class="df-energy">${escHtml(m.energy)}</span>${m.reversed ? '<span class="df-revtag">能量内收</span>' : ""}</div>
+        ${m.keywords.length ? `<div class="df-kws">${m.keywords.map(k => `<span class="df-kw">${escHtml(k)}</span>`).join("")}</div>` : ""}
+      </div>
     </div>
     ${streakLine}
     <div class="df-grid">${m.facets.map(x => `<div class="df-item"><div class="df-k">${x.i} ${x.k}</div><p>${escHtml(x.v)}</p></div>`).join("")}</div>
@@ -4016,13 +4027,21 @@ async function buildDailyShareCard() {
   const t = new Date();
   ctx.fillStyle = "#847c6a"; ctx.font = `22px ${SANS}`; ctx.fillText(`${t.getFullYear()} 年 ${t.getMonth() + 1} 月 ${t.getDate()} 日 · 今 日 一 牌`, CX, 150);
   ctx.strokeStyle = "rgba(201,168,106,.32)"; ctx.beginPath(); ctx.moveTo(300, 182); ctx.lineTo(W - 300, 182); ctx.stroke();
-  const cw = 288, ch = Math.round(cw * 1.72), cx = CX - cw / 2, cy = 206;
+  const cw = 300, ch = Math.round(cw * 1.72), cx = CX - cw / 2, cy = 200;
   let im = await loadCardImg(IMG_BASE + (card && card.image));
   if (!im && CDN_BASE) im = await loadCardImg(CDN_BASE + (card && card.image));
+  const rr = (x, y, w, h, r) => { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); };
   ctx.save();
+  ctx.shadowColor = "rgba(201,168,106,.5)"; ctx.shadowBlur = 42;
+  ctx.fillStyle = "#141122"; rr(cx - 11, cy - 11, cw + 22, ch + 22, 18); ctx.fill();
+  ctx.shadowBlur = 0;
+  ctx.strokeStyle = "rgba(201,168,106,.82)"; ctx.lineWidth = 2; rr(cx - 11, cy - 11, cw + 22, ch + 22, 18); ctx.stroke();
+  ctx.restore();
+  ctx.save();
+  rr(cx, cy, cw, ch, 12); ctx.clip();
   if (d && d.reversed) { ctx.translate(CX, cy + ch / 2); ctx.rotate(Math.PI); ctx.translate(-CX, -(cy + ch / 2)); }
   if (im) ctx.drawImage(im, cx, cy, cw, ch);
-  else { ctx.strokeStyle = "rgba(201,168,106,.5)"; ctx.strokeRect(cx, cy, cw, ch); ctx.fillStyle = "#c9a86a"; ctx.font = `52px ${SERIF}`; ctx.fillText("✶", CX, cy + ch / 2 + 18); }
+  else { ctx.fillStyle = "#c9a86a"; ctx.font = `52px ${SERIF}`; ctx.textAlign = "center"; ctx.fillText("✶", CX, cy + ch / 2 + 18); }
   ctx.restore();
   if (d && d.reversed) { const bx = cx + cw - 6, by = cy + 16; ctx.fillStyle = "#07070e"; ctx.beginPath(); ctx.arc(bx, by, 20, 0, 7); ctx.fill(); ctx.strokeStyle = "#c9a86a"; ctx.lineWidth = 2; ctx.stroke(); ctx.fillStyle = "#c9a86a"; ctx.font = `24px ${SANS}`; ctx.textBaseline = "middle"; ctx.fillText("逆", bx, by + 2); ctx.textBaseline = "alphabetic"; }
   let y = cy + ch + 50;
