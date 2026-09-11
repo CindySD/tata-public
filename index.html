@@ -136,6 +136,15 @@ textarea{min-height:96px}
 .spread-reason{margin-top:16px;font-size:13px;color:var(--gold);letter-spacing:.08em;min-height:22px;font-family:var(--serif)}
 .ask-submit{margin-top:32px;text-align:center}
 .ask-err{color:#d98f7a;font-size:13px;text-align:center;min-height:20px;margin-top:10px;letter-spacing:.06em}
+/* 每日一牌入口·PC 美化：只留"给个数字"时居中放大、去掉右侧牌阵栏隐藏后留下的空档 */
+#stage-ask.daily .ask-panel{padding-bottom:38px}
+#stage-ask.daily .ask-row{justify-content:center}
+#stage-ask.daily .num-wrap{flex:1 1 auto;max-width:340px;margin:0 auto}
+#stage-ask.daily .num-input{height:66px;font-size:26px;letter-spacing:.14em;border-radius:14px}
+#stage-ask.daily .field-label{justify-content:center}
+#stage-ask.daily .field-label::after{display:none}
+#stage-ask.daily .ask-hint{letter-spacing:.08em}
+#stage-ask.daily .ask-submit{margin-top:26px}
 
 /* ---------- S2 仪式 ---------- */
 #stage-ritual{padding-top:7vh;text-align:center}
@@ -2406,6 +2415,10 @@ function syncAskForDaily() {
   const k = document.getElementById("ask-kicker");
   if (k) k.textContent = on ? "今 日 一 牌" : "提 问";
   ["ask-q-block", "ask-spread-block"].forEach(id => { const el = document.getElementById(id); if (el) el.style.display = on ? "none" : ""; });
+  const stage = document.getElementById("stage-ask");
+  if (stage) stage.classList.toggle("daily", on);          /* PC 下把"只给个数字"居中放大，消除右侧空档 */
+  const numIn = document.getElementById("lucky-num");
+  if (numIn) { numIn.placeholder = on ? "凭直觉，写一个数字" : "如 37 12 55"; if (on) numIn.maxLength = 2; else numIn.removeAttribute("maxlength"); }
 }
 function refreshChips() {
   const rec = state.spreadManual ? null : pickSpread(qEl.value);
@@ -2444,7 +2457,10 @@ function refreshNumHint() {
     numScrollFired = false; /* 删减数字后重新计数，再次齐备时才会再跳 */
   }
 }
-numEl.addEventListener("input", refreshNumHint);
+numEl.addEventListener("input", () => {
+  if (state.dailyMode) { const v = numEl.value.replace(/[^0-9]/g, "").slice(0, 2); if (v !== numEl.value) numEl.value = v; }  /* 每日一牌：只允许你自己输入一个 1–78 整数（系统不代填） */
+  refreshNumHint();
+});
 refreshChips();
 refreshNumHint();
 reasonEl.textContent = "";
