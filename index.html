@@ -714,7 +714,7 @@ footer .gold{color:var(--gold)}
   <section class="stage" id="stage-ritual">
     <div class="kicker">仪 式</div>
     <div class="ritual-status" id="ritual-status">正在为你洗牌……</div>
-    <div class="ritual-sub" id="ritual-sub">宇宙的能量正在汇聚……</div>
+    <div class="ritual-sub" id="ritual-sub">深呼吸，让心静下来……</div>
     <div class="ritual-spread" id="ritual-spread"></div>
 
     <div class="ritual-arena" id="arena">
@@ -784,7 +784,7 @@ footer .gold{color:var(--gold)}
     <div class="care-panel">
       <h3>先陪陪你</h3>
       <p>我注意到你的话里有很重的疲惫和痛。此刻，牌先退后一步——<br>你值得被真实的人接住，而不是独自面对。</p>
-      <p class="hotline">全国心理援助热线：400-161-9995</p>
+      <p class="hotline">24 小时心理援助热线：12356（全国）· 希望24热线 400-161-9995</p>
       <p>也可以联系一位你信任的人，哪怕只是说一句「我现在不太好」。</p>
       <div style="margin-top:26px"><button class="btn ghost" id="btn-care-back" type="button">回到提问</button></div>
     </div>
@@ -2686,7 +2686,7 @@ function startRitual() {
   document.querySelectorAll(".btn-locate-multi").forEach(b => b.style.display = "none");
   go("ritual");
   statusEl.textContent = state.dailyMode ? "今日之牌正在浮现……" : "正在为你洗牌……";
-  subEl.textContent = "宇宙的能量正在汇聚……";
+  subEl.textContent = "深呼吸，让心静下来……";
   playSfx("shuffle");
   /* 洗牌轨道 */
   for (let i = 0; i < 9; i++) {
