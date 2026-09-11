@@ -1773,6 +1773,7 @@ async function callLLMStream(question, spreadName, draws, onPart) {
   let ctrl = null;
   if (typeof AbortController !== "undefined") {
     ctrl = new AbortController();
+    activeCtrl = ctrl;
     var streamTimer = setTimeout(() => ctrl.abort(), STREAM_TIMEOUT);
   }
   let resp;
@@ -2122,10 +2123,11 @@ const state = {
   question: "", number: 0, numbers: [], spreadKey: "three_time", spreadManual: false,
   draws: [], revealed: 0, seed: 0, domain: "general",
   deck: [], offer: [], markedCards: [], deckRev: [],
-  dailyMode: false, dailyCard: null, dailyReversed: false, cutCard: null,
+  dailyMode: false, cutCard: null,
   shareSnapshot: null, lastHistT: 0, restoreRec: null
 };
 
+let preheatGen = 0; /* 牌图预加载链代 token：新一轮 buildDraws 作废旧的 idle 分块链，防并发抢带宽 */
 function buildDraws() {
   const spread = SPREADS[state.spreadKey];
   /* P1-2 可复现抽牌：seed = crypto 随机源 ⊕ 问题  数字；洗牌与逆位全由 seed 的确定性 PRNG 流驱动。
@@ -2162,8 +2164,10 @@ function buildDraws() {
   const markedSet = new Set(state.markedCards.map(m => m.card));
   const preheatList = [...markedSet, ...CARDS.filter(c => !markedSet.has(c))];
   const PREHEAT_CHUNK = 8;
+  const preheatToken = ++preheatGen; /* 本轮预加载 token：下一次 buildDraws 会 ++，令本链自动作废 */
   const idle = (typeof requestIdleCallback === "function") ? requestIdleCallback : (fn => setTimeout(fn, 120));
   const loadChunk = (k) => {
+    if (preheatToken !== preheatGen) return; /* 已被更新的抽牌取代，停掉旧链避免并发抢带宽 */
     if (k >= preheatList.length) return;
     for (let j = k; j < Math.min(k + PREHEAT_CHUNK, preheatList.length); j++) {
       const im = new Image(); im.src = IMG_BASE + preheatList[j].image;
@@ -2278,6 +2282,7 @@ const HIGH_STAKES_RE = /癌症|肿瘤|绝症|病危|重病|会不会死|死了�
 const $ = s => document.querySelector(s);
 const stages = { cover: $("#stage-cover"), serene: $("#stage-serene"), ask: $("#stage-ask"), ritual: $("#stage-ritual"), reading: $("#stage-reading"), care: $("#stage-care"), history: $("#stage-history") };
 function go(name) {
+  if (name !== "reading") abortActiveLLM(); /* 导航到非解读页（开新局/回首页等）：掐掉仍在跑的 AI 流，省重复计费；进入解读页则放行其自身新流 */
   Object.values(stages).forEach(s => s.classList.remove("active"));
   stages[name].classList.add("active");
   window.scrollTo({ top: 0, behavior: "instant" in document.documentElement ? "instant" : "auto" });
@@ -2383,7 +2388,7 @@ SPREAD_ORDER.forEach(k => {
   const b = document.createElement("button");
   b.type = "button"; b.className = "chip"; b.dataset.k = k;
   b.innerHTML = `<span class="chip-top">${SPREADS[k].name}<i class="chip-n">${SPREADS[k].positions.length} 张</i></span><small>${SPREAD_HINT[k]}</small><i class="chip-rec">✦ 推荐</i>`;
-  b.addEventListener("click", () => { state.spreadManual = true; state.dailyMode = false; /* 手动换阵即退出每日一牌模式，防止 dailyCard 劫持多张阵的翻牌 */ state.spreadKey = k; refreshChips(); reasonEl.textContent = "好，就用「" + SPREADS[k].name + "」。" + SPREADS[k].reason; refreshNumHint(); });
+  b.addEventListener("click", () => { state.spreadManual = true; state.dailyMode = false; /* 手动换阵即退出每日一牌模式，防止单牌揭示逻辑误套多张阵 */ state.spreadKey = k; refreshChips(); reasonEl.textContent = "好，就用「" + SPREADS[k].name + "」。" + SPREADS[k].reason; refreshNumHint(); });
   chipsBox.appendChild(b);
 });
 function refreshChips() {
@@ -2473,14 +2478,9 @@ $("#llm-save").addEventListener("click", () => {
   const cfg = { baseURL: $("#llm-baseurl").value.trim(), apiKey: $("#llm-apikey").value.trim(), model: $("#llm-model").value.trim() };
   const ok = saveLLMConfig(cfg);
   closeSettings();
-  const b = $("#btn-settings"); const old = b.textContent;
-  if (ok) {
-    b.textContent = "⚙ AI 已启用 ✓";
-  } else {
-    b.textContent = "⚙ 保存失败（无痕模式？）";
-    b.style.color = "#d98f7a";
-  }
-  setTimeout(() => { b.textContent = old; b.style.color = ""; }, 3000);
+  const b = $("#btn-settings");
+  if (ok) flashBtnText(b, "⚙ AI 已启用 ✓", 3000);
+  else flashBtnText(b, "⚙ 保存失败（无痕模式？）", 3000, "#d98f7a");
 });
 $("#llm-clear").addEventListener("click", () => {
   try { localStorage.removeItem(LLM_KEY); } catch (e) {}
@@ -2559,7 +2559,7 @@ $("#btn-ask").addEventListener("click", () => {
   state.question = q || (state.dailyMode ? "今日指引" : q); state.numbers = nums; state.number = nums[0];
   state.domain = detectDomain(q);
   if (!state.spreadManual) state.spreadKey = pickSpread(q);
-  /* 不变量兜底：每日一牌只允许单牌阵。任何路径组合出 dailyMode+多张阵都会让 dailyCard 劫持全部翻牌（同牌 bug），一律自动退出 */
+  /* 不变量兜底：每日一牌只允许单牌阵。任何路径组合出 dailyMode+多张阵都会让单牌揭示逻辑误套全部翻牌（同牌 bug），一律自动退出 */
   if (state.dailyMode && SPREADS[state.spreadKey].positions.length > 1) state.dailyMode = false;
   try { buildDraws(); } catch(e) { flashErr("抽牌出错: " + e.message); return; }
   startRitual();
@@ -2571,7 +2571,7 @@ const orbitLayer = $("#orbit-layer"), fanEl = $("#fan"), arena = $("#arena"), pe
 const holdWrap = $("#hold-wrap"), holdBtn = $("#hold-btn"), holdRing = $("#hold-ring"), holdTip = $("#hold-tip"), holdLabel = $("#hold-label");
 const progressLine = $("#progress-line"), revealedRow = $("#revealed-row"), nextCta = $("#next-cta"), arenaHint = $("#arena-hint");
 const RING_LEN = 392;
-let holdTimer = null, holdStart = 0, holdNeed = 1500, holding = false, ritualBusy = false, fanArmed = false;
+let holdTimer = null, holdStart = 0, holdNeed = 1500, holding = false, holdPointerId = null, ritualBusy = false, fanArmed = false;
 let ritualGen = 0; /* 仪式代数令牌：跳过/重开仪式时作废上一轮洗牌→切牌的待触发定时器 */
 /* 仪式相关时序常量（集中管理，避免散落的魔法数字） */
 const SHUFFLE_MS = 2700;      /* 洗牌轨道动画时长 */
@@ -2580,7 +2580,6 @@ const HOLD_HIDE_MS = 3000;    /* 凝神完成后定位按钮收起的延时 */
 const REVERSED_CHANCE = 0.34; /* 逆位概率（约三分之一，对应传统韦特逆位习惯） */
 /* P1-2：正逆在洗牌时已按 seed 预分配，翻牌只是揭示（可复现）；无预分配数据时退回现场随机（防御） */
 function drawReversed(card) {
-  if (state.dailyMode && state.dailyCard) return state.dailyReversed;
   const i = state.deck.indexOf(card);
   return i >= 0 && Array.isArray(state.deckRev) ? !!state.deckRev[i] : Math.random() < REVERSED_CHANCE;
 }
@@ -2633,6 +2632,7 @@ function playSfx(kind) {
 }
 
 function startRitual() {
+  abortActiveLLM(); /* 开新局：掐掉上一局仍在跑的 AI 流，省重复计费 */
   const gen = ++ritualGen;
   ritualBusy = false; /* R4：作废旧动画链的同时释放翻牌锁，防止旧链中途被作废后新仪式永远无法翻牌 */
   state.revealed = 0;
@@ -2779,8 +2779,8 @@ function pickFromSpread(el) {
   ritualBusy = true;
   /* B1：必须在 splice 之前取逆位——drawReversed 依赖 state.deck.indexOf(card) 查 seed 预分配表，
      splice 后再查必为 -1 而退化为现场随机，击穿"同回响码复现牌局"承诺 */
-  const finalCard = state.dailyMode && state.dailyCard ? state.dailyCard : el.__card;
-  const rev = state.dailyMode && state.dailyCard ? state.dailyReversed : drawReversed(el.__card);
+  const finalCard = el.__card;
+  const rev = drawReversed(el.__card);
   state.deck.splice(idx, 1)[0];
   el.classList.add("picked");
   /* 移除标记（数据驱动方案：单一类 + data 属性，任意张数牌阵通用） */
@@ -2814,8 +2814,9 @@ fanEl.addEventListener("wheel", e => {
 /* 长按（setInterval 驱动：后台标签页 rAF 会暂停，interval 最多降频不会卡死） */
 function startHold(e) {
   if (ritualBusy || !holdWrap.classList.contains("show")) return;
+  if (holding && e.pointerId !== holdPointerId) return; /* 已有手指在凝神：忽略额外手指，防双指打断/重置进度 */
   e.preventDefault();
-  holding = true; holdStart = performance.now();
+  holding = true; holdPointerId = e.pointerId; holdStart = performance.now();
   holdBtn.classList.add("holding");
   holdTip.textContent = "能量正在汇聚……";
   clearInterval(holdTimer);
@@ -2823,12 +2824,12 @@ function startHold(e) {
     if (!holding) { clearInterval(holdTimer); return; }
     const p = Math.min(1, (performance.now() - holdStart) / holdNeed);
     holdRing.style.strokeDashoffset = String(RING_LEN * (1 - p));
-    if (p >= 1) { holding = false; clearInterval(holdTimer); holdBtn.classList.remove("holding"); completeHold(); }
+    if (p >= 1) { holding = false; holdPointerId = null; clearInterval(holdTimer); holdBtn.classList.remove("holding"); completeHold(); }
   }, 60);
 }
 function cancelHold() {
   if (!holding) return;
-  holding = false;
+  holding = false; holdPointerId = null;
   clearInterval(holdTimer);
   holdBtn.classList.remove("holding");
   holdRing.style.strokeDashoffset = String(RING_LEN);
@@ -2884,9 +2885,10 @@ function highlightNextMark(pulse) {
 }
 holdBtn.addEventListener("pointerdown", startHold);
 /* #7 移动端长按容差：pointerleave 改为仅 pointerup/pointercancel，且加 40px 容差区域 */
-["pointerup", "pointercancel"].forEach(ev => holdBtn.addEventListener(ev, cancelHold));
+["pointerup", "pointercancel"].forEach(ev => holdBtn.addEventListener(ev, e => { if (e && e.pointerId != null && e.pointerId !== holdPointerId) return; cancelHold(); }));
 holdBtn.addEventListener("pointermove", e => {
   if (!holding) return;
+  if (e.pointerId !== holdPointerId) return; /* 非凝神手指的移动不干扰当前按住的手指 */
   /* 手指微移不取消，只有离开按钮太远才取消 */
   const r = holdBtn.getBoundingClientRect();
   const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
@@ -2990,6 +2992,8 @@ function revealChosen(card, reversed) {
 /* ---------- S3 解读 ---------- */
 let __restoreMode = false;
 let aiGen = 0; /* R1：主 AI 流代际令牌——旧轮流式回调校验 gen 后才允许写 DOM，防止迟到帧污染新一轮解读页 */
+let activeCtrl = null; /* 进行中的 AI 流式请求 controller；重开占卜/回首页时 abort 掉，省重复计费 */
+function abortActiveLLM() { if (activeCtrl) { try { activeCtrl.abort(); } catch (e) {} activeCtrl = null; } }
 let readingNavScroll = null; /* Feature B：解读页章节导航的滚动监听句柄，重渲染前移除避免重复绑定 */
 /* ---------- 解读·确定性兜底润色（不指望弱模型自觉：保证至少一条"相对时间+动作"、去重复免责） ---------- */
 function polishReading(d) {
@@ -3032,6 +3036,7 @@ async function renderReading() {
   state.shareSnapshot = null; /* 分享卡/历史能量词的跨轮残留防护 */
   fuGen++; /* 作废进行中的追问请求，防止旧轮结果迟到覆盖新解读 */
   aiGen++; /* R1：作废上一轮主 AI 流的迟到 onPart/权威渲染 */
+  abortActiveLLM(); /* 掐掉上一局仍在跑的 AI 流，省重复计费 */
   $("#reading-spread-name").textContent = spread.name;
   $("#reading-q").innerHTML = `你问：「<b>${escapeHtml(state.question)}</b>」`;
   const h = new Date().getHours();
@@ -3432,26 +3437,16 @@ function renderTiming() {
   const synEl = document.getElementById("synthesis");
   if (!synEl || !state.draws.length) return;
   const usable = state.draws.filter(d => timingFor(d.card.name));
-  /* 全部牌都无传统时间对应且非每日一牌：整块隐藏，避免零信息区块 */
-  if (!usable.length && !(state.dailyMode && state.dailyCard)) return;
+  /* 全部牌都无传统时间对应：整块隐藏，避免零信息区块 */
+  if (!usable.length) return;
   const lines = state.draws.map(d => {
     const t = timingFor(d.card.name);
     return `<div class="timing-line"><span class="t-card">${d.card.name}${d.reversed ? "（逆）" : ""}</span><span class="t-time">${t || "无传统对应"}</span></div>`;
   });
   const block = document.createElement("div");
   block.className = "timing-block";
-  let dailyLine = "";
-  if (state.dailyMode && state.dailyCard) {
-    const acts = (typeof CARD_ACTIONS !== "undefined" && CARD_ACTIONS[state.dailyCard.name]) ? CARD_ACTIONS[state.dailyCard.name] : [];
-    if (acts.length) {
-      const t = new Date();
-      const act = acts[(t.getFullYear() * 372 + t.getMonth() * 31 + t.getDate()) % acts.length];
-      dailyLine = `<div class="timing-line"><span class="t-card">🎯 今日行动</span><span class="t-time">${act}</span></div>`;
-    }
-  }
   block.innerHTML = `
     <div class="tb-title">⏳ 应期参考</div>
-    ${dailyLine}
     ${lines.join("")}
     <p class="tb-note">应期出自传统时间对应法，仅按牌面推演大致区间——时机终究操之在己，不是注定。</p>`;
   synEl.parentNode.insertBefore(block, synEl.nextSibling);
@@ -3645,6 +3640,7 @@ qEl.addEventListener("input", renderCoach);
 
 /* 重新抽牌 */
 $("#btn-again").addEventListener("click", () => {
+  abortActiveLLM(); /* 重开占卜：先掐掉上一局仍在跑的 AI 流（go("ask") 兜底，此处显式更贴合入口语义） */
   qEl.value = ""; numEl.value = ""; flashErr("");
   state.dailyMode = false;
   state.spreadManual = false; state.spreadKey = "three_time";
@@ -3705,21 +3701,27 @@ function buildReadingPrompt() {
     + "\n\n【解读任务】你是一位反思式塔罗解读顾问（精神分析素养；职业操守：不预测注定、不替第三方下心理结论、不做医疗/法律/投资建议）。请用中文按此结构输出：①结论先行（一句话）②逐张解读＝牌义×该牌位职能×问题语境（同牌异位结论允许不同）③牌阵联动：优先引用上面系统预计算的牌间关系与来源编号展开理由 ④综合判断：说明这是照目前状况不加改变的推演、并非注定 ⑤3-5 条可验证的行动建议（相对时间+具体动作，拒绝万能废话）⑥结尾一句关怀提醒。避免「你一定会/注定/牌面显示你会」这类断言措辞。"
     + `\n（牌局印记：${seedHex()} · 出自 塔塔🔮の心灵疗愈室 cindysd.github.io/tata-public）`;
 }
+/* 按钮临时改文案后自动还原：带代际令牌，连续快点击时旧定时器不会把新文案盖回或卡住 */
+function flashBtnText(btn, msg, ms, color) {
+  if (!btn) return;
+  if (btn.__flashOld == null) btn.__flashOld = btn.textContent;   /* 首次记录真实原文，二次点击不覆盖成"已复制" */
+  btn.textContent = msg;
+  if (color) btn.style.color = color;
+  const tok = (btn.__flashTok = (btn.__flashTok || 0) + 1);
+  setTimeout(() => {
+    if (btn.__flashTok !== tok) return;                            /* 已被更新点击接管，跳过避免卡在旧文案 */
+    btn.textContent = btn.__flashOld; btn.style.color = ""; btn.__flashOld = null;
+  }, ms);
+}
 $("#btn-prompt")?.addEventListener("click", () => {
   if (!state.draws.length) return;
-  const done = () => {
-    const b = $("#btn-prompt"); const old = b.textContent;
-    b.textContent = "已复制 ✓ 可粘贴给任意 AI"; setTimeout(() => { b.textContent = old; }, 2200);
-  };
+  const done = () => flashBtnText($("#btn-prompt"), "已复制 ✓ 可粘贴给任意 AI", 2200);
   copyToClipboard(buildReadingPrompt(), done);
 });
 
 $("#btn-share").addEventListener("click", () => {
   const txt = shareText();
-  const done = () => {
-    const b = $("#btn-share"); const old = b.textContent;
-    b.textContent = "已抄收 ✓"; setTimeout(() => { b.textContent = old; }, 1600);
-  };
+  const done = () => flashBtnText($("#btn-share"), "已抄收 ✓", 1600);
   copyToClipboard(txt, done);
 });
 function copyToClipboard(txt, done) {
@@ -3945,42 +3947,54 @@ $("#btn-card").addEventListener("click", async () => {
 /* ---------- 占卜历史（本机保存，最多 20 条） ---------- */
 const HKEY = "tata-history-v1";
 function loadHistory() { try { return JSON.parse(localStorage.getItem(HKEY) || "[]"); } catch (e) { return []; } }
-function saveHistory() {
+/* 多标签页安全写入：每次落盘前重新读取最新存储，并按时间戳 t 去重合并（我们的编辑版优先），
+   防止两个标签各占一卦时"读全部→加一条→整体写回"互相覆盖丢记录 */
+function mergeHistoryByT(primary, extra) {
+  const seen = new Set(), out = [];
+  for (const r of primary.concat(extra)) { if (r && r.t != null && !seen.has(r.t)) { seen.add(r.t); out.push(r); } }
+  out.sort((a, b) => (b.t || 0) - (a.t || 0));
+  return out.slice(0, 20);
+}
+function mutateHistory(fn) {
   try {
     const h = loadHistory();
+    if (fn(h) === false) return false;                 /* fn 返回 false：目标记录不存在等操作，跳过写入 */
+    const fresh = loadHistory();                        /* 写前再读一次，合并另一标签页在此期间新增的记录 */
+    localStorage.setItem(HKEY, JSON.stringify(mergeHistoryByT(h, fresh)));
+    return true;
+  } catch (e) { return false; }
+}
+function saveHistory() {
+  try {
     const now = Date.now();
-    h.unshift({
+    const rec = {
       t: now, q: state.question, n: state.number, sp: state.spreadKey, seed: state.seed,
       d: state.draws.map(x => ({ id: x.card.id, r: x.reversed })), e: (state.shareSnapshot && state.shareSnapshot.energy) || energyWord()
-    });
+    };
     state.lastHistT = now;
-    localStorage.setItem(HKEY, JSON.stringify(h.slice(0, 20)));
+    mutateHistory((h) => { h.unshift(rec); });
   } catch (e) { /* 存储不可用时静默跳过，占卜流程不受影响 */ }
 }
 /* AI 解读完成后能量词才定稿：回写本次刚入档的那条记录（时间戳匹配，绝不碰旧记录） */
 function updateHistoryEnergy() {
-  try {
-    const h = loadHistory();
-    if (h.length && state.lastHistT && h[0].t === state.lastHistT && state.shareSnapshot) {
-      h[0].e = state.shareSnapshot.energy;
-      localStorage.setItem(HKEY, JSON.stringify(h));
-    }
-  } catch (e) { /* 静默 */ }
+  if (!state.lastHistT || !state.shareSnapshot) return;
+  mutateHistory((h) => {
+    const i = h.findIndex(r => r && r.t === state.lastHistT);
+    if (i === -1) return false;
+    h[i].e = state.shareSnapshot.energy;
+  });
 }
 /* ---------- P1-1 复盘闭环：按时间戳定位记录打补丁（情绪/应验/AI 缓存/回看次数） ---------- */
 function updateHistoryRecord(t, patch) {
-  try {
-    const h = loadHistory();
+  return mutateHistory((h) => {
     const i = h.findIndex(r => r && r.t === t);
     if (i === -1) return false;
     Object.assign(h[i], patch);
     const s = JSON.stringify(h);
     if (s.length > 1_800_000) { /* 存储守卫：缓存过大则丢弃 a 字段重写 */
       h.forEach(r => { if (r && r.a && s.length > 1_800_000) delete r.a; });
-      localStorage.setItem(HKEY, JSON.stringify(h));
-    } else localStorage.setItem(HKEY, s);
-    return true;
-  } catch (e) { return false; }
+    }
+  });
 }
 /* AI 结果精简缓存：只留回看所需的解读文本，逐字段截断 + 总量守卫 */
 function shrinkAi(d) {
@@ -4252,7 +4266,7 @@ function openFeedback() {
     <p class="note" style="margin-top:14px;text-align:center;line-height:1.9">「写邮件」会唤起你设备上的邮件应用；若没有弹出，请点「复制邮箱 + 模板」，<br>粘贴到你的邮箱或微信发送。涉及个人隐私的内容（问题原文等）请自行斟酌是否附上。</p>`);
   const fbCopy = document.getElementById("fb-copy");
   if (fbCopy) fbCopy.addEventListener("click", () => {
-    const done = () => { fbCopy.textContent = "已复制 ✓ 去邮箱/微信粘贴发送"; setTimeout(() => { fbCopy.textContent = "📋 复制邮箱 + 模板"; }, 2400); };
+    const done = () => flashBtnText(fbCopy, "已复制 ✓ 去邮箱/微信粘贴发送", 2400);
     if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(fbAll).then(done, () => fallbackCopy(fbAll, done));
     else fallbackCopy(fbAll, done);
   });
