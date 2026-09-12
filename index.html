@@ -4273,9 +4273,11 @@ let SHARE_H = 1440;
 function loadCardImg(src) {
   return new Promise(resolve => {
     const im = new Image();
+    let done = false; const fin = v => { if (!done) { done = true; resolve(v); } };
     im.crossOrigin = "anonymous"; /* jsDelivr 兜底图需 CORS 才不污染画布 */
-    im.onload = () => resolve(im);
-    im.onerror = () => resolve(null);
+    im.onload = () => fin(im);
+    im.onerror = () => fin(null);
+    setTimeout(() => fin(null), 12000); /* 超时兜底：连接卡死时 onload/onerror 都不触发，12s 后走 ✶ 文字占位——分享图不再无限"绘制中"（铁律4：超时覆盖全生命周期） */
     im.src = src;
   });
 }
