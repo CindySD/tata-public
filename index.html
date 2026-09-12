@@ -4384,14 +4384,17 @@ async function buildDailyShareCard() {
   const D0 = { brand: 44, date: 34, cardPad: 26, name: 58, en: 30, rev: 28, orn: 46, energy: 58, foot: 150 };
   const D1 = { brand: 40, date: 30, cardPad: 20, name: 52, en: 26, rev: 24, orn: 36, energy: 52, foot: 136 };
   let D = D0, tight = false;
-  let cw = 356, lineH = 34, rowGap = 16;
+  let cw = 316, lineH = 34, rowGap = 16;
+  const CB = { pad: 16, label: 40, padTop: 14, padBot: 14 };     /* 直觉框内边距（解读页 conclusion-banner 同款金框样式） */
+  const CBOXW = W - PADX * 2;
   const measure = () => {
     const chh = Math.round(cw * 1.72);
     const cLineH = tight ? 27 : 32;
     const rowH = rows.map(r => 28 + countWrap(r.v, F.body, BODYW) * lineH);
-    const blocks = { brand: D.brand, date: D.date, card: chh + D.cardPad, name: D.name, en: enTxt ? D.en : 0, rev: revTxt ? D.rev : 0, orn: D.orn, energy: D.energy, concl: concl ? 36 + countWrap(`「${concl}」`, F.concl, W - PADX * 2) * cLineH + 10 : 0, rows: rowH.reduce((a, b) => a + b + rowGap, 0), lucky: 0 };
+    const blocks = { brand: D.brand, date: D.date, card: chh + D.cardPad, name: D.name, en: enTxt ? D.en : 0, rev: revTxt ? D.rev : 0, orn: D.orn, energy: D.energy, concl: concl ? CB.padTop + CB.label + conclLines0() * cLineH + CB.padBot : 0, rows: rowH.reduce((a, b) => a + b + rowGap, 0), lucky: 0 };
     return { chh, rowH, cLineH, contentH: Object.values(blocks).reduce((a, b) => a + b, 0) };
   };
+  const conclLines0 = () => Math.max(1, countWrap(`「${concl}」`, F.concl, CBOXW - CB.pad * 2 - 36));
   let M = measure();
   const needH = TOP + D0.foot + M.contentH + 40;      /* +40：给 gap 呼吸余量 */
   if (needH > H) { H = Math.min(1560, Math.ceil(needH / 30) * 30); cv.height = H; }   /* ⓪ 优先长高：1350→≤1560，文字保持舒展间距；比率仍介于 4:5 与 2:3 */
@@ -4401,8 +4404,8 @@ async function buildDailyShareCard() {
   while (M.contentH > H - TOP - D.foot && cw > 208) { cw -= 12; M = measure(); }     /* ④ 主图再降一档 */
   const gap = Math.max(6, Math.min(48, Math.floor((H - TOP - D.foot - M.contentH) / 8)));
   const { chh, rowH, cLineH } = M;
-  const conclLines = concl ? Math.max(1, countWrap(`「${concl}」`, F.concl, W - PADX * 2)) : 0;
-  const conclH = concl ? 36 + conclLines * cLineH + 10 : 0;
+  const conclLines = conclLines0();
+  const conclH = concl ? CB.padTop + CB.label + conclLines * cLineH + CB.padBot : 0;
   paintBG();
 
   /* ── 第二遍：按量好的高度顺序绘制（页脚锚底，内容不侵入） ── */
@@ -4422,17 +4425,26 @@ async function buildDailyShareCard() {
   ctx.fillStyle = "#d4b57c"; ctx.font = F.brand; ctx.fillText("塔塔🔮の心灵疗愈室", CX, y + D.brand - 10); ctx.restore(); y += D.brand + gap;
   ctx.fillStyle = "#8a8271"; ctx.font = F.date; ctx.fillText(dateTxt, CX, y + 22); y += D.date + gap;
 
-  /* 塔塔的直觉：与页面直觉框同一句（shareSnapshot.conclusion），置于牌图上方——先给答案，再看牌面 */
+  /* 塔塔的直觉：与页面直觉框同一句（shareSnapshot.conclusion）、同一款金框；置于牌图上方——先给答案，再看牌面 */
   if (concl) {
-    ctx.fillStyle = "#d4b57c"; ctx.font = `600 23px ${SANS}`; ctx.fillText("塔 塔 的 直 觉", CX, y + 24); y += 36;
+    const boxH = conclH;
+    /* 框：金渐变底 + 金边 + 圆角（复刻站内 .conclusion-banner） */
+    const bg = ctx.createLinearGradient(0, y, 0, y + boxH);
+    bg.addColorStop(0, "rgba(201,168,106,.14)"); bg.addColorStop(1, "rgba(201,168,106,.03)");
+    ctx.fillStyle = bg; rr(PADX, y, CBOXW, boxH, 14); ctx.fill();
+    ctx.strokeStyle = "rgba(201,168,106,.55)"; ctx.lineWidth = 2; rr(PADX, y, CBOXW, boxH, 14); ctx.stroke();
+    ctx.strokeStyle = "rgba(238,224,178,.16)"; ctx.lineWidth = 1; rr(PADX + 5, y + 5, CBOXW - 10, boxH - 10, 10); ctx.stroke();
+    let iy = y + CB.padTop;
+    ctx.fillStyle = "#c9a86a"; ctx.font = `600 22px ${SANS}`; ctx.fillText("塔 塔 的 直 觉", CX, iy + 22); iy += CB.label;
     ctx.fillStyle = "#e8e2d4"; ctx.font = F.concl;
-    ctx.textAlign = "left"; let cCur = "", cLy = y + 26;
+    const cInW = CBOXW - CB.pad * 2 - 36;
+    ctx.textAlign = "left"; let cCur = "", cLy = iy + 24;
     for (const c3 of `「${concl}」`.split("")) {
-      if (ctx.measureText(cCur + c3).width > W - PADX * 2) { ctx.fillText(cCur, PADX, cLy); cCur = c3; cLy += cLineH; } else cCur += c3;
+      if (ctx.measureText(cCur + c3).width > cInW) { ctx.fillText(cCur, PADX + CB.pad + 18, cLy); cCur = c3; cLy += cLineH; } else cCur += c3;
     }
-    if (cCur) ctx.fillText(cCur, PADX, cLy);
+    if (cCur) ctx.fillText(cCur, PADX + CB.pad + 18, cLy);
     ctx.textAlign = "center";
-    y += conclLines * cLineH + 10 + gap;
+    y += conclH + gap;
   }
 
   const cx = CX - cw / 2;
