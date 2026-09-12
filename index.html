@@ -806,6 +806,66 @@ footer::before{
   background:linear-gradient(90deg,transparent,var(--gold-dim),transparent)
 }
 
+/* ---------- ⑮ 封面"今天抽了吗"提示条（只读状态，不代做任何决定） ---------- */
+.cover-daily-hint{
+  display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;
+  margin:14px auto 4px;font-size:12.5px;letter-spacing:.08em;color:var(--ink-dim);
+}
+.cover-daily-hint .cdh-text b{color:var(--gold-hi);font-weight:600}
+.cover-daily-hint:not(.done) .cdh-text::before{
+  content:"";display:inline-block;width:6px;height:6px;border-radius:50%;
+  background:var(--gold);margin-right:8px;vertical-align:1px;
+  animation:cdh-pulse 2.4s ease-in-out infinite;
+}
+@keyframes cdh-pulse{0%,100%{opacity:.35;transform:scale(.8)}50%{opacity:1;transform:scale(1.15)}}
+.cover-daily-hint .cdh-link{
+  background:none;border:1px solid var(--gold-faint);border-radius:999px;color:var(--gold);
+  font-size:11.5px;letter-spacing:.1em;padding:5px 14px;cursor:pointer;transition:border-color .25s,color .25s;
+}
+.cover-daily-hint .cdh-link:hover{border-color:var(--gold);color:var(--gold-hi)}
+
+/* ---------- ⑯ 历史页「这 30 天」月度切片 ---------- */
+.month-panel{
+  display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 16px;
+  border:1px solid var(--panel-line);border-radius:12px;padding:10px 14px;margin:-6px 0 14px;
+  background:rgba(201,168,106,.03);font-size:11.5px;color:var(--ink-faint);letter-spacing:.05em;
+}
+.month-panel .mp-title{font-family:var(--serif);letter-spacing:.18em;color:var(--gold-hi);font-size:12.5px}
+.month-panel .mp-item b{color:var(--gold);font-weight:600}
+
+/* ---------- ⑰ 解读页「时间的镜子」同题对照 ---------- */
+.time-mirror{
+  margin-top:22px;padding:16px 18px;border:1px solid var(--gold-faint);border-radius:14px;
+  background:linear-gradient(180deg,rgba(201,168,106,.05),rgba(201,168,106,.02));
+}
+.time-mirror .tm-title{font-family:var(--serif);font-size:13px;letter-spacing:.24em;color:var(--gold-hi);text-align:center;margin-bottom:6px}
+.time-mirror .tm-sub{font-size:11.5px;color:var(--ink-faint);text-align:center;letter-spacing:.05em;margin-bottom:12px}
+.time-mirror .tm-row{
+  display:flex;align-items:baseline;justify-content:center;gap:10px;flex-wrap:wrap;
+  font-size:13px;color:var(--ink-dim);padding:7px 0;border-top:1px solid rgba(201,168,106,.07);
+}
+.time-mirror .tm-row:first-of-type{border-top:none}
+.time-mirror .tm-pos{font-size:10.5px;letter-spacing:.14em;color:var(--ink-faint);min-width:64px;text-align:right}
+.time-mirror .tm-then{opacity:.72}
+.time-mirror .tm-arrow{color:var(--gold-dim)}
+.time-mirror .tm-now b{color:var(--gold-hi);font-weight:600}
+.time-mirror .tm-tag{
+  font-size:10.5px;letter-spacing:.12em;color:var(--gold);border:1px solid var(--gold-faint);
+  border-radius:999px;padding:2px 10px;
+}
+.time-mirror .tm-row.reborn .tm-tag{color:#d98f7a;border-color:rgba(217,143,122,.4)}
+.time-mirror .tm-ref{
+  font-family:var(--serif);font-size:12.5px;line-height:1.95;color:var(--ink-dim);
+  margin:12px 4px 2px;padding-left:10px;border-left:2px solid var(--gold-dim);
+}
+.time-mirror .tm-note{font-size:11px;color:var(--ink-faint);text-align:center;line-height:1.9;margin:12px 0 10px;letter-spacing:.04em}
+.time-mirror .tm-back{
+  display:block;margin:0 auto;background:none;border:1px solid var(--gold-faint);border-radius:999px;
+  color:var(--gold);font-size:12px;letter-spacing:.12em;padding:7px 20px;cursor:pointer;transition:border-color .25s,color .25s;
+}
+.time-mirror .tm-back:hover{border-color:var(--gold);color:var(--gold-hi)}
+@media (prefers-reduced-motion:reduce){.cover-daily-hint:not(.done) .cdh-text::before{animation:none}}
+
 </style>
 </head>
 <body>
@@ -832,6 +892,7 @@ footer::before{
       <button class="btn ghost" id="btn-hist" type="button">占卜记录</button>
       <button class="btn ghost" id="btn-settings" type="button">⚙ AI 设置</button>
     </div>
+    <div class="cover-daily-hint" id="cover-daily-hint" hidden></div>
     <button class="btn ghost demo-entry" id="btn-demo" type="button">第一次来？✦ 试试演示占卜</button>
   </section>
 
@@ -949,7 +1010,7 @@ footer::before{
         <button class="btn ghost" id="btn-hist-clear" type="button">清空记录</button>
       </div>
       <input type="file" id="hist-import-file" accept=".json,application/json" style="display:none" aria-label="选择历史记录备份文件">
-      <p class="note" style="margin-top:20px">记录保存在你的浏览器本机，最多保留最近 20 次，不上传任何服务器。<br>导出的 JSON 文件可用于换机迁移——在新设备上点「导入记录」即可合并。</p>
+      <p class="note" style="margin-top:20px">记录保存在你的浏览器本机，最多保留最近 40 次，不上传任何服务器。<br>导出的 JSON 文件可用于换机迁移——在新设备上点「导入记录」即可合并。<br>怕忘记备份？回首页点「⏰ 每日提醒」，让<b>你自己的日历</b>提醒你备份和抽牌。</p>
     </div>
   </section>
 
@@ -2538,6 +2599,7 @@ function go(name) {
   stages[name].classList.add("active");
   window.scrollTo({ top: 0, behavior: "instant" in document.documentElement ? "instant" : "auto" });
   if (name === "ask") { refreshNumHint(); syncAskForDaily(); } /* 进提问页同步数字提示与牌阵所需个数 + 每日一牌入口精简 */
+  if (name === "cover") updateCoverDailyHint(); /* 回封面刷新"今天抽了吗"提示条（只读派生，不代做任何决定） */
   // 浮动按钮：非封面页显示
   const floatBtn = $("#float-settings");
   if (floatBtn) floatBtn.classList.toggle("show", name !== "cover");
@@ -3605,6 +3667,7 @@ async function renderReading() {
   renderLinks();
   renderTiming();
   renderReflectBlock(wasRestore);
+  renderTimeMirror(wasRestore); /* P1 时间的镜子：所有内容落定后、导航生成前插入——四条渲染路径（AI 流式/权威/规则/回看）都经此函数，逐路径不再各挂各的 */
   renderReadingNav(); /* Feature B：子块渲染完成后再生成章节导航，能探测到实际存在的锚点 */
   if (state.dailyMode) renderDailyFortune(); /* 今日运势卡只属于「今日一牌」；普通占卜（含手选/自动选中的单牌阵）一律不渲染 */
   setTimeout(() => document.getElementById("reading-spread-name")?.scrollIntoView({ block: "start" }), 60);
@@ -3620,6 +3683,7 @@ function renderReadingNav() {
     ["联动", "#stage-reading .links-block"],
     ["综合", "#synthesis"],
     ["复盘", "#synthesis .reflect-block"],
+    ["镜子", "#synthesis .time-mirror"],
     ["操作", "#stage-reading .ending"]
   ];
   const secs = cand
@@ -4061,6 +4125,62 @@ $("#btn-daily").addEventListener("click", () => {
   go("ask");
   numEl.focus();
 });
+
+/* ---------- P0-B 每日提醒：封面"今天抽了吗"提示条 + .ics 日历提醒（零服务器，诚实可兑现） ---------- */
+const REMIND_KEY = "tata-remind-v1";
+function _readRemind() { try { return JSON.parse(localStorage.getItem(REMIND_KEY) || "null"); } catch (e) { return null; } }
+function updateCoverDailyHint() {
+  const el = $("#cover-daily-hint"); if (!el) return;
+  const lock = _readDaily(), today = dailyLockedToday();
+  const y = _dayStr(new Date(Date.now() - 864e5));
+  let txt;
+  if (today) txt = `今天已翻过 · 连续打卡 <b>${today.streak || 1}</b> 天`;
+  else if (lock && lock.day === y) txt = `今天还没抽牌 · 昨天连的 <b>${lock.streak || 1}</b> 天，别在今天断掉`;
+  else txt = "今天还没抽牌 ✦ 凭直觉翻一张？";
+  const rm = _readRemind();
+  el.innerHTML = `<span class="cdh-text">${txt}</span><button class="cdh-link" id="btn-remind" type="button">⏰ 每日提醒${rm && rm.hhmm ? " · " + escHtml(rm.hhmm) : ""}</button>`;
+  el.classList.toggle("done", !!today);
+  el.hidden = false;
+  const rb = $("#btn-remind");
+  if (rb) rb.addEventListener("click", openRemindModal);
+}
+function openRemindModal() {
+  const rm = _readRemind();
+  const val = (rm && /^\d{2}:\d{2}$/.test(rm.hhmm || "") && rm.hhmm) || "09:00";
+  openInfoModal(`
+    <h4>⏰ 每日提醒</h4>
+    <div class="m-row"><p>先说清楚能做到的：<b>塔塔没有服务器，也不做推送</b>——它不会在你没打开网页时"叮"你一下。
+    它能做的是生成一个日历文件（.ics），导入你自己的日历后，由<b>你的日历 App</b> 每天在此时提醒你「该翻牌了」。</p></div>
+    <div class="m-row" style="margin-top:10px">
+      <div class="m-label">提醒时间</div>
+      <input class="num-input" id="remind-time" type="time" value="${val}" style="font-size:14px;font-family:var(--sans);height:42px;width:150px;text-align:center">
+    </div>
+    <div style="display:flex;gap:14px;justify-content:center;margin-top:16px;flex-wrap:wrap">
+      <button class="btn" id="remind-dl" type="button">生成日历提醒文件（.ics）</button>
+    </div>
+    <p class="note" style="margin-top:14px;font-size:11.5px;line-height:1.9">下载后打开文件即可存入/订阅日历（iPhone、安卓系统日历均支持）。<br>提醒只会说"该翻牌了"——<b>不替你抽、不替你选数字、不催你做任何决定</b>。<br>换时间请重新生成一份，旧的提醒记得在日历里删掉。</p>`);
+  const dl = $("#remind-dl"); if (!dl) return;
+  dl.addEventListener("click", () => {
+    const raw = ($("#remind-time").value || "").trim();
+    const t = /^(\d{2}):(\d{2})$/.exec(raw) || /^(\d{2}):(\d{2})$/.exec("09:00");
+    if (!t) return;
+    try { localStorage.setItem(REMIND_KEY, JSON.stringify({ hhmm: raw || "09:00", at: Date.now() })); } catch (e) {}
+    const now = new Date(), p = x => String(x).padStart(2, "0");
+    const dtstamp = now.getUTCFullYear() + p(now.getUTCMonth() + 1) + p(now.getUTCDate()) + "T" + p(now.getUTCHours()) + p(now.getUTCMinutes()) + p(now.getUTCSeconds()) + "Z";
+    const ics = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//tata-tarot//daily-card-reminder//CN", "CALSCALE:GREGORIAN",
+      "BEGIN:VEVENT", "UID:tata-daily-card-reminder-" + t[1] + t[2] + "@tata-tarot", "DTSTAMP:" + dtstamp,
+      "DTSTART:" + _dayStr().replace(/-/g, "") + "T" + t[1] + t[2] + "00", "RRULE:FREQ=DAILY",
+      "SUMMARY:塔塔 · 今天翻一张牌", "DESCRIPTION:凭直觉翻一张今天的牌。牌不是水晶球，是一面镜子。塔塔不会推送，这条提醒来自你自己的日历。",
+      "BEGIN:VALARM", "ACTION:DISPLAY", "DESCRIPTION:塔塔 · 今天翻一张牌", "TRIGGER:-PT0M", "END:VALARM",
+      "END:VEVENT", "END:VCALENDAR"].join("\r\n");
+    const blob = new Blob([ics], { type: "text/calendar;charset=utf-8" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob); a.download = "tata-daily-reminder.ics"; a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1500);
+    flashBtnText(dl, "已生成 ✓ 打开文件存入日历即可", 2600);
+    updateCoverDailyHint();
+  });
+}
 
 /* 抄收指引（文本分享，零依赖）：牌面 + 综合解读 + 行动建议 + 站点链接 */
 function shareText() {
@@ -4559,8 +4679,9 @@ $("#btn-card").addEventListener("click", async () => {
   b.disabled = false; b.textContent = old;
 });
 
-/* ---------- 占卜历史（本机保存，最多 20 条） ---------- */
+/* ---------- 占卜历史（本机保存，最多 HIST_MAX=40 条） ---------- */
 const HKEY = "tata-history-v1";
+const HIST_MAX = 40; /* 历史上限：20→40。给「时间的镜子」同题对照与「这 30 天」月度面板留足样本；体积由 updateHistoryRecord 的 1.8MB AI 缓存守卫兜底 */
 function loadHistory() { try { return JSON.parse(localStorage.getItem(HKEY) || "[]"); } catch (e) { return []; } }
 /* 多标签页安全写入：每次落盘前重新读取最新存储，并按时间戳 t 去重合并（我们的编辑版优先），
    防止两个标签各占一卦时"读全部→加一条→整体写回"互相覆盖丢记录 */
@@ -4568,7 +4689,7 @@ function mergeHistoryByT(primary, extra) {
   const seen = new Set(), out = [];
   for (const r of primary.concat(extra)) { if (r && r.t != null && !seen.has(r.t)) { seen.add(r.t); out.push(r); } }
   out.sort((a, b) => (b.t || 0) - (a.t || 0));
-  return out.slice(0, 20);
+  return out.slice(0, HIST_MAX);
 }
 function mutateHistory(fn) {
   try {
@@ -4723,6 +4844,68 @@ function trendPanel(t) {
     ${moods ? `<div class="tp-sec"><span class="tp-cap">情 绪 落 点</span><div class="tp-row">${moods}</div></div>` : ""}
   </div>`;
 }
+/* P1「时间的镜子」之月度切片：近 30 天你与牌的样子——纯从历史派生，不新增存储 */
+function monthPanel(h) {
+  const since = Date.now() - 30 * 864e5;
+  const recs = h.filter(r => r && (r.t || 0) >= since && Array.isArray(r.d) && r.d.length);
+  if (recs.length < 2) return "";
+  const t = computeTrend(recs);
+  if (!t.draws) return "";
+  const daySet = new Set(recs.map(r => _dayStr(new Date(r.t))));
+  const lk = _readDaily();
+  const y = _dayStr(new Date(Date.now() - 864e5));
+  const streakNow = dailyLockedToday() ? ((lk && lk.streak) || 1) : (lk && lk.day === y ? (lk.streak || 0) : 0);
+  const revPct = Math.round(t.rev / t.draws * 100);
+  const top = t.top && t.top[0];
+  return `<div class="month-panel" role="region" aria-label="近三十天概览">
+    <span class="mp-title">🌙 这 30 天</span>
+    <span class="mp-item">抽牌 <b>${recs.length}</b> 次</span>
+    <span class="mp-item">翻开 <b>${t.draws}</b> 张牌</span>
+    <span class="mp-item">逆位 <b>${revPct}%</b></span>
+    <span class="mp-item">打卡 <b>${daySet.size}</b> 天${streakNow ? ` · 连签 <b>${streakNow}</b> 天` : ""}</span>
+    ${top ? `<span class="mp-item">最常见「<b>${top[0]}</b>」×${top[1]}</span>` : ""}
+  </div>`;
+}
+/* P1「时间的镜子」：同一问题、上一次你抽到什么——历史里的同题记录逐位对照。
+   只读派生（loadHistory.find），不改任何存储；无同题旧记录则整块不出现。 */
+function renderTimeMirror(wasRestore) {
+  const synEl = $("#synthesis");
+  if (!synEl || !state.question) return;
+  const anchorT = (wasRestore && state.restoreRec && state.restoreRec.t) ? state.restoreRec.t : (state.lastHistT || Date.now());
+  const norm = s => String(s || "").replace(/[\s，。！？、,.!?~～]/g, "").toLowerCase();
+  const nq = norm(state.question);
+  if (!nq) return;
+  const nd = state.draws.length;
+  /* 排除本局自身：每日牌回放时 lastHistT=0、anchorT=now，当天那条档案（seed 相同）会被误当"上一次"形成自比 */
+  const mySeed = state.seed >>> 0;
+  const prev = loadHistory().find(r => r && (r.t || 0) < anchorT && (r.seed >>> 0) !== mySeed && norm(r.q) === nq && Array.isArray(r.d) && r.d.length === nd);
+  if (!prev) return;
+  let rows = "";
+  state.draws.forEach((d, i) => {
+    const o = prev.d[i];
+    const oc = o && cardById[o.id];
+    const curTxt = `<b>${d.card.name}</b>${d.reversed ? " · 逆" : " · 正"}`;
+    if (!oc) { rows += `<div class="tm-row"><span class="tm-pos">${d.pos.n}</span><span class="tm-then">—</span><span class="tm-arrow">→</span><span class="tm-now">${curTxt}</span></div>`; return; }
+    const same = oc.name === d.card.name;
+    const sameOri = same && !!o.r === !!d.reversed;
+    rows += `<div class="tm-row${sameOri ? " again" : (same ? " reborn" : "")}"><span class="tm-pos">${d.pos.n}</span><span class="tm-then">${oc.name}${o.r ? " · 逆" : " · 正"}</span><span class="tm-arrow">→</span><span class="tm-now">${curTxt}</span>${sameOri ? '<span class="tm-tag">还是它</span>' : (same ? '<span class="tm-tag">同名换向</span>' : "")}</div>`;
+  });
+  const days = Math.max(1, Math.round((anchorT - (prev.t || 0)) / 864e5));
+  const refConcl = (prev.a && typeof prev.a === "object" && typeof prev.a.conclusion === "string" && prev.a.conclusion)
+    ? `<p class="tm-ref">上一次，塔塔是这样说的：<br>「${escHtml(prev.a.conclusion.slice(0, 90))}${prev.a.conclusion.length > 90 ? "……" : ""}」</p>` : "";
+  const html = `<div class="time-mirror" role="region" aria-label="同题对照">
+    <div class="tm-title">🕰️ 时 间 的 镜 子</div>
+    <p class="tm-sub">${days} 天前（${fmtTime(prev.t)}），你问过同一件事。</p>
+    ${rows}${refConcl}
+    <p class="tm-note">两次抽牌只是同一个问题在不同时刻的映照，不构成预测——牌不替时间下结论，变的是你，镜子只负责照见。</p>
+    <button class="tm-back" type="button">✦ 回看那一次的完整解读</button>
+  </div>`;
+  const reflectEl = synEl.querySelector(".reflect-block");
+  if (reflectEl) reflectEl.insertAdjacentHTML("beforebegin", html);
+  else synEl.insertAdjacentHTML("beforeend", html);
+  const backBtn = synEl.querySelector(".time-mirror .tm-back");
+  if (backBtn) backBtn.addEventListener("click", () => restoreReading(prev));
+}
 function renderHistory() {
   /* 每次进入历史页重置搜索，展示全部 */
   const si = $("#hist-search");
@@ -4737,12 +4920,13 @@ function renderHistList() {
   const box = $("#history-list"); box.innerHTML = "";
   const kw = ($("#hist-search")?.value || "").trim().toLowerCase();
   /* 满额预警：接近 20 条上限时提醒备份（搜索时不显示，避免干扰结果） */
-  const warnHtml = (!kw && h.length >= 17)
-    ? `<div class="hist-warn">📦 记录已存 ${h.length}/20 条${h.length >= 20 ? "，再占卜将淘汰最旧记录" : `，再占 ${20 - h.length} 次将开始淘汰最旧记录`}——建议先「导出记录」备份。</div>`
+  const warnHtml = (!kw && h.length >= HIST_MAX - 3)
+    ? `<div class="hist-warn">📦 记录已存 ${h.length}/${HIST_MAX} 条${h.length >= HIST_MAX ? "，再占卜将淘汰最旧记录" : `，再占 ${HIST_MAX - h.length} 次将开始淘汰最旧记录`}——建议先「导出记录」备份。</div>`
     : "";
   /* P1-1 复盘小结 + 排序开关 */
   let headHtml = "";
   if (!kw && h.length) headHtml += trendPanel(computeTrend(h));
+  if (!kw && h.length) headHtml += monthPanel(h);
   if (!kw && h.length > 1) headHtml += `<div class="hist-tools"><button class="hist-sortbtn" id="btn-hist-sort" type="button">↕ ${histSortMemory ? "按时间排序" : "按记忆强度排序"}</button></div>`;
   if (!kw) {
     const checked = h.filter(r => r && r.check);
@@ -4871,10 +5055,10 @@ $("#hist-import-file").addEventListener("change", (e) => {
         seen.add(key); cur.push(r); added++;
       }
       cur.sort((a, b) => (b.t || 0) - (a.t || 0));
-      const kept = cur.slice(0, 20);
+      const kept = cur.slice(0, HIST_MAX);
       try { localStorage.setItem(HKEY, JSON.stringify(kept)); } catch (err) { alert("保存失败：浏览器存储不可用。"); e.target.value = ""; return; }
       renderHistory();
-      alert(`导入完成：新增 ${added} 条，当前共 ${kept.length} 条（最多保留最近 20 条）。`);
+      alert(`导入完成：新增 ${added} 条，当前共 ${kept.length} 条（最多保留最近 ${HIST_MAX} 条）。`);
     } catch (err) {
       alert("导入失败：" + (err.message || "文件格式不正确。请选择本站导出的 JSON 文件。"));
     }
@@ -4914,6 +5098,9 @@ if ("serviceWorker" in navigator && location.protocol === "https:") {
     navigator.serviceWorker.register("sw.js").catch(() => { /* 注册失败不影响功能 */ });
   });
 }
+
+/* 首屏初始化：封面提示条（页面默认就停在 cover，go() 不会触发这次刷新） */
+updateCoverDailyHint();
 
 /* 只读调试句柄（自动化测试用） */
 window.__TATA__ = {
