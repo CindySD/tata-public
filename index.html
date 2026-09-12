@@ -4396,13 +4396,13 @@ async function buildDailyShareCard() {
   };
   const conclLines0 = () => Math.max(1, countWrap(`「${concl}」`, F.concl, CBOXW - CB.pad * 2 - 36));
   let M = measure();
-  const needH = TOP + D0.foot + M.contentH + 40;      /* +40：给 gap 呼吸余量 */
-  if (needH > H) { H = Math.min(1560, Math.ceil(needH / 30) * 30); cv.height = H; }   /* ⓪ 优先长高：1350→≤1560，文字保持舒展间距；比率仍介于 4:5 与 2:3 */
-  while (M.contentH > H - TOP - D.foot && cw > 232) { cw -= 12; M = measure(); }     /* ① 缩主图 */
+  const needH = TOP + D0.foot + M.contentH + 140;     /* 呼吸余量：7 个块间 gap(≥14) + 直觉框上下缓冲 */
+  if (needH > H) { H = Math.min(1620, Math.ceil(needH / 30) * 30); cv.height = H; }   /* ⓪ 优先长高：1350→≤1620，文字保持舒展间距 */
+  while (M.contentH > H - TOP - D.foot && cw > 268) { cw -= 12; M = measure(); }     /* ① 缩主图（下限 268：保住牌面可读性，宁可画布长高） */
   while (M.contentH > H - TOP - D.foot && lineH > 29) { lineH -= 2; rowGap = 12; M = measure(); }  /* ② 压行高 */
   if (M.contentH > H - TOP - D.foot) { tight = true; D = D1; rowGap = 10; M = measure(); }          /* ③ 紧凑模式：装饰块收缩+直觉段专用行高（极端长文才动用） */
   while (M.contentH > H - TOP - D.foot && cw > 208) { cw -= 12; M = measure(); }     /* ④ 主图再降一档 */
-  const gap = Math.max(6, Math.min(48, Math.floor((H - TOP - D.foot - M.contentH) / 8)));
+  const gap = Math.max(14, Math.min(48, Math.floor((H - TOP - D.foot - M.contentH) / 8)));
   const { chh, rowH, cLineH } = M;
   const conclLines = conclLines0();
   const conclH = concl ? CB.padTop + CB.label + conclLines * cLineH + CB.padBot : 0;
