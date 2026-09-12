@@ -192,8 +192,8 @@ textarea{min-height:96px}
 .orbiter:nth-child(odd) .tcard{filter:brightness(.8)}
 
 /* 牌桌：78 张牌背单排缎带式铺开，横向滑动（竞品主流 ribbon spread） */
-.fan{position:absolute;left:0;right:0;top:0;height:132px;display:flex;flex-wrap:nowrap;align-items:flex-start;
-  overflow-x:auto;overflow-y:hidden;padding:28px 12px 12px;opacity:0;transition:opacity .6s;
+.fan{position:absolute;left:0;right:0;top:0;height:140px;display:flex;flex-wrap:nowrap;align-items:flex-start;
+  overflow-x:auto;overflow-y:hidden;padding:38px 12px 12px;opacity:0;transition:opacity .6s;
   touch-action:pan-x;cursor:grab;scrollbar-width:thin;scrollbar-color:var(--gold-dim) transparent}
 .fan:active{cursor:grabbing}
 .fan.show{opacity:1}
@@ -219,8 +219,11 @@ textarea{min-height:96px}
 /* 标记牌样式数据驱动：颜色与徽章序号由 app.js 注入（--mk / data-mark-badge），
    新增牌阵不必改这里；--mk 缺省时回退金色边框。 */
 .fan .fcard.marked{border-color:var(--mk,var(--gold));transform:rotate(var(--tilt,0deg)) translateY(-6px);z-index:6;animation:fanIn .4s var(--ease-out) var(--fd) backwards,markPulse 2.6s ease-in-out 1s infinite}
-/* 标记徽章：深底圆片+同色描边，落在牌面内侧顶部（不再悬出牌顶，抬牌/放大时不会被 .fan 的裁切线削掉一半） */
-.fan .fcard.marked::after{content:attr(data-mark-badge);position:absolute;top:5px;left:50%;transform:translateX(-50%);width:21px;height:21px;line-height:19px;border-radius:50%;background:#0b0917;border:1px solid var(--mk,var(--gold-hi));color:var(--mk,var(--gold-hi));font-size:11px;text-align:center;text-shadow:none;box-shadow:0 1px 7px rgba(0,0,0,.6);z-index:7}
+/* 标记徽章：深底圆片+同色描边，钉在牌顶的**左上角**（不是居中）。
+   缎式排布每张牌只有左侧 ~20px 露在右邻之外，居中的圆片会被相邻标记牌压掉大半（实测 83%）；
+   钉在左上角既落在露出的那条边上，又悬在牌顶之上（不被邻牌横向遮挡），
+   配合 .fan 的 38px 上留白，抬牌/放大 1.16 后也不会被 overflow 裁掉。 */
+.fan .fcard.marked::after{content:attr(data-mark-badge);position:absolute;top:-9px;left:1px;width:19px;height:19px;line-height:17px;border-radius:50%;background:#0b0917;border:1px solid var(--mk,var(--gold-hi));color:var(--mk,var(--gold-hi));font-size:10.5px;text-align:center;text-shadow:none;box-shadow:0 1px 7px rgba(0,0,0,.6);z-index:7}
 @keyframes markPulse{0%,100%{box-shadow:0 0 5px rgba(201,168,106,.25)}50%{box-shadow:0 0 14px rgba(201,168,106,.6)}}
 @keyframes fanIn{from{opacity:0;transform:rotate(var(--tilt,0deg)) scale(.6)}to{opacity:1;transform:rotate(var(--tilt,0deg)) scale(1)}}
 /* 严格按序抽牌：当前"该翻的下一张"高亮（金色描边+抬起+辉光），其余牌背不可翻 */
@@ -476,7 +479,7 @@ footer .gold{color:var(--gold)}
   :root{--card-w:112px}
   .shell{padding:0 16px 70px}
   .ritual-arena{height:340px}
-  .fan{height:120px;padding:26px 10px 8px}
+  .fan{height:126px;padding:36px 10px 8px}
   .fan .fcard{width:48px;margin-left:-32px}
   /* hold-wrap 已在 arena 内 absolute，移动端不额外处理 */
   .ask-panel{padding:26px 18px}
@@ -3126,6 +3129,7 @@ function showSpread() {
       /* 徽章配色/序号由数据注入——任意张数的牌阵自动获得完整标记支持 */
       f.style.setProperty("--mk", markColor(marked.order));
       f.dataset.markBadge = markLabel(marked.order);
+      f.style.zIndex = String(6 + i); /* 缎式排布右邻压住左邻 34px，而徽章钉在牌顶左上角 → 层叠必须随牌桌位置递增，相邻标记牌的徽章才不会互相盖住 */
       f.setAttribute("aria-label", `第 ${i + 1} 张牌背（你的第 ${marked.order + 1} 个数字标记）`);
       f.__markedOrder = marked.order;
     } else {
@@ -3191,6 +3195,7 @@ function pickFromSpread(el) {
   /* 移除标记（数据驱动方案：单一类 + data 属性，任意张数牌阵通用） */
   el.classList.remove("marked", "next");
   delete el.dataset.markBadge;
+  el.style.zIndex = ""; /* 位置层级一并撤掉：否则这张已翻的牌会以高层级继续压住右邻左上角的徽章 */
   /* 隐藏定位按钮 */
   const locBtns = document.querySelectorAll("[id^='btn-locate-']");
   locBtns.forEach(b => b.style.display = "none");
