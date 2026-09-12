@@ -2149,7 +2149,7 @@ const state = {
   question: "", number: 0, numbers: [], spreadKey: "three_time", spreadManual: false,
   draws: [], revealed: 0, seed: 0, domain: "general",
   deck: [], offer: [], markedCards: [], deckRev: [],
-  dailyMode: false, cutCard: null,
+  dailyMode: false, cutCard: null, readingDate: 0, /* 本次解读属于哪一天：运势卡/竖版分享图的「今日/当日」措辞与日期以此为准 */
   shareSnapshot: null, lastHistT: 0, restoreRec: null
 };
 
@@ -3082,7 +3082,7 @@ function polishReading(d) {
 async function renderReading() {
   const wasRestore = __restoreMode;
   const isDailyReplay = dailyReplay; dailyReplay = false;   /* 今日一牌·回看今天这张（区别于全新占卜） */
-  if (!__restoreMode) saveHistory();
+  if (!__restoreMode) { state.readingDate = Date.now(); saveHistory(); } /* 回看时由 restoreReading 写入记录当天日期 */
   __restoreMode = false;
   if (state.dailyMode && !wasRestore && state.draws[0] && state.draws[0].card) saveDailyLock(state.draws[0].card, state.draws[0].reversed); /* 新的一天翻开→当日锁定 + 本机连续打卡 */
   const spread = SPREADS[state.spreadKey];
@@ -3563,7 +3563,7 @@ function replayDailyFromLock(lock) {
   state.revealed = 1;
   const cached = loadHistory().find(r => r && r.sp === "single" && (r.seed >>> 0) === (lock.seed >>> 0) && Array.isArray(r.d) && r.d[0] && r.d[0].id === card.id && r.a && typeof r.a === "object");
   state.restoreRec = cached || null;
-  dailyReplay = true; __restoreMode = true;
+  dailyReplay = true; __restoreMode = true; state.readingDate = Date.now();
   renderReading();
   return true;
 }
@@ -3573,23 +3573,28 @@ function renderDailyFortune() {
   const head = document.querySelector("#stage-reading .reading-head");
   if (!head) return;
   const m = fortuneModel(d.card, d.reversed);
+  const rd = new Date(state.readingDate || Date.now());
+  const isToday = _dayStr(rd) === _dayStr(); /* 隔天的每日一牌回看：保留运势卡，但措辞改「当日」，不套用今天的打卡天数 */
+  const dayWord = isToday ? "今日" : "当日";
   const streak = (typeof getDailyStreak === "function") ? getDailyStreak() : 0;
-  const streakLine = state.dailyMode ? `<div class="df-streak">✦ ${streak > 1 ? "连续 " + streak + " 天与你相伴" : "这是今天的第 1 张"} · 今日这张已定，明天再来翻下一张</div>` : "";
+  const streakLine = isToday
+    ? `<div class="df-streak">✦ ${streak > 1 ? "连续 " + streak + " 天与你相伴" : "这是今天的第 1 张"} · 今日这张已定，明天再来翻下一张</div>`
+    : `<div class="df-streak">✦ 这是 ${rd.getMonth() + 1} 月 ${rd.getDate()} 日为你翻到的那张 · 隔几天回看，常常又是另一种读懂</div>`;
   const box = document.createElement("div");
   box.className = "daily-fortune"; box.id = "daily-fortune";
   box.innerHTML = `
     <div class="df-head">
       <div class="df-art${m.reversed ? " rev" : ""}"><img src="${IMG_BASE}${d.card.image}" alt="${escHtml(m.name)}" loading="lazy" onerror="if(!this.dataset.fb){this.dataset.fb=1;this.src='${CDN_BASE}${d.card.image}'}"></div>
       <div class="df-hero-txt">
-        <div class="df-title">✦ 今 日 运 势</div>
-        <div class="df-theme">今日为你翻到 <b>「${escHtml(m.name)}${m.reversed ? "（逆位）" : ""}」</b><span class="df-energy">${escHtml(m.energy)}</span>${m.reversed ? '<span class="df-revtag">能量内收</span>' : ""}</div>
+        <div class="df-title">✦ ${isToday ? "今 日" : "当 日"} 运 势</div>
+        <div class="df-theme">${dayWord}为你翻到 <b>「${escHtml(m.name)}${m.reversed ? "（逆位）" : ""}」</b><span class="df-energy">${escHtml(m.energy)}</span>${m.reversed ? '<span class="df-revtag">能量内收</span>' : ""}</div>
         ${m.keywords.length ? `<div class="df-kws">${m.keywords.map(k => `<span class="df-kw">${escHtml(k)}</span>`).join("")}</div>` : ""}
       </div>
     </div>
     ${streakLine}
     <div class="df-grid">${m.facets.map(x => `<div class="df-item"><div class="df-k">${x.i} ${x.k}</div><p>${escHtml(x.v)}</p></div>`).join("")}</div>
-    ${m.reversed ? `<div class="df-revnote">逆位不是"坏"——它提示「${escHtml(m.name)}」这股能量更多在内在或被卡住，今天先向内看，别只向外求。</div>` : ""}
-    ${m.advice ? `<div class="df-row"><span class="df-k">🧭 今日指引</span><p>${escHtml(m.advice)}</p></div>` : ""}
+    ${m.reversed ? `<div class="df-revnote">逆位不是"坏"——它提示「${escHtml(m.name)}」这股能量更多在内在或被卡住，${dayWord}先向内看，别只向外求。</div>` : ""}
+    ${m.advice ? `<div class="df-row"><span class="df-k">🧭 ${dayWord}指引</span><p>${escHtml(m.advice)}</p></div>` : ""}
     ${m.timing ? `<div class="df-row"><span class="df-k">⏳ 有利节奏</span><p>${escHtml(m.timing)}</p></div>` : ""}
     <div class="df-lucky"><span>🎨 幸运色 ${escHtml(m.colors)}</span><span>🔢 本命吉数 ${m.luckyNum}</span><span>🧭 参考方位 ${escHtml(m.dir)}</span></div>
     <p class="df-src">↑ 以上分项、吉数与方位，都由你抽到的这张 <b>${escHtml(m.suitName)}</b> 牌推得。</p>
@@ -4024,8 +4029,8 @@ async function buildDailyShareCard() {
   ctx.strokeStyle = "rgba(201,168,106,.5)"; ctx.lineWidth = 2; ctx.strokeRect(34, 34, W - 68, H - 68);
   ctx.textAlign = "center";
   ctx.fillStyle = "#c9a86a"; ctx.font = `600 40px ${SANS}`; ctx.fillText("塔塔🔮の心灵疗愈室", CX, 108);
-  const t = new Date();
-  ctx.fillStyle = "#847c6a"; ctx.font = `22px ${SANS}`; ctx.fillText(`${t.getFullYear()} 年 ${t.getMonth() + 1} 月 ${t.getDate()} 日 · 今 日 一 牌`, CX, 150);
+  const t = new Date(state.readingDate || Date.now());
+  ctx.fillStyle = "#847c6a"; ctx.font = `22px ${SANS}`; ctx.fillText(`${t.getFullYear()} 年 ${t.getMonth() + 1} 月 ${t.getDate()} 日 · ${_dayStr(t) === _dayStr() ? "今 日" : "当 日"} 一 牌`, CX, 150);
   ctx.strokeStyle = "rgba(201,168,106,.32)"; ctx.beginPath(); ctx.moveTo(300, 182); ctx.lineTo(W - 300, 182); ctx.stroke();
   const cw = 300, ch = Math.round(cw * 1.72), cx = CX - cw / 2, cy = 200;
   let im = await loadCardImg(IMG_BASE + (card && card.image));
@@ -4329,8 +4334,8 @@ function restoreReading(rec) {
     return;
   }
   state.question = rec.q; state.number = rec.n; state.spreadKey = rec.sp;
-  /* 只有「今天那条今日一牌」回看时仍算每日一牌（运势卡文案是今日）；隔天的每日一牌记录按普通单牌回看 */
-  state.dailyMode = !!rec.dm && _dayStr(new Date(rec.t || 0)) === _dayStr();
+  /* 每日一牌的历史记录回看时仍是每日一牌（运势卡/打卡/竖版分享图都在）；隔天的卡自动改口「当日」并显示那天日期 */
+  state.dailyMode = !!rec.dm; state.readingDate = rec.t || Date.now();
   state.cutCard = null;
   state.domain = detectDomain(rec.q); state.seed = rec.seed || 0; state.spreadManual = true;
   const positions = SPREADS[rec.sp].positions;
