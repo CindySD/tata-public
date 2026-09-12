@@ -3506,9 +3506,9 @@ function revealChosen(card, reversed) {
           if (gen !== ritualGen) { el.remove(); ritualBusy = false; return; }
           el.remove();
           updateProgress();
-          /* C3：飞行期继续持锁，落位后再放行下一张——防"牌还在空中就点下一张"导致动画链堆叠；迟到帧不得替新一局解锁 */
-          if (flyMs) setTimeout(() => { if (gen === ritualGen) ritualBusy = false; }, flyMs);
-          else ritualBusy = false;
+          /* C3：飞行只作用于已入列的 mini，牌座 el 此刻已移除——锁按原 480ms 节奏释放，
+             实测持锁到落位（+620ms）会吞掉紧随的下一张点击，三张阵走不完（fan-cut-check L4 抓出） */
+          ritualBusy = false;
           const total = SPREADS[state.spreadKey].positions.length;
           if (state.draws.length < total) {
             statusEl.textContent = `已按数字翻开 ${state.draws.length} 张。`;
