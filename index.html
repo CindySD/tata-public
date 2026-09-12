@@ -3334,7 +3334,7 @@ async function renderReading() {
   renderTiming();
   renderReflectBlock(wasRestore);
   renderReadingNav(); /* Feature B：子块渲染完成后再生成章节导航，能探测到实际存在的锚点 */
-  if (state.dailyMode || spread.positions.length === 1) renderDailyFortune(); /* 今日一牌 & 普通单牌阵：多面运势卡 */
+  if (state.dailyMode) renderDailyFortune(); /* 今日运势卡只属于「今日一牌」；普通占卜（含手选/自动选中的单牌阵）一律不渲染 */
   setTimeout(() => document.getElementById("reading-spread-name")?.scrollIntoView({ block: "start" }), 60);
 }
 
@@ -3884,7 +3884,7 @@ async function buildShareCard() {
   const rowPitch = imgH + 96;
   const cardBot = 520 + (rows - 1) * rowPitch + imgH + 44;
   SHARE_H = Math.max(1440, cardBot + (hasRead ? 840 : 460));
-  const showFortune = (state.dailyMode || n === 1) && state.draws[0] && state.draws[0].card;
+  const showFortune = !!state.dailyMode && n === 1 && state.draws[0] && state.draws[0].card; /* 运势分项只随「今日一牌」进分享图；普通占卜（含单牌阵）不绘 */
   const fM = showFortune ? fortuneModel(state.draws[0].card, state.draws[0].reversed) : null;
   if (fM) SHARE_H += 560 + fM.facets.length * 150 + (fM.advice ? 150 : 0) + (fM.timing ? 160 : 0);
   const cv = document.createElement("canvas");
@@ -4128,6 +4128,7 @@ function saveHistory() {
     const now = Date.now();
     const rec = {
       t: now, q: state.question, n: state.number, sp: state.spreadKey, seed: state.seed,
+      dm: !!state.dailyMode, /* 记录本次是否「今日一牌」，回看时据此还原模式（运势卡/打卡/竖版分享图） */
       d: state.draws.map(x => ({ id: x.card.id, r: x.reversed })), e: (state.shareSnapshot && state.shareSnapshot.energy) || energyWord()
     };
     state.lastHistT = now;
@@ -4328,7 +4329,9 @@ function restoreReading(rec) {
     return;
   }
   state.question = rec.q; state.number = rec.n; state.spreadKey = rec.sp;
-  state.dailyMode = false; state.cutCard = null;
+  /* 只有「今天那条今日一牌」回看时仍算每日一牌（运势卡文案是今日）；隔天的每日一牌记录按普通单牌回看 */
+  state.dailyMode = !!rec.dm && _dayStr(new Date(rec.t || 0)) === _dayStr();
+  state.cutCard = null;
   state.domain = detectDomain(rec.q); state.seed = rec.seed || 0; state.spreadManual = true;
   const positions = SPREADS[rec.sp].positions;
   state.draws = rec.d.map((x, i) => ({ pos: positions[i] || positions[positions.length - 1], card: cardById[x.id], reversed: !!x.r })).filter(d => d.card);
