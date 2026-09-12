@@ -9,7 +9,7 @@
 <meta name="theme-color" content="#07070e">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="assets/icons/icon-512.png">
-<meta name="description" content="塔塔🔮の心灵疗愈室：韦特塔罗 78 张，仪式化盲抽，结合精神分析视角的温柔解读。多人在线，每个人的牌阵都是私密的一次对话。">
+<meta name="description" content="塔塔🔮の心灵疗愈室：韦特塔罗 78 张，仪式化盲抽，结合精神分析视角的温柔解读。没有服务器账号，占卜记录只存在你自己的浏览器里、不上传任何地方，每个人的牌阵都是一次私密对话。">
 <meta name="google-site-verification" content="EIAgxWeH9qOt-8NBbBO_zDNY1vNgVMRqamatEnVDUSo">
 <link rel="canonical" href="https://cindysd.github.io/tata-public/">
 <meta property="og:type" content="website">
@@ -1564,7 +1564,7 @@ const LLM_SYSTEM_PROMPT = `你是塔塔🔮の心灵疗愈室的首席解牌师�
 5. 反巴纳姆：建议必须具体到相对时间+动作（如"48小时内""今晚睡前""本周找一个状态好的日子"），禁止"注意沟通""保持平衡"等万能废话。禁止绝对日期，只用相对时间。**硬性格式：advice 每条 step 必须"相对时间开头＋动词短语"（例："今晚睡前，写下你最在意的两条"）；做不到就不算合格建议。** 对照示例：❌"宇宙会指引你""你会遇到重要的人"（被动/断言）→ ✅"设两周决策期限，先写下三条选择标准""约他谈一次，只谈事实不翻旧账"（可验证、主动权在人）。
 6. 牌是镜子不是水晶球：正文一律用**确定的观察句**直给（"这张牌说明你已经在……""你其实卡在……""你要的不是X，是Y"），不要每句都塞"可能/也许/或许"来躲——满篇 hedge 就是废话。**"非注定/仅供参考"这类免责全篇只在结尾 closing 说一次**，正文不重复；始终禁说"你一定会/命中注定"。
 7. 不做评分/概率——塔罗不是测量工具，不给"1-10分"或"80%概率"，用判断性语言代替伪精度。
-8. 安全边界：检测到自伤信号时暂停占卜，建议联系心理援助热线 400-161-9995。不做医疗/法律/投资建议。
+8. 安全边界：检测到自伤信号时暂停占卜，建议拨打 24 小时心理援助热线 12356（全国统一），或希望24热线 400-161-9995（这两个号码要与站内关怀页一致，不得混称、不得只报其中一个）。不做医疗/法律/投资建议。
 
 【逆位总纲】逆位不是"坏牌"——它是正位的能量受阻或失衡的状态，牌的原义仍然存在，不会变成另一张牌。解读逆位时按牌类型择用角度：①数字牌看程度——能量"过度"或"不足"（如圣杯三逆=欢乐过度乐极生悲）；②大牌看内心——被压抑否认的情绪、或牌面图景倒转的演绎（如塔逆=骤变来自内在）；③宫廷牌逆位一律看"过度或不足"的人物化表达（如星币骑士逆=工作狂或闲混，权杖国王逆=暴君或懦夫）。
 
@@ -1656,9 +1656,10 @@ async function llmFetch(url, options, timeoutMs) {
   if (typeof AbortController === "undefined") return fetch(url, options);
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+  const heldBy = activeCtrl; activeCtrl = ctrl; /* 一次性请求（回落/追问）也要登记进可中断通道，否则离开页面掐不动它、继续跑满计费 */
   try {
     return await fetch(url, { ...options, signal: ctrl.signal });
-  } finally { clearTimeout(timer); }
+  } finally { clearTimeout(timer); if (activeCtrl === ctrl) activeCtrl = heldBy; }
 }
 async function callLLM(question, spreadName, draws, userContentOverride) {
   const cfg = loadLLMConfig();
@@ -2171,6 +2172,7 @@ function buildDraws() {
   }
   /* 逆位预分配：开牌前整副 deck 正逆已定，翻牌只是揭示（保证可复现） */
   state.deckRev = deck.map(() => rng() < REVERSED_CHANCE);
+  deck.forEach((c, i) => { c.__deckIdx = i; }); /* 把"洗牌既定序号"钉在牌上：查 deckRev 用它，别用活数组 indexOf（splice 后会整体左移） */
   /* 多数字标记：每个数字标记一张牌（不同序号颜色），严格按顺序对应牌阵位置 */
   state.deck = deck;
   /* 严格按数字顺序抽牌：第 i 个数字 → 洗牌后牌堆的第 num 张 → 落在牌阵第 i 个位置。
@@ -2473,7 +2475,12 @@ refreshChips();
 refreshNumHint();
 reasonEl.textContent = "";
 
-$("#btn-start").addEventListener("click", () => { state.dailyMode = false; state.spreadManual = false; go("serene"); });
+$("#btn-start").addEventListener("click", () => { /* 与「再来一次」「新建记录」一致：清掉上一局的问题/数字/选阵，避免一键就拿旧问题再占一次 */
+  qEl.value = ""; numEl.value = ""; flashErr("");
+  state.dailyMode = false; state.spreadManual = false; state.spreadKey = "three_time";
+  refreshChips(); reasonEl.textContent = "";
+  go("serene");
+});
 $("#btn-serene-next").addEventListener("click", () => { go("ask"); qEl.focus(); });
 $("#btn-serene-back").addEventListener("click", () => go("cover"));
 $("#btn-care-back").addEventListener("click", () => go("ask"));
@@ -2623,7 +2630,7 @@ const HOLD_HIDE_MS = 3000;    /* 凝神完成后定位按钮收起的延时 */
 const REVERSED_CHANCE = 0.34; /* 逆位概率（约三分之一，对应传统韦特逆位习惯） */
 /* P1-2：正逆在洗牌时已按 seed 预分配，翻牌只是揭示（可复现）；无预分配数据时退回现场随机（防御） */
 function drawReversed(card) {
-  const i = state.deck.indexOf(card);
+  const i = card && typeof card.__deckIdx === "number" ? card.__deckIdx : -1; /* 洗牌时钉好的序号；state.deck 是活数组，splice 后 indexOf 会左移错位 */
   return i >= 0 && Array.isArray(state.deckRev) ? !!state.deckRev[i] : Math.random() < REVERSED_CHANCE;
 }
 
@@ -2735,7 +2742,10 @@ function showCutStep() {
   const cut = () => {
     if (layer.dataset.done) return;
     layer.dataset.done = "1";
-    const card = CARDS[Math.floor(Math.random() * CARDS.length)];
+    /* 切牌由本局 seed 派生（可随印记复现），且不从阵内牌里取（避免与牌阵某张同名） */
+    const cutPool = CARDS.filter(c => !state.markedCards.some(m => m.card === c));
+    const cutRng = mulberry32((state.seed ^ 0x9e3779b9) >>> 0);
+    const card = (state.seed ? cutPool[Math.floor(cutRng() * cutPool.length)] : null) || cutPool[Math.floor(Math.random() * cutPool.length)] || CARDS[0];
     state.cutCard = card;
     const el = makeCardEl(card, false);
     el.classList.add("cut-flip");
@@ -2790,7 +2800,9 @@ function showSpread() {
   void fanEl.offsetWidth;
   const numsStr = state.numbers.join(" ");
   statusEl.textContent = "78 张牌已铺成一排。";
-  subEl.textContent = `你的数字 ${numsStr} 已锁定 ${state.markedCards.length} 张牌。请按顺序翻开它们——不能抽别的牌。`;
+  subEl.textContent = state.dailyMode
+    ? `你的数字 ${numsStr} 点亮了 ${state.markedCards.length} 张牌。亮着的那张是它给你的邀请——也可以翻任意一张，交给此刻的直觉。`
+    : `你的数字 ${numsStr} 已锁定 ${state.markedCards.length} 张牌。请按顺序翻开它们——不能抽别的牌。`;
   arenaHint.textContent = "← 滑 动 牌 桌 →";
   holdLabel.textContent = "凝神聚气";
   holdTip.textContent = "可选 · 也可直接翻开";
@@ -3027,10 +3039,16 @@ function revealChosen(card, reversed) {
           } else {
             statusEl.textContent = "所有的牌，都已翻开。";
             subEl.textContent = "指引已经就位，让我们开始解读。";
+            /* 每日一牌·当日锁定在"翻开这一刻"就落盘：不点进解读也不给当天重抽（原来只在 renderReading 里锁，翻完就走=可再抽一张） */
+            if (state.dailyMode && state.draws[0] && state.draws[0].card) saveDailyLock(state.draws[0].card, state.draws[0].reversed);
             const b = document.createElement("button");
             b.className = "btn"; b.type = "button";
             b.textContent = "查 看 指 引 ✦";
-            b.addEventListener("click", renderReading);
+            b.addEventListener("click", () => { /* 重入锁：双击会存两条重复记录并起两条 AI 流（实测 25ms 间隔即复现） */
+              if (b.disabled) return;
+              b.disabled = true;
+              renderReading().catch(err => { b.disabled = false; flashErr("解读没能完成（" + ((err && err.message) || "未知错误") + "），再点一次试试。"); });
+            });
             nextCta.appendChild(b);
             nextCta.style.display = "flex";
             /* 自动滚动到"查看指引"按钮，防止用户翻完牌后找不到入口 */
@@ -3046,7 +3064,7 @@ function revealChosen(card, reversed) {
 let __restoreMode = false;
 let aiGen = 0; /* R1：主 AI 流代际令牌——旧轮流式回调校验 gen 后才允许写 DOM，防止迟到帧污染新一轮解读页 */
 let activeCtrl = null; /* 进行中的 AI 流式请求 controller；重开占卜/回首页时 abort 掉，省重复计费 */
-function abortActiveLLM() { if (activeCtrl) { try { activeCtrl.abort(); } catch (e) {} activeCtrl = null; } }
+function abortActiveLLM() { if (activeCtrl) { try { activeCtrl.abort(); } catch (e) {} activeCtrl = null; } aiGen++; } /* 掐流必须同时作废本轮代数：否则被 abort 的流会在 catch 之后走"回落一次性请求"，反而多花一次全价钱 */
 let dailyReplay = false; /* 今日一牌·当天再点直接回看这张：不重抽、不新增历史、缺缓存也不二次计费 */
 let readingNavScroll = null; /* Feature B：解读页章节导航的滚动监听句柄，重渲染前移除避免重复绑定 */
 /* ---------- 解读·确定性兜底润色（不指望弱模型自觉：保证至少一条"相对时间+动作"、去重复免责） ---------- */
@@ -3084,7 +3102,7 @@ async function renderReading() {
   const isDailyReplay = dailyReplay; dailyReplay = false;   /* 今日一牌·回看今天这张（区别于全新占卜） */
   if (!__restoreMode) { state.readingDate = Date.now(); saveHistory(); } /* 回看时由 restoreReading 写入记录当天日期 */
   __restoreMode = false;
-  if (state.dailyMode && !wasRestore && state.draws[0] && state.draws[0].card) saveDailyLock(state.draws[0].card, state.draws[0].reversed); /* 新的一天翻开→当日锁定 + 本机连续打卡 */
+  if (state.dailyMode && !wasRestore && state.draws[0] && state.draws[0].card) saveDailyLock(state.draws[0].card, state.draws[0].reversed); /* 兜底：锁正常在"翻开那一刻"已写（1520 附近），同日同牌幂等，不会重复加打卡 */
   const spread = SPREADS[state.spreadKey];
   /* 新一轮解读开始：无条件清除上一轮可能残留的直觉横幅、AI 失败提示与追问轮（均为解读容器的兄弟节点） */
   document.querySelectorAll(".conclusion-banner,.ai-fail-notice,.followup-round,.reading-nav,.daily-fortune").forEach(b => b.remove());
@@ -3095,12 +3113,12 @@ async function renderReading() {
   abortActiveLLM(); /* 掐掉上一局仍在跑的 AI 流，省重复计费 */
   $("#reading-spread-name").textContent = spread.name;
   $("#reading-q").innerHTML = `你问：「<b>${escapeHtml(state.question)}</b>」`;
-  const h = new Date().getHours();
+  const h = new Date(state.readingDate || Date.now()).getHours();
   const daypart = h >= 6 && h < 12 ? "晨光初启的时分" : h < 18 ? "日光渐沉的时分" : "夜色渐深的时分";
-  $("#reading-meta").innerHTML = `直觉数字 ${state.number} · ${daypart} · 印记 <button class="echo-code" id="echo-code" type="button" title="这次占卜的唯一印记，点一下即可复制。凭同一个印记 + 同样的问题 + 同一组数字，可以把这副牌原样重现。">${seedHex()}</button>` + (state.cutCard ? ` · <button class="meta-cut" id="meta-cut" type="button" title="点开看这张心态牌的牌义">切牌：${state.cutCard.name}（${state.cutCard.upright.keywords[0]}）</button>` : "");
+  $("#reading-meta").innerHTML = `直觉数字 ${state.number} · ${daypart} · 印记 <button class="echo-code" id="echo-code" type="button" title="这次占卜的唯一印记，点一下即可复制。想原样回看这一局，去「占卜记录」点开它即可（印记用来标识与核对，不支持手动输入重演）。">${seedHex()}</button>` + (state.cutCard ? ` · <button class="meta-cut" id="meta-cut" type="button" title="点开看这张心态牌的牌义">切牌：${state.cutCard.name}（${state.cutCard.upright.keywords[0]}）</button>` : "");
   $("#meta-cut")?.addEventListener("click", openCutDeep);
   $("#echo-code")?.addEventListener("click", () => {
-    copyToClipboard(`塔塔🔮 占卜印记：${seedHex()}（${fmtTime(Date.now())} · ${SPREADS[state.spreadKey].name}）`, () => {
+    copyToClipboard(`塔塔🔮 占卜印记：${seedHex()}（${fmtTime(state.readingDate || Date.now())} · ${SPREADS[state.spreadKey].name} · 问：${state.question || "今日一牌"} · 数字：${state.numbers.join(" ")}）`, () => {
       const b = $("#echo-code"); if (!b) return; b.classList.add("copied"); setTimeout(() => b.classList.remove("copied"), 1500);
     });
   });
@@ -3301,10 +3319,11 @@ async function renderReading() {
         conclusion: typeof d.conclusion === "string" ? d.conclusion.slice(0, 120) : "",
         judgment: typeof syn.judgment === "string" ? syn.judgment.slice(0, 120) : ""
       };
-      if (!wasRestore) {
-        updateHistoryEnergy();
-        const shrunk = shrinkAi(d);
-        if (shrunk && state.lastHistT) updateHistoryRecord(state.lastHistT, { a: shrunk });
+      const shrunk = shrinkAi(d);
+      const targetT = wasRestore ? (state.restoreRec ? state.restoreRec.t : 0) : state.lastHistT;
+      if (targetT) {
+        if (!wasRestore) updateHistoryEnergy();
+        if (shrunk) updateHistoryRecord(targetT, wasRestore ? { a: shrunk, e: state.shareSnapshot.energy } : { a: shrunk });
       }
       if (fuList.length) {
         synHTML += `<div class="followup-block"><div class="sb-label">想 继 续 问</div>${fuList.map((q2, i) => `<button class="fu-btn" type="button" data-fu="${i}">💬 ${escHtml(q2)}</button>`).join("")}</div>`;
@@ -3495,9 +3514,9 @@ function renderTiming() {
   const usable = state.draws.filter(d => timingFor(d.card.name));
   /* 全部牌都无传统时间对应：整块隐藏，避免零信息区块 */
   if (!usable.length) return;
-  const lines = state.draws.map(d => {
+  const lines = usable.map(d => {
     const t = timingFor(d.card.name);
-    return `<div class="timing-line"><span class="t-card">${d.card.name}${d.reversed ? "（逆）" : ""}</span><span class="t-time">${t || "无传统对应"}</span></div>`;
+    return `<div class="timing-line"><span class="t-card">${d.card.name}${d.reversed ? "（逆）" : ""}</span><span class="t-time">${t}</span></div>`;
   });
   const block = document.createElement("div");
   block.className = "timing-block";
@@ -3528,7 +3547,7 @@ function fortuneModel(card, reversed) {
     advice: o.advice || "",
     timing: (typeof timingFor === "function" ? (timingFor(card.name) || "") : ""),
     colors: suit.colors.join("·"), dir: suit.dir,
-    luckyNum: ((hashStr(card.id || card.name) >>> 4) % 9) + 1   /* 本命吉数：由这张牌本身决定，稳定可复现 */
+    luckyNum: ((hashStr(card.id || card.name) >>> 4) % 9) + 1   /* 牌面吉数：由这张牌本身决定，稳定可复现（不是用户命理-derived 的"本命"数） */
   };
 }
 /* ---------- 今日一牌 · 当日锁定 + 本机连续打卡（纯前端 localStorage：锁的是"你今天亲手抽到的这张"，不是全站同频） ---------- */
@@ -3567,6 +3586,8 @@ function replayDailyFromLock(lock) {
   renderReading();
   return true;
 }
+/* 运势相关文案的"今日/当日"统一由本次解读所属日期决定（隔天回看/隔天分享不说"今日"） */
+function fortuneDayWord() { return _dayStr(new Date(state.readingDate || Date.now())) === _dayStr() ? "今日" : "当日"; }
 function renderDailyFortune() {
   const d = state.draws[state.draws.length - 1] || state.draws[0];
   if (!d || !d.card) return;
@@ -3595,9 +3616,9 @@ function renderDailyFortune() {
     <div class="df-grid">${m.facets.map(x => `<div class="df-item"><div class="df-k">${x.i} ${x.k}</div><p>${escHtml(x.v)}</p></div>`).join("")}</div>
     ${m.reversed ? `<div class="df-revnote">逆位不是"坏"——它提示「${escHtml(m.name)}」这股能量更多在内在或被卡住，${dayWord}先向内看，别只向外求。</div>` : ""}
     ${m.advice ? `<div class="df-row"><span class="df-k">🧭 ${dayWord}指引</span><p>${escHtml(m.advice)}</p></div>` : ""}
-    ${m.timing ? `<div class="df-row"><span class="df-k">⏳ 有利节奏</span><p>${escHtml(m.timing)}</p></div>` : ""}
-    <div class="df-lucky"><span>🎨 幸运色 ${escHtml(m.colors)}</span><span>🔢 本命吉数 ${m.luckyNum}</span><span>🧭 参考方位 ${escHtml(m.dir)}</span></div>
-    <p class="df-src">↑ 以上分项、吉数与方位，都由你抽到的这张 <b>${escHtml(m.suitName)}</b> 牌推得。</p>
+    ${m.timing ? `<div class="df-row"><span class="df-k">⏳ 传统对应时段</span><p>${escHtml(m.timing)}</p></div>` : ""}
+    <div class="df-lucky"><span>🎨 幸运色 ${escHtml(m.colors)}</span><span>🔢 牌面吉数 ${m.luckyNum}</span><span>🧭 参考方位 ${escHtml(m.dir)}</span></div>
+    <p class="df-src">↑ 以上分项、时段、吉数与方位，都由你抽到的这张 <b>${escHtml(m.suitName)}</b> 牌推得——它们是传统象征对应，不是日程预言。</p>
     <p class="df-note">牌是镜子，不是判决书——这是你此刻能量的一种读法，选择权始终在你手里。</p>`;
   head.insertAdjacentElement("afterend", box);
 }
@@ -3984,8 +4005,9 @@ async function buildShareCard() {
     let fy = cardBot + (hasRead ? 840 : 460) + 40;
     ctx.textAlign = "center";
     ctx.strokeStyle = "rgba(201,168,106,.25)"; ctx.beginPath(); ctx.moveTo(150, fy); ctx.lineTo(SHARE_W - 150, fy); ctx.stroke(); fy += 70;
-    ctx.fillStyle = "#c9a86a"; ctx.font = `600 32px ${SANS}`; ctx.fillText("✦ 今 日 运 势", CX, fy); fy += 52;
-    ctx.fillStyle = "#e8e2d4"; ctx.font = `28px ${SANS}`; ctx.fillText("今日为你翻到「" + fM.name + (fM.reversed ? "（逆位）" : "") + "」", CX, fy); fy += 46;
+    const fdw = fortuneDayWord();
+    ctx.fillStyle = "#c9a86a"; ctx.font = `600 32px ${SANS}`; ctx.fillText(`✦ ${fdw === "今日" ? "今 日" : "当 日"} 运 势`, CX, fy); fy += 52;
+    ctx.fillStyle = "#e8e2d4"; ctx.font = `28px ${SANS}`; ctx.fillText(fdw + "为你翻到「" + fM.name + (fM.reversed ? "（逆位）" : "") + "」", CX, fy); fy += 46;
     ctx.fillStyle = "#8f8877"; ctx.font = `24px ${SANS}`; ctx.fillText("能量关键词：" + (fM.energy ? fM.energy + " ｜ " : "") + fM.keywords.join(" · "), CX, fy); fy += 58;
     ctx.textAlign = "left"; const fLX = 150, fLW = SHARE_W - 300;
     fM.facets.forEach(x => {
@@ -3994,10 +4016,10 @@ async function buildShareCard() {
       fy += 36 * wrapText(ctx, x.v, fLX, fy, fLW, 36, 2) + 26;
     });
     ctx.textAlign = "center";
-    if (fM.advice) { ctx.fillStyle = "#c9a86a"; ctx.font = `600 27px ${SANS}`; ctx.fillText("🧭 今日指引", CX, fy); ctx.fillStyle = "#e8e2d4"; ctx.font = `26px ${SANS}`; fy += 42; fy += 40 * wrapText(ctx, fM.advice, CX, fy, SHARE_W - 240, 40, 2) + 22; }
-    if (fM.timing) { ctx.fillStyle = "#c9a86a"; ctx.font = `600 27px ${SANS}`; ctx.fillText("⏳ 有利节奏", CX, fy); ctx.fillStyle = "#b3a992"; ctx.font = `25px ${SANS}`; fy += 40; fy += 38 * wrapText(ctx, fM.timing, CX, fy, SHARE_W - 240, 38, 2) + 20; }
-    ctx.fillStyle = "#c9a86a"; ctx.font = `600 26px ${SANS}`; ctx.fillText("🎨 " + fM.colors + "    🔢 本命吉数 " + fM.luckyNum + "    🧭 " + fM.dir, CX, fy); fy += 40;
-    ctx.fillStyle = "#847c6a"; ctx.font = `22px ${SANS}`; ctx.fillText("以上由你抽到的「" + fM.suitName + "」牌推得 · 牌是镜子，不是判决书", CX, fy);
+    if (fM.advice) { ctx.fillStyle = "#c9a86a"; ctx.font = `600 27px ${SANS}`; ctx.fillText("🧭 " + fdw + "指引", CX, fy); ctx.fillStyle = "#e8e2d4"; ctx.font = `26px ${SANS}`; fy += 42; fy += 40 * wrapText(ctx, fM.advice, CX, fy, SHARE_W - 240, 40, 2) + 22; }
+    if (fM.timing) { ctx.fillStyle = "#c9a86a"; ctx.font = `600 27px ${SANS}`; ctx.fillText("⏳ 传统对应时段", CX, fy); ctx.fillStyle = "#b3a992"; ctx.font = `25px ${SANS}`; fy += 40; fy += 38 * wrapText(ctx, fM.timing, CX, fy, SHARE_W - 240, 38, 2) + 20; }
+    ctx.fillStyle = "#c9a86a"; ctx.font = `600 26px ${SANS}`; ctx.fillText("🎨 " + fM.colors + "    🔢 牌面吉数 " + fM.luckyNum + "    🧭 " + fM.dir, CX, fy); fy += 40;
+    ctx.fillStyle = "#847c6a"; ctx.font = `22px ${SANS}`; ctx.fillText("以上由你抽到的「" + fM.suitName + "」牌推得 · 传统象征对应，不是日程预言 · 牌是镜子，不是判决书", CX, fy);
   }
   /* 能量之词（与解读页显示同源：AI 能量词优先，规则版兜底） */
   ctx.fillStyle = "#c9a86a"; ctx.font = `600 72px ${SERIF}`;
@@ -4061,10 +4083,10 @@ async function buildDailyShareCard() {
       ctx.fillStyle = "#c9a86a"; ctx.font = `600 24px ${SANS}`; ctx.fillText(`${f.i} ${f.k}`, fx, y); y += 30;
       ctx.fillStyle = "#ddd6c4"; ctx.font = `22px ${SANS}`; y += wrapText(ctx, f.v, fx, y, fmax, 29, 3) * 29 + 12;
     });
-    if (m.advice) { ctx.fillStyle = "#c9a86a"; ctx.font = `600 24px ${SANS}`; ctx.fillText("🧭 今日指引", fx, y); y += 30; ctx.fillStyle = "#ddd6c4"; ctx.font = `22px ${SANS}`; y += wrapText(ctx, m.advice, fx, y, fmax, 29, 2) * 29 + 10; }
+    if (m.advice) { ctx.fillStyle = "#c9a86a"; ctx.font = `600 24px ${SANS}`; ctx.fillText(`🧭 ${fortuneDayWord()}指引`, fx, y); y += 30; ctx.fillStyle = "#ddd6c4"; ctx.font = `22px ${SANS}`; y += wrapText(ctx, m.advice, fx, y, fmax, 29, 2) * 29 + 10; }
     ctx.textAlign = "center";
     ctx.fillStyle = "#847c6a"; ctx.font = `21px ${SANS}`;
-    ctx.fillText(`🎨 ${m.colors}　🔢 吉数 ${m.luckyNum}　🧭 ${m.dir}`, CX, Math.min(y + 8, H - 108));
+    ctx.fillText(`🎨 ${m.colors}　🔢 牌面吉数 ${m.luckyNum}　🧭 ${m.dir}`, CX, Math.min(y + 8, H - 108));
   }
   ctx.fillStyle = "#847c6a"; ctx.font = `20px ${SANS}`;
   ctx.fillText("牌是镜子，不是判决书 · cindysd.github.io/tata-public", CX, H - 56);
@@ -4134,10 +4156,17 @@ function saveHistory() {
     const rec = {
       t: now, q: state.question, n: state.number, sp: state.spreadKey, seed: state.seed,
       dm: !!state.dailyMode, /* 记录本次是否「今日一牌」，回看时据此还原模式（运势卡/打卡/竖版分享图） */
-      d: state.draws.map(x => ({ id: x.card.id, r: x.reversed })), e: (state.shareSnapshot && state.shareSnapshot.energy) || energyWord()
+      d: state.draws.map(x => ({ id: x.card.id, r: x.reversed })), e: (state.shareSnapshot && state.shareSnapshot.energy) || energyWord(),
+      c: state.cutCard ? state.cutCard.id : null /* 切牌（心态牌）也要入档：否则回看时"心态底色"整块凭空消失 */
     };
     state.lastHistT = now;
-    mutateHistory((h) => { h.unshift(rec); });
+    mutateHistory((h) => {
+      const prev = h[0];
+      const dup = prev && (prev.seed >>> 0) === (state.seed >>> 0) && Array.isArray(prev.d) && prev.d.length === rec.d.length
+        && prev.d.every((x, i) => x && rec.d[i] && x.id === rec.d[i].id) && (now - (prev.t || 0)) < 3000; /* 同一局 3 秒内的重复触发（双击/异常路径）不再叠第二条 */
+      if (dup) { state.lastHistT = prev.t; return false; }
+      h.unshift(rec);
+    });
   } catch (e) { /* 存储不可用时静默跳过，占卜流程不受影响 */ }
 }
 /* AI 解读完成后能量词才定稿：回写本次刚入档的那条记录（时间戳匹配，绝不碰旧记录） */
@@ -4155,9 +4184,11 @@ function updateHistoryRecord(t, patch) {
     const i = h.findIndex(r => r && r.t === t);
     if (i === -1) return false;
     Object.assign(h[i], patch);
-    const s = JSON.stringify(h);
-    if (s.length > 1_800_000) { /* 存储守卫：缓存过大则丢弃 a 字段重写 */
-      h.forEach(r => { if (r && r.a && s.length > 1_800_000) delete r.a; });
+    let s = JSON.stringify(h);
+    if (s.length > 1_800_000) { /* 存储守卫：从最旧的开始丢 AI 缓存，保住最近几条（全删会让刚存的回看也重新计费） */
+      for (let j = h.length - 1; j >= 0 && s.length > 1_800_000; j--) {
+        if (h[j] && h[j].a) { delete h[j].a; s = JSON.stringify(h); }
+      }
     }
   });
 }
@@ -4186,6 +4217,7 @@ const REFLECT_CHECKS = [["met", "✅ 应验了"], ["part", "◐ 部分应验"], 
 function renderReflectBlock(isReplay) {
   const synEl = $("#synthesis");
   if (!synEl) return;
+  if (isReplay && !state.restoreRec) return; /* 回看却定位不到那条记录：宁可不出复盘块，也不要把情绪/应验写到上一条无关记录上 */
   const t = isReplay && state.restoreRec ? state.restoreRec.t : state.lastHistT;
   if (!t) return;
   const cur = isReplay && state.restoreRec ? state.restoreRec : null;
@@ -4335,8 +4367,12 @@ function restoreReading(rec) {
   }
   state.question = rec.q; state.number = rec.n; state.spreadKey = rec.sp;
   /* 每日一牌的历史记录回看时仍是每日一牌（运势卡/打卡/竖版分享图都在）；隔天的卡自动改口「当日」并显示那天日期 */
-  state.dailyMode = !!rec.dm; state.readingDate = rec.t || Date.now();
-  state.cutCard = null;
+  /* dm 是本轮新增字段：存量/导入的旧每日一牌记录没它会被当成普通单牌·运势卡静默消失，故按"单牌阵+每日一牌固定问句"兜底识别 */
+  state.dailyMode = rec.dm === undefined || rec.dm === null
+    ? (rec.sp === "single" && /今天我需要留意什么|今日指引/.test(String(rec.q || "")))
+    : !!rec.dm;
+  state.readingDate = rec.t || Date.now();
+  state.cutCard = rec.c ? (cardById[rec.c] || null) : null; /* 切牌入档后回看才能还原"心态底色"；老记录无 c → 与从前一致 */
   state.domain = detectDomain(rec.q); state.seed = rec.seed || 0; state.spreadManual = true;
   const positions = SPREADS[rec.sp].positions;
   state.draws = rec.d.map((x, i) => ({ pos: positions[i] || positions[positions.length - 1], card: cardById[x.id], reversed: !!x.r })).filter(d => d.card);
