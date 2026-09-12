@@ -4327,13 +4327,36 @@ async function buildDailyShareCard() {
   const SERIF = '"Cormorant Garamond",Georgia,serif';
   const d = state.draws[0]; const card = d && d.card;
   const m = card ? fortuneModel(card, d.reversed) : null;
+  /* ── 氛围底：墨金渐变 + 星云 + 星野 + 四芒星 + 晕影（与站内神秘墨金同一语言） ── */
   const g = ctx.createLinearGradient(0, 0, 0, H);
-  g.addColorStop(0, "#0d0b19"); g.addColorStop(.55, "#12101f"); g.addColorStop(1, "#07070e");
+  g.addColorStop(0, "#0e0b1c"); g.addColorStop(.52, "#110e20"); g.addColorStop(1, "#07070e");
   ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  const neb = (x, y, r, c) => { const ng = ctx.createRadialGradient(x, y, 0, x, y, r); ng.addColorStop(0, c); ng.addColorStop(1, "rgba(0,0,0,0)"); ctx.fillStyle = ng; ctx.fillRect(x - r, y - r, r * 2, r * 2); };
+  neb(W * .84, 110, 560, "rgba(96,66,170,.16)");
+  neb(W * .10, 330, 520, "rgba(34,62,140,.13)");
+  neb(CX, H + 60, 760, "rgba(201,168,106,.12)");
   let s = (state.seed || 20260911) >>> 0; const rnd = () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; };
-  for (let i = 0; i < 90; i++) { ctx.globalAlpha = .1 + rnd() * .4; ctx.fillStyle = "#c9a86a"; ctx.beginPath(); ctx.arc(rnd() * W, rnd() * H, rnd() * 1.6 + .4, 0, 7); ctx.fill(); }
+  for (let i = 0; i < 110; i++) { ctx.globalAlpha = .08 + rnd() * .42; ctx.fillStyle = i % 9 ? "#c9a86a" : "#eee0b2"; ctx.beginPath(); ctx.arc(rnd() * W, rnd() * H, rnd() * 1.7 + .4, 0, 7); ctx.fill(); }
   ctx.globalAlpha = 1;
+  /* 四芒星光斑（带金晕，画在晕影之前保持亮度） */
+  const sparkle = (x, y, r, a) => {
+    ctx.save(); ctx.globalAlpha = a; ctx.fillStyle = "#eee0b2";
+    ctx.shadowColor = "rgba(238,224,178,.85)"; ctx.shadowBlur = r * 3;
+    ctx.beginPath();
+    ctx.moveTo(x, y - r); ctx.quadraticCurveTo(x, y, x + r, y); ctx.quadraticCurveTo(x, y, x, y + r);
+    ctx.quadraticCurveTo(x, y, x - r, y); ctx.quadraticCurveTo(x, y, x, y - r);
+    ctx.fill(); ctx.restore();
+  };
+  sparkle(152, 214, 9, .85); sparkle(W - 168, 148, 7, .7); sparkle(W - 118, 640, 6, .55); sparkle(126, 1000, 6, .5); sparkle(W - 196, 1086, 8, .6);
+  /* 晕影：四角收暗聚焦中央 */
+  const vg = ctx.createRadialGradient(CX, H * .42, H * .32, CX, H * .42, H * .9);
+  vg.addColorStop(0, "rgba(0,0,0,0)"); vg.addColorStop(1, "rgba(2,2,8,.5)");
+  ctx.fillStyle = vg; ctx.fillRect(0, 0, W, H);
+  /* 双线鎏金框：外框 + 内缘发丝线（同站内鎏金面板），框顶中央✦印记 */
   ctx.strokeStyle = "rgba(201,168,106,.5)"; ctx.lineWidth = 2; ctx.strokeRect(34, 34, W - 68, H - 68);
+  ctx.strokeStyle = "rgba(201,168,106,.12)"; ctx.lineWidth = 1; ctx.strokeRect(48, 48, W - 96, H - 96);
+  ctx.fillStyle = "#0e0b1c"; ctx.fillRect(CX - 26, 25, 52, 20);
+  sparkle(CX, 35, 8, .95);
   const rr = (x, y, w, h, r) => { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); };
   const countWrap = (text, font, maxW) => { ctx.font = font; const cs = String(text || "").split(""); let ln = 1, cur = ""; for (const c1 of cs) { if (ctx.measureText(cur + c1).width > maxW) { ln++; cur = c1; } else cur += c1; } return Math.max(1, ln); };
 
@@ -4359,7 +4382,7 @@ async function buildDailyShareCard() {
   const measure = () => {
     const chh = Math.round(cw * 1.72);
     const rowH = rows.map(r => 28 + countWrap(r.v, F.body, BODYW) * lineH);
-    const blocks = { brand: 44, date: 34, card: chh + 26, name: 58, en: enTxt ? 30 : 0, rev: revTxt ? 28 : 0, energy: 58, rows: rowH.reduce((a, b) => a + b + rowGap, 0), lucky: 0 };
+    const blocks = { brand: 44, date: 34, card: chh + 26, name: 58, en: enTxt ? 30 : 0, rev: revTxt ? 28 : 0, orn: 46, energy: 58, rows: rowH.reduce((a, b) => a + b + rowGap, 0), lucky: 0 };
     return { chh, rowH, contentH: Object.values(blocks).reduce((a, b) => a + b, 0) };
   };
   let M = measure();
@@ -4371,7 +4394,18 @@ async function buildDailyShareCard() {
   /* ── 第二遍：按量好的高度顺序绘制（页脚锚底，内容不侵入） ── */
   let y = TOP;
   ctx.textAlign = "center";
-  ctx.fillStyle = "#c9a86a"; ctx.font = F.brand; ctx.fillText("塔塔🔮の心灵疗愈室", CX, y + 34); y += 44 + gap;
+  /* 法环：两圈虚线椭圆绕牌图（画在所有文字之下，同站内仪式魔法圈） */
+  const cardTopY = y + (44 + gap) + (34 + gap);
+  const cardCY = cardTopY + 12 + chh / 2;
+  ctx.save();
+  ctx.strokeStyle = "rgba(201,168,106,.20)"; ctx.lineWidth = 1.5; ctx.setLineDash([10, 12]);
+  ctx.beginPath(); ctx.ellipse(CX, cardCY, cw * .8, chh * .66, 0, 0, 7); ctx.stroke();
+  ctx.setLineDash([2, 10]); ctx.strokeStyle = "rgba(201,168,106,.13)";
+  ctx.beginPath(); ctx.ellipse(CX, cardCY, cw * .93, chh * .76, 0, 0, 7); ctx.stroke();
+  ctx.restore();
+  /* 品牌行：微金晕 */
+  ctx.save(); ctx.shadowColor = "rgba(201,168,106,.28)"; ctx.shadowBlur = 16;
+  ctx.fillStyle = "#d4b57c"; ctx.font = F.brand; ctx.fillText("塔塔🔮の心灵疗愈室", CX, y + 34); ctx.restore(); y += 44 + gap;
   ctx.fillStyle = "#8a8271"; ctx.font = F.date; ctx.fillText(dateTxt, CX, y + 22); y += 34 + gap;
 
   const cx = CX - cw / 2;
@@ -4379,6 +4413,7 @@ async function buildDailyShareCard() {
   ctx.shadowColor = "rgba(201,168,106,.45)"; ctx.shadowBlur = 46;
   ctx.fillStyle = "#141122"; rr(cx - 12, y, cw + 24, chh + 24, 18); ctx.fill();
   ctx.shadowBlur = 0; ctx.strokeStyle = "rgba(201,168,106,.8)"; ctx.lineWidth = 2; rr(cx - 12, y, cw + 24, chh + 24, 18); ctx.stroke();
+  ctx.strokeStyle = "rgba(238,224,178,.28)"; ctx.lineWidth = 1; rr(cx - 4, y + 8, cw + 8, chh + 8, 14); ctx.stroke();
   ctx.restore();
   ctx.save();
   rr(cx, y + 12, cw, chh, 12); ctx.clip();
@@ -4391,17 +4426,30 @@ async function buildDailyShareCard() {
   if (d && d.reversed) { const bx = cx + cw - 2, by = y + 28; ctx.fillStyle = "#07070e"; ctx.beginPath(); ctx.arc(bx, by, 21, 0, 7); ctx.fill(); ctx.strokeStyle = "#c9a86a"; ctx.lineWidth = 2; ctx.stroke(); ctx.fillStyle = "#c9a86a"; ctx.font = `24px ${SANS}`; ctx.textBaseline = "middle"; ctx.fillText("逆", bx, by + 2); ctx.textBaseline = "alphabetic"; }
   y += chh + 26 + gap;
 
-  ctx.fillStyle = "#f0ead9"; ctx.font = F.name; ctx.fillText(nameTxt, CX, y + 46); y += 58;
+  /* 牌名：米金渐变 */
+  const nameGrad = ctx.createLinearGradient(0, y, 0, y + 52);
+  nameGrad.addColorStop(0, "#f7f1e2"); nameGrad.addColorStop(1, "#d8cdb0");
+  ctx.fillStyle = nameGrad; ctx.font = F.name; ctx.fillText(nameTxt, CX, y + 46); y += 58;
   if (enTxt) { ctx.fillStyle = "#7f7866"; ctx.font = F.en; ctx.fillText(enTxt, CX, y + 20); y += 30; }
   if (revTxt) { ctx.fillStyle = "#b9945f"; ctx.font = F.rev; ctx.fillText(revTxt, CX, y + 18); y += 28; }
-  ctx.fillStyle = "#c9a86a"; ctx.font = F.energy; ctx.fillText(energyTxt, CX, y + 42); y += 58 + gap;
+  /* 月相饰线 ☽ ✦ ☾（与封面同一装饰语言） */
+  ctx.fillStyle = "#c9a86a"; ctx.font = `28px ${SERIF}`;
+  ctx.fillText("☽", CX - 96, y + 30); ctx.fillText("☾", CX + 96, y + 30);
+  sparkle(CX, y + 21, 7, .9); y += 46;
+  /* 能量词：鎏金渐变 + 金晕（同站内金箔标题） */
+  const eg = ctx.createLinearGradient(0, y, 0, y + 48);
+  eg.addColorStop(0, "#f7edd4"); eg.addColorStop(.5, "#e6cd8f"); eg.addColorStop(1, "#b18e52");
+  ctx.save(); ctx.shadowColor = "rgba(201,168,106,.35)"; ctx.shadowBlur = 22;
+  ctx.fillStyle = eg; ctx.font = F.energy; ctx.fillText(energyTxt, CX, y + 42); ctx.restore(); y += 58 + gap;
 
   if (rows.length) {
-    ctx.strokeStyle = "rgba(201,168,106,.2)"; ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(PADX, y - 8); ctx.lineTo(W - PADX, y - 8); ctx.stroke();
+    const dg = ctx.createLinearGradient(PADX, 0, W - PADX, 0);
+    dg.addColorStop(0, "rgba(201,168,106,0)"); dg.addColorStop(.5, "rgba(201,168,106,.4)"); dg.addColorStop(1, "rgba(201,168,106,0)");
+    ctx.fillStyle = dg; ctx.fillRect(PADX, y - 9, W - PADX * 2, 2);
+    sparkle(CX, y - 8, 6, .8);
     rows.forEach((r, i) => {
       ctx.textAlign = "left";
-      ctx.fillStyle = "#c9a86a"; ctx.font = F.key; ctx.fillText(r.k, PADX, y + 24);
+      ctx.fillStyle = "#d4b57c"; ctx.font = F.key; ctx.fillText(r.k, PADX, y + 24);
       ctx.fillStyle = i % 2 ? "#d9d3c3" : "#e6dfcd"; ctx.font = F.body;
       let cur = "", ly = y + 24;
       for (const c2 of String(r.v).split("")) {
@@ -4412,8 +4460,12 @@ async function buildDailyShareCard() {
     });
     ctx.textAlign = "center";
   }
-  if (lucky) { ctx.fillStyle = "#9c9482"; ctx.font = F.foot; ctx.fillText(lucky, CX, H - 104); }
-  ctx.fillStyle = "#6f6959"; ctx.font = F.note; ctx.fillText(note, CX, H - 56);
+  /* 页脚：渐隐金线起首（同站内页脚手法） */
+  const fg2 = ctx.createLinearGradient(PADX, 0, W - PADX, 0);
+  fg2.addColorStop(0, "rgba(201,168,106,0)"); fg2.addColorStop(.5, "rgba(201,168,106,.45)"); fg2.addColorStop(1, "rgba(201,168,106,0)");
+  ctx.fillStyle = fg2; ctx.fillRect(PADX, H - 156, W - PADX * 2, 2);
+  if (lucky) { ctx.fillStyle = "#a89e88"; ctx.font = F.foot; ctx.fillText(lucky, CX, H - 104); }
+  ctx.fillStyle = "#6f6959"; ctx.font = F.note; ctx.fillText("✦  " + note + "  ✦", CX, H - 56);
   return cv;
 }
 $("#btn-card").addEventListener("click", async () => {
