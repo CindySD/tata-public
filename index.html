@@ -192,8 +192,8 @@ textarea{min-height:96px}
 .orbiter:nth-child(odd) .tcard{filter:brightness(.8)}
 
 /* 牌桌：78 张牌背单排缎带式铺开，横向滑动（竞品主流 ribbon spread） */
-.fan{position:absolute;left:0;right:0;top:0;height:116px;display:flex;flex-wrap:nowrap;align-items:flex-start;
-  overflow-x:auto;overflow-y:hidden;padding:18px 12px 10px;opacity:0;transition:opacity .6s;
+.fan{position:absolute;left:0;right:0;top:0;height:132px;display:flex;flex-wrap:nowrap;align-items:flex-start;
+  overflow-x:auto;overflow-y:hidden;padding:28px 12px 12px;opacity:0;transition:opacity .6s;
   touch-action:pan-x;cursor:grab;scrollbar-width:thin;scrollbar-color:var(--gold-dim) transparent}
 .fan:active{cursor:grabbing}
 .fan.show{opacity:1}
@@ -219,8 +219,8 @@ textarea{min-height:96px}
 /* 标记牌样式数据驱动：颜色与徽章序号由 app.js 注入（--mk / data-mark-badge），
    新增牌阵不必改这里；--mk 缺省时回退金色边框。 */
 .fan .fcard.marked{border-color:var(--mk,var(--gold));transform:rotate(var(--tilt,0deg)) translateY(-6px);z-index:6;animation:fanIn .4s var(--ease-out) var(--fd) backwards,markPulse 2.6s ease-in-out 1s infinite}
-/* 标记徽章：深底圆片+同色描边，叠在重叠牌面上依然清晰（z-index 高于相邻牌） */
-.fan .fcard.marked::after{content:attr(data-mark-badge);position:absolute;top:-11px;left:50%;transform:translateX(-50%);width:21px;height:21px;line-height:19px;border-radius:50%;background:#0b0917;border:1px solid var(--mk,var(--gold-hi));color:var(--mk,var(--gold-hi));font-size:11px;text-align:center;text-shadow:none;z-index:7}
+/* 标记徽章：深底圆片+同色描边，落在牌面内侧顶部（不再悬出牌顶，抬牌/放大时不会被 .fan 的裁切线削掉一半） */
+.fan .fcard.marked::after{content:attr(data-mark-badge);position:absolute;top:5px;left:50%;transform:translateX(-50%);width:21px;height:21px;line-height:19px;border-radius:50%;background:#0b0917;border:1px solid var(--mk,var(--gold-hi));color:var(--mk,var(--gold-hi));font-size:11px;text-align:center;text-shadow:none;box-shadow:0 1px 7px rgba(0,0,0,.6);z-index:7}
 @keyframes markPulse{0%,100%{box-shadow:0 0 5px rgba(201,168,106,.25)}50%{box-shadow:0 0 14px rgba(201,168,106,.6)}}
 @keyframes fanIn{from{opacity:0;transform:rotate(var(--tilt,0deg)) scale(.6)}to{opacity:1;transform:rotate(var(--tilt,0deg)) scale(1)}}
 /* 严格按序抽牌：当前"该翻的下一张"高亮（金色描边+抬起+辉光），其余牌背不可翻 */
@@ -229,9 +229,9 @@ textarea{min-height:96px}
 @keyframes nextPulse{0%{box-shadow:0 0 6px rgba(201,168,106,.4)}50%{box-shadow:0 0 30px rgba(201,168,106,1)}100%{box-shadow:0 0 18px rgba(201,168,106,.8)}}
 /* 今日一牌·引导式揭示（daily）：其余牌淡出、标记牌"命运之光"浮起辉光并轻微起伏；动效由全局 prefers-reduced-motion 块自动降为静态 */
 .fan .fcard.dimming{opacity:.3;transition:opacity 1.1s ease}
-.fan .fcard.destiny{transform:rotate(var(--tilt,0deg)) translateY(-14px) scale(1.12);z-index:12;box-shadow:0 0 26px rgba(201,168,106,.8),0 0 60px rgba(201,168,106,.34)}
+.fan .fcard.destiny{transform:rotate(var(--tilt,0deg)) translateY(-12px) scale(1.12);z-index:12;box-shadow:0 0 26px rgba(201,168,106,.8),0 0 60px rgba(201,168,106,.34)}
 .fan .fcard.destiny.marked{animation:fanIn .4s var(--ease-out) var(--fd) backwards,destinyFloat 2.2s ease-in-out 1.1s infinite alternate}
-@keyframes destinyFloat{from{transform:rotate(var(--tilt,0deg)) translateY(-14px) scale(1.12)}to{transform:rotate(var(--tilt,0deg)) translateY(-20px) scale(1.16)}}
+@keyframes destinyFloat{from{transform:rotate(var(--tilt,0deg)) translateY(-12px) scale(1.12)}to{transform:rotate(var(--tilt,0deg)) translateY(-16px) scale(1.16)}}
 /* 运势卡·当日锁定 / 连续打卡行 */
 .df-streak{margin:0 0 4px;font-size:12px;letter-spacing:.05em;color:var(--gold);opacity:.92;text-align:center}
 
@@ -476,7 +476,7 @@ footer .gold{color:var(--gold)}
   :root{--card-w:112px}
   .shell{padding:0 16px 70px}
   .ritual-arena{height:340px}
-  .fan{height:104px;padding:16px 10px 8px}
+  .fan{height:120px;padding:26px 10px 8px}
   .fan .fcard{width:48px;margin-left:-32px}
   /* hold-wrap 已在 arena 内 absolute，移动端不额外处理 */
   .ask-panel{padding:26px 18px}
@@ -553,6 +553,22 @@ footer .gold{color:var(--gold)}
 #btn-cut:disabled,#btn-cut[disabled]{opacity:.34;cursor:not-allowed;filter:saturate(.5)}
 #btn-cut-skip{font-size:13px;padding:11px 18px}
 .cut-dup{color:var(--gold-hi);font-size:13px}
+/* 切牌层移动端档（必须排在上面基础规则之后，否则同特异度会被基础规则覆盖）：
+   牌 + 提示 + 输入行 + 说明整块要落进 340px / 300px 高的 arena，不再上下溢出压住洗牌状态文字 */
+@media (max-width:600px){
+  .cut-layer{gap:8px}
+  .cut-deck,.cut-flip{width:96px;height:160px}
+  .cut-hint{font-size:12px;letter-spacing:.12em}
+  /* 输入 + 两个按钮收进一行：折一行就多 ~50px，整块会顶出 arena */
+  .cut-num{width:72px;padding:9px 8px;font-size:16px}
+  #btn-cut{font-size:13px;padding:10px 14px;letter-spacing:.1em}
+  #btn-cut-skip{font-size:12px;padding:9px 12px}
+  .cut-result{font-size:13px;line-height:1.7;min-height:44px}
+}
+@media (max-width:380px){
+  .cut-deck,.cut-flip{width:84px;height:140px}
+  .cut-result{min-height:40px}
+}
 
 /* 阶段④-1 应期参考 */
 .timing-block{margin-top:26px;border:1px dashed var(--gold-dim);border-radius:14px;padding:20px 24px;background:rgba(201,168,106,.03)}
@@ -3052,8 +3068,13 @@ function showCutStep() {
     if (deckEl) deckEl.style.transform = valid() ? `translateY(${-Math.min(+inp.value, 78) * 0.5}px)` : "";
   });
   const finish = (leaveMs) => {
-    layer.style.transition = "opacity .5s"; layer.style.opacity = "0";
-    setTimeout(() => { if (gen !== cutGen) return; layer.remove(); showSpread(); }, leaveMs + 520);
+    /* 先停留 leaveMs 再淡出：旧写法在调用瞬间就把整层 opacity 归零（leaveMs 只延迟了 remove），
+       而翻面是 250ms 起 + .6s 过渡 → 图片还没翻完就已经看不见，用户报"点切牌后切牌图片不显示" */
+    setTimeout(() => {
+      if (gen !== cutGen || !layer.isConnected) return; /* 已被新一轮仪式作废 */
+      layer.style.transition = "opacity .5s"; layer.style.opacity = "0";
+      setTimeout(() => { if (gen !== cutGen) return; layer.remove(); showSpread(); }, 520);
+    }, leaveMs);
   };
   const cut = () => {
     if (layer.dataset.done || !valid()) return;
@@ -3080,7 +3101,7 @@ function showCutStep() {
           (alsoIn ? `<br><span style="font-size:11.5px;color:var(--gold-hi)">它同时也在阵里出现了——同一张牌被翻两次，传统上读作"这件事的分量很重"</span>` : "");
       }, 450);
     }, 250);
-    finish(2600);
+    finish(3200);
   };
   btn.addEventListener("click", cut);
   inp.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); cut(); } });
