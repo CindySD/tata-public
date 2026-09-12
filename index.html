@@ -866,6 +866,17 @@ footer::before{
 .time-mirror .tm-back:hover{border-color:var(--gold);color:var(--gold-hi)}
 @media (prefers-reduced-motion:reduce){.cover-daily-hint:not(.done) .cdh-text::before{animation:none}}
 
+/* ---------- ⑱ 分享图规格 chips（弹窗内显式换版，默认规格不变） ---------- */
+.share-variants{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin:2px 0 6px}
+.sv-chip{
+  background:none;border:1px solid var(--gold-faint);border-radius:999px;color:var(--gold);
+  font-size:12px;letter-spacing:.1em;padding:6px 16px;cursor:pointer;transition:border-color .25s,color .25s,background .25s;
+}
+.sv-chip:hover{border-color:var(--gold)}
+.sv-chip.on{background:linear-gradient(135deg,rgba(201,168,106,.22),rgba(201,168,106,.10));border-color:var(--gold);color:var(--gold-hi);font-weight:600}
+.sv-chip.wait{opacity:.45;pointer-events:none}
+.share-stage-wait{color:var(--gold);letter-spacing:.2em;font-size:13px;padding:70px 0;opacity:.8}
+
 </style>
 </head>
 <body>
@@ -4439,8 +4450,13 @@ async function buildShareCard() {
   return cv;
 }
 /* 今日一牌·4:5 竖版紧凑分享（社媒信息流友好）；与通用动态长图分开，避免把富信息版硬塞进 1350 高而截断 */
-async function buildDailyShareCard() {
+async function buildDailyShareCard(kind) {
+  /* 三规格并存、同一快照数据源：full=4:5 竖版（默认，行为与旧版逐字一致）；mini=3:4 小红书向；story=9:16 大字状态/快拍向 */
+  const V = kind === "mini" ? { H: 1440, grow: false, rows: false, lucky: false, orn: true, en: true, cw: 330 }
+    : kind === "story" ? { H: 1920, grow: false, rows: false, lucky: false, orn: false, en: false, cw: 460, big: true }
+    : { rows: true, lucky: true, orn: true, en: true };
   const W = 1080; let H = 1350; const CX = W / 2, PADX = 96;
+  if (V.H) H = V.H;
   const cv = document.createElement("canvas"); cv.width = W; cv.height = H;
   const ctx = cv.getContext("2d");
   const SANS = '"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif';
@@ -4499,12 +4515,15 @@ async function buildDailyShareCard() {
 
   /* ── 第一遍：量高 + 自适应（页脚固定锚底；四级压缩：缩主图→压行高→紧凑模式→再缩主图） ── */
   const F = { brand: `600 38px ${SANS}`, date: `22px ${SANS}`, name: `600 52px ${SANS}`, en: `24px ${SERIF}`, rev: `20px ${SANS}`, energy: `600 46px ${SERIF}`, concl: `600 25px ${SANS}`, key: `600 23px ${SANS}`, body: `25px ${SANS}`, foot: `21px ${SANS}`, note: `19px ${SANS}` };
+  if (V.big) { F.concl = `600 32px ${SANS}`; F.energy = `600 58px ${SERIF}`; F.name = `600 60px ${SANS}`; } /* 9:16 大字版：判词/能量词/牌名整体升档，缩略可读 */
   const KEYW = 168, BODYW = W - PADX * 2 - KEYW;
   const TOP = 64;
   const D0 = { brand: 44, date: 34, cardPad: 26, name: 58, en: 30, rev: 28, orn: 46, energy: 58, foot: 150 };
   const D1 = { brand: 40, date: 30, cardPad: 20, name: 52, en: 26, rev: 24, orn: 36, energy: 52, foot: 136 };
+  if (V.big) { D0.name = 76; D0.energy = 78; } /* 9:16 大字版：槽位随字号扩，防牌名与能量词叠字（看图抓出的真 bug） */
   let D = D0, tight = false;
   let cw = 316, lineH = 34, rowGap = 24;
+  if (V.cw) cw = V.cw; /* mini/story 块少空间大：主图基础宽上调（压缩级联与 268 下限不变） */
   /* 直觉框内距（舒展版）：标题→正文、正文行距、框上下留白全面加大——canvas 里 25px 字配 32 行距视觉偏挤 */
   const CB = { pad: 24, label: 66, padTop: 20, padBot: 26, cLineH: 40 };
   const CBOXW = W - PADX * 2;
@@ -4512,18 +4531,18 @@ async function buildDailyShareCard() {
     const chh = Math.round(cw * 1.72);
     const cLineH = tight ? 30 : CB.cLineH;
     const rowH = rows.map(r => 32 + countWrap(r.v, F.body, BODYW) * lineH);
-    const blocks = { brand: D.brand, date: D.date, card: chh + D.cardPad, name: D.name, en: enTxt ? D.en : 0, rev: revTxt ? D.rev : 0, orn: D.orn, energy: D.energy, concl: concl ? CB.padTop + CB.label + conclLines0() * cLineH + CB.padBot : 0, rows: rowH.reduce((a, b) => a + b + rowGap, 0), lucky: 0 };
+    const blocks = { brand: D.brand, date: D.date, card: chh + D.cardPad, name: D.name, en: (V.en && enTxt) ? D.en : 0, rev: revTxt ? D.rev : 0, orn: V.orn ? D.orn : 0, energy: D.energy, concl: concl ? CB.padTop + CB.label + conclLines0() * cLineH + CB.padBot : 0, rows: V.rows ? rowH.reduce((a, b) => a + b + rowGap, 0) : 0, lucky: 0 };
     return { chh, rowH, cLineH, contentH: Object.values(blocks).reduce((a, b) => a + b, 0) };
   };
   const conclLines0 = () => Math.max(1, countWrap(`「${concl}」`, F.concl, CBOXW - CB.pad * 2 - 36));
   let M = measure();
   const needH = TOP + D0.foot + M.contentH + 190;     /* 呼吸余量：块间 gap(≥14) + 直觉框/牌图上下缓冲 + 列表区分隔余量 */
-  if (needH > H) { H = Math.min(1620, Math.ceil(needH / 30) * 30); cv.height = H; }   /* ⓪ 优先长高：1350→≤1620，文字保持舒展间距 */
+  if (V.grow !== false && needH > H) { H = Math.min(1620, Math.ceil(needH / 30) * 30); cv.height = H; }   /* ⓪ 优先长高：1350→≤1620，文字保持舒展间距（仅 full；mini/story 固定比例） */
   while (M.contentH > H - TOP - D.foot && cw > 268) { cw -= 12; M = measure(); }     /* ① 缩主图（下限 268：保住牌面可读性，宁可画布长高） */
   while (M.contentH > H - TOP - D.foot && lineH > 29) { lineH -= 2; rowGap = 12; M = measure(); }  /* ② 压行高 */
   if (M.contentH > H - TOP - D.foot) { tight = true; D = D1; rowGap = 10; M = measure(); }          /* ③ 紧凑模式：装饰块收缩+直觉段专用行高（极端长文才动用） */
   while (M.contentH > H - TOP - D.foot && cw > 208) { cw -= 12; M = measure(); }     /* ④ 主图再降一档 */
-  const gap = Math.max(14, Math.min(48, Math.floor((H - TOP - D.foot - M.contentH) / 8)));
+  const gap = Math.max(14, Math.min(V.big ? 90 : 48, Math.floor((H - TOP - D.foot - M.contentH) / (V.big ? 5 : 8))));
   const { chh, rowH, cLineH } = M;
   const conclLines = conclLines0();
   const conclH = concl ? CB.padTop + CB.label + conclLines * cLineH + CB.padBot : 0;
@@ -4590,22 +4609,22 @@ async function buildDailyShareCard() {
   const nameGrad = ctx.createLinearGradient(0, y - 20, 0, y + 32);
   nameGrad.addColorStop(0, "#f7f1e2"); nameGrad.addColorStop(1, "#d8cdb0");
   ctx.fillStyle = nameGrad; ctx.font = F.name; ctx.fillText(nameTxt, CX, y + D.name - 32); y += D.name - 20;
-  if (enTxt) { ctx.fillStyle = "#7f7866"; ctx.font = F.en; ctx.fillText(enTxt, CX, y + 18); y += D.en; }
+  if (enTxt && V.en) { ctx.fillStyle = "#7f7866"; ctx.font = F.en; ctx.fillText(enTxt, CX, y + 18); y += D.en; }
   if (revTxt) { ctx.fillStyle = "#b9945f"; ctx.font = F.rev; ctx.fillText(revTxt, CX, y + 18); y += D.rev; }
   /* 月相饰线 ☽ ✦ ☾（与封面同一装饰语言；紧凑模式让位于内容，仅留呼吸间距） */
-  if (!tight) {
+  if (!tight && V.orn) {
     ctx.fillStyle = "#c9a86a"; ctx.font = `28px ${SERIF}`;
     ctx.fillText("☽", CX - 96, y + 30); ctx.fillText("☾", CX + 96, y + 30);
     sparkle(CX, y + 21, 7, .9);
   }
-  y += D.orn;
+  if (V.orn) y += D.orn;
   /* 能量词：鎏金渐变 + 金晕（同站内金箔标题） */
   const eg = ctx.createLinearGradient(0, y, 0, y + 48);
   eg.addColorStop(0, "#f7edd4"); eg.addColorStop(.5, "#e6cd8f"); eg.addColorStop(1, "#b18e52");
   ctx.save(); ctx.shadowColor = "rgba(201,168,106,.35)"; ctx.shadowBlur = 22;
   ctx.fillStyle = eg; ctx.font = F.energy; ctx.fillText(energyTxt, CX, y + D.energy - 16); ctx.restore(); y += D.energy + gap;
 
-  if (rows.length) {
+  if (V.rows && rows.length) {
     const dg = ctx.createLinearGradient(PADX, 0, W - PADX, 0);
     dg.addColorStop(0, "rgba(201,168,106,0)"); dg.addColorStop(.5, "rgba(201,168,106,.4)"); dg.addColorStop(1, "rgba(201,168,106,0)");
     ctx.fillStyle = dg; ctx.fillRect(PADX, y - 11, W - PADX * 2, 2);
@@ -4637,45 +4656,191 @@ async function buildDailyShareCard() {
   const fg2 = ctx.createLinearGradient(PADX, 0, W - PADX, 0);
   fg2.addColorStop(0, "rgba(201,168,106,0)"); fg2.addColorStop(.5, "rgba(201,168,106,.45)"); fg2.addColorStop(1, "rgba(201,168,106,0)");
   ctx.fillStyle = fg2; ctx.fillRect(PADX, H - D.foot - 6, W - PADX * 2, 2);
-  if (lucky) { ctx.fillStyle = "#a89e88"; ctx.font = F.foot; ctx.fillText(lucky, CX, H - D.foot + 46); }
+  if (V.lucky && lucky) { ctx.fillStyle = "#a89e88"; ctx.font = F.foot; ctx.fillText(lucky, CX, H - D.foot + 46); }
   ctx.fillStyle = "#6f6959"; ctx.font = F.note; ctx.fillText("✦  " + note + "  ✦", CX, H - D.foot + 94);
   return cv;
 }
+/* 多牌阵 · 3:4 极简分享图：与富信息长图同一份 shareSnapshot（直觉一句、能量词），只留牌图行 + 金框判词——小红书友好版 */
+async function buildSpreadMiniCard() {
+  const _draws = state.draws.slice(); /* 快照防跨 await 混局（同 buildShareCard 教训） */
+  const _q = state.question, _sp = (SPREADS[state.spreadKey] || {}).name || "";
+  const snap = state.shareSnapshot;
+  const W = 1080, H = 1440, CX = W / 2, PADX = 96, TOP = 64, FOOT = 150;
+  const cv = document.createElement("canvas"); cv.width = W; cv.height = H;
+  const ctx = cv.getContext("2d");
+  const SANS = '"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif';
+  const SERIF = '"Cormorant Garamond",Georgia,serif';
+  const rr = (x, y, w, h, r) => { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); };
+  const sparkle = (x, y, r, a) => {
+    ctx.save(); ctx.globalAlpha = a; ctx.fillStyle = "#eee0b2";
+    ctx.shadowColor = "rgba(238,224,178,.85)"; ctx.shadowBlur = r * 3;
+    ctx.beginPath();
+    ctx.moveTo(x, y - r); ctx.quadraticCurveTo(x, y, x + r, y); ctx.quadraticCurveTo(x, y, x, y + r);
+    ctx.quadraticCurveTo(x, y, x - r, y); ctx.quadraticCurveTo(x, y, x, y - r);
+    ctx.fill(); ctx.restore();
+  };
+  const countWrap = (text, font, maxW) => { ctx.font = font; const cs = String(text || "").split(""); let ln = 1, cur = ""; for (const c1 of cs) { if (ctx.measureText(cur + c1).width > maxW) { ln++; cur = c1; } else cur += c1; } return Math.max(1, ln); };
+  /* 氛围底：与每日一牌卡同一墨金语言（星云+星野+晕影+双线框），尺寸固定一次绘成 */
+  const g = ctx.createLinearGradient(0, 0, 0, H);
+  g.addColorStop(0, "#0e0b1c"); g.addColorStop(.52, "#110e20"); g.addColorStop(1, "#07070e");
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  const neb = (x, y, r, c) => { const ng = ctx.createRadialGradient(x, y, 0, x, y, r); ng.addColorStop(0, c); ng.addColorStop(1, "rgba(0,0,0,0)"); ctx.fillStyle = ng; ctx.fillRect(x - r, y - r, r * 2, r * 2); };
+  neb(W * .84, 110, 560, "rgba(96,66,170,.16)"); neb(W * .10, 330, 520, "rgba(34,62,140,.13)"); neb(CX, H + 60, 760, "rgba(201,168,106,.12)");
+  let sd = (state.seed || 20260912) >>> 0; const rnd = () => { sd = (sd * 1664525 + 1013904223) >>> 0; return sd / 4294967296; };
+  for (let i = 0; i < 110; i++) { ctx.globalAlpha = .08 + rnd() * .42; ctx.fillStyle = i % 9 ? "#c9a86a" : "#eee0b2"; ctx.beginPath(); ctx.arc(rnd() * W, rnd() * H, rnd() * 1.7 + .4, 0, 7); ctx.fill(); }
+  ctx.globalAlpha = 1;
+  const vg = ctx.createRadialGradient(CX, H * .42, H * .32, CX, H * .42, H * .9);
+  vg.addColorStop(0, "rgba(0,0,0,0)"); vg.addColorStop(1, "rgba(2,2,8,.5)");
+  ctx.fillStyle = vg; ctx.fillRect(0, 0, W, H);
+  ctx.strokeStyle = "rgba(201,168,106,.5)"; ctx.lineWidth = 2; ctx.strokeRect(34, 34, W - 68, H - 68);
+  ctx.strokeStyle = "rgba(201,168,106,.12)"; ctx.lineWidth = 1; ctx.strokeRect(48, 48, W - 96, H - 96);
+  ctx.fillStyle = "#0e0b1c"; ctx.fillRect(CX - 26, 25, 52, 20); sparkle(CX, 35, 8, .95);
+  /* 内容（全部走快照） */
+  const concl = ((snap && snap.conclusion) || "").trim();
+  const energy = (snap && snap.energy) || energyWord();
+  const t = new Date(state.readingDate || Date.now());
+  const isToday = _dayStr(t) === _dayStr();
+  const dateTxt = `${t.getFullYear()} 年 ${t.getMonth() + 1} 月 ${t.getDate()} 日　·　${isToday ? "今 日 牌 阵" : "当 日 牌 阵"}`;
+  const CB = { pad: 24, label: 60, padTop: 18, padBot: 24, cLineH: 38 };
+  const CBOXW = W - PADX * 2;
+  const conclLines = concl ? Math.min(6, countWrap(`「${concl}」`, `600 25px ${SANS}`, CBOXW - CB.pad * 2 - 36)) : 0;
+  const conclH = concl ? CB.padTop + CB.label + conclLines * CB.cLineH + CB.padBot : 0;
+  const qLines = Math.min(2, countWrap(`「${_q}」`, `30px ${SANS}`, W - 320));
+  const n = _draws.length;
+  const rowsN = n > 4 ? 2 : 1;
+  const perRow = Math.ceil(n / rowsN);
+  let size = Math.min(230, Math.floor((W - PADX * 2 - (perRow - 1) * 24) / perRow));
+  const totalH = () => TOP + 44 + 30 + qLines * 44 + 36 + rowsN * (Math.round(size * 1.72) + 40) + (rowsN - 1) * 16 + (conclH ? conclH + 26 : 0) + 110 + FOOT;
+  while (totalH() > H && size > 118) size -= 12; /* 溢出只缩牌图：文字与金框不动（防紧凑红线同源） */
+  /* 绘制：顶向下排布，页脚锚底 */
+  let y = TOP;
+  ctx.textAlign = "center";
+  ctx.save(); ctx.shadowColor = "rgba(201,168,106,.28)"; ctx.shadowBlur = 16;
+  ctx.fillStyle = "#d4b57c"; ctx.font = `600 38px ${SANS}`; ctx.fillText("塔塔🔮の心灵疗愈室", CX, y + 32); ctx.restore(); y += 44;
+  ctx.fillStyle = "#8a8271"; ctx.font = `22px ${SANS}`; ctx.fillText(dateTxt, CX, y + 20); y += 30;
+  ctx.fillStyle = "#e8e2d4"; ctx.font = `30px ${SANS}`;
+  { let cur = "", ly = y + 30;
+    for (const c2 of `「${_q}」`.split("")) { if (ctx.measureText(cur + c2).width > W - 320) { ctx.fillText(cur, CX, ly); cur = c2; ly += 44; } else cur += c2; }
+    if (cur) ctx.fillText(cur, CX, ly); }
+  y += qLines * 44;
+  ctx.fillStyle = "#c9a86a"; ctx.font = `24px ${SANS}`; ctx.fillText(`——「${_sp}」——`, CX, y + 24); y += 36;
+  /* 牌图行（>4 张双行；每张带金边与逆位徽点 + 下方牌名小字） */
+  const imgH = Math.round(size * 1.72);
+  for (let i = 0; i < n; i++) {
+    const d = _draws[i];
+    const r = Math.floor(i / perRow), c = i % perRow;
+    const rowCount = r === rowsN - 1 ? n - r * perRow : perRow;
+    const x = CX - (rowCount * size + (rowCount - 1) * 24) / 2 + c * (size + 24);
+    const iy = y + r * (imgH + 40 + 16);
+    ctx.save();
+    ctx.shadowColor = "rgba(201,168,106,.35)"; ctx.shadowBlur = 24;
+    ctx.fillStyle = "#141122"; rr(x - 6, iy - 6, size + 12, imgH + 12, 12); ctx.fill();
+    ctx.shadowBlur = 0; ctx.strokeStyle = "rgba(201,168,106,.7)"; ctx.lineWidth = 2; rr(x - 6, iy - 6, size + 12, imgH + 12, 12); ctx.stroke();
+    ctx.restore();
+    ctx.save(); rr(x, iy, size, imgH, 10); ctx.clip();
+    if (d.reversed) { ctx.translate(x + size / 2, iy + imgH / 2); ctx.rotate(Math.PI); ctx.translate(-(x + size / 2), -(iy + imgH / 2)); }
+    let im = await loadCardImg(IMG_BASE + (d.card && d.card.image));
+    if (!im && CDN_BASE) im = await loadCardImg(CDN_BASE + (d.card && d.card.image));
+    if (im) ctx.drawImage(im, x, iy, size, imgH);
+    else { ctx.fillStyle = "#c9a86a"; ctx.font = `44px ${SERIF}`; ctx.fillText("✶", x + size / 2, iy + imgH / 2 + 16); }
+    ctx.restore();
+    if (d.reversed) { const bx = x + size - 2, by = iy + 16; ctx.fillStyle = "#07070e"; ctx.beginPath(); ctx.arc(bx, by, 15, 0, 7); ctx.fill(); ctx.strokeStyle = "#c9a86a"; ctx.lineWidth = 2; ctx.stroke(); ctx.fillStyle = "#c9a86a"; ctx.font = `17px ${SANS}`; ctx.textBaseline = "middle"; ctx.fillText("逆", bx, by + 1); ctx.textBaseline = "alphabetic"; }
+    ctx.fillStyle = "#b8ad93"; ctx.font = `21px ${SANS}`; ctx.fillText(d.card.name + (d.reversed ? "·逆" : ""), x + size / 2, iy + imgH + 30);
+  }
+  y += rowsN * (imgH + 40) + (rowsN - 1) * 16;
+  /* 塔塔的直觉：与页面/长图同一句、同款金框（复刻 .conclusion-banner） */
+  if (concl) {
+    y += 26;
+    const bg = ctx.createLinearGradient(0, y, 0, y + conclH);
+    bg.addColorStop(0, "rgba(201,168,106,.14)"); bg.addColorStop(1, "rgba(201,168,106,.03)");
+    ctx.fillStyle = bg; rr(PADX, y, CBOXW, conclH, 14); ctx.fill();
+    ctx.strokeStyle = "rgba(201,168,106,.55)"; ctx.lineWidth = 2; rr(PADX, y, CBOXW, conclH, 14); ctx.stroke();
+    ctx.strokeStyle = "rgba(238,224,178,.16)"; ctx.lineWidth = 1; rr(PADX + 5, y + 5, CBOXW - 10, conclH - 10, 10); ctx.stroke();
+    let iy2 = y + CB.padTop;
+    ctx.fillStyle = "#c9a86a"; ctx.font = `600 20px ${SANS}`; ctx.fillText("塔 塔 的 直 觉", CX, iy2 + 20); iy2 += CB.label;
+    ctx.fillStyle = "#e8e2d4"; ctx.font = `600 25px ${SANS}`; ctx.textAlign = "left";
+    let cur = "", ly = iy2 + 24;
+    for (const c3 of `「${concl}」`.split("")) {
+      if (ctx.measureText(cur + c3).width > CBOXW - CB.pad * 2 - 36) { ctx.fillText(cur, PADX + CB.pad + 18, ly); cur = c3; ly += CB.cLineH; } else cur += c3;
+    }
+    if (cur) ctx.fillText(cur, PADX + CB.pad + 18, ly);
+    ctx.textAlign = "center";
+  }
+  /* 能量词：鎏金渐变——紧跟判词流式排布（锚页脚会在少牌阵时留大空洞，看图抓出） */
+  y += concl ? conclH + 40 : 26;
+  const eg = ctx.createLinearGradient(0, y, 0, y + 56);
+  eg.addColorStop(0, "#f7edd4"); eg.addColorStop(.5, "#e6cd8f"); eg.addColorStop(1, "#b18e52");
+  ctx.save(); ctx.shadowColor = "rgba(201,168,106,.35)"; ctx.shadowBlur = 22;
+  ctx.fillStyle = eg; ctx.font = `600 46px ${SERIF}`; ctx.fillText(energy, CX, y + 46); ctx.restore();
+  /* 页脚 */
+  const fg2 = ctx.createLinearGradient(PADX, 0, W - PADX, 0);
+  fg2.addColorStop(0, "rgba(201,168,106,0)"); fg2.addColorStop(.5, "rgba(201,168,106,.45)"); fg2.addColorStop(1, "rgba(201,168,106,0)");
+  ctx.fillStyle = fg2; ctx.fillRect(PADX, H - FOOT - 6, W - PADX * 2, 2);
+  ctx.fillStyle = "#6f6959"; ctx.font = `19px ${SANS}`;
+  ctx.fillText("✦  牌是镜子，不是判决书 · cindysd.github.io/tata-public  ✦", CX, H - FOOT + 52);
+  return cv;
+}
+/* ---------- 分享图入口：默认规格不变（每日一牌→4:5 竖版；多牌阵→富信息长图），弹窗内 chips 显式换版、同一快照就地重绘 ---------- */
+const SHARE_VARIANTS = {
+  daily: [["full", "4:5 竖版"], ["mini", "3:4 极简"], ["story", "9:16 大字"]],
+  spread: [["long", "富信息长图"], ["mini", "3:4 极简"]]
+};
 $("#btn-card").addEventListener("click", async () => {
   const b = $("#btn-card"); const old = b.textContent;
   b.disabled = true; b.textContent = "绘制中……";
-  try {
-    const cv = await (state.dailyMode ? buildDailyShareCard() : buildShareCard());
-    const blob = await new Promise((res, rej) => {
-      if (cv.toBlob) { try { cv.toBlob(bb => bb ? res(bb) : rej(new Error("导出失败")), "image/png"); } catch (e) { rej(e); } }
-      else rej(new Error("no-blob"));
-    }).catch(() => null);
-    let url, mimeOk = true;
-    if (blob) {
-      if (window.__tataShareUrl) { try { URL.revokeObjectURL(window.__tataShareUrl); } catch (e) {} }
-      url = URL.createObjectURL(blob); window.__tataShareUrl = url;
-    } else {
-      url = cv.toDataURL("image/png"); mimeOk = false; /* 老 Safari 无 toBlob：退化为 dataURL，仍可长按保存 */
+  const daily = !!state.dailyMode;
+  let kind = daily ? "full" : "long", busy = false, lastBlob = null;
+  const chipsHtml = SHARE_VARIANTS[daily ? "daily" : "spread"].map(([k, label]) => `<button class="sv-chip${k === kind ? " on" : ""}" type="button" data-k="${k}">${label}</button>`).join("");
+  openInfoModal(`
+    <h4>分享图已生成</h4>
+    <div class="share-variants" role="group" aria-label="分享图规格">${chipsHtml}</div>
+    <div style="margin:6px auto 14px;max-width:460px;text-align:center;font-size:13px;line-height:1.7;color:#0b0917;background:linear-gradient(90deg,#e8c46a,#c9a86a);border-radius:10px;padding:9px 14px;font-weight:600">📱 手机上长按图片 →「存储到照片」，即可在相册看到。</div>
+    <div id="share-stage" style="text-align:center;min-height:240px;display:flex;align-items:center;justify-content:center"><span class="share-stage-wait">绘制中……</span></div>
+    <div style="display:flex;gap:14px;justify-content:center;margin-top:18px;flex-wrap:wrap">
+      <a class="btn" id="share-dl" href="#" download="tata-tarot-share.png" style="text-decoration:none">保存图片</a>
+      <button class="btn ghost" id="share-img" type="button" style="display:none">系统分享</button>
+    </div>
+    <p class="note" style="margin-top:14px;text-align:center;line-height:1.9">各规格共用同一份解读快照——换的是排版，不换内容。<br>安卓／电脑：点「保存图片」存入相册，或「系统分享」发到微信/QQ。</p>`);
+  const draw = async (k) => {
+    if (busy) return; busy = true;
+    const stage = $("#share-stage"); if (stage) stage.innerHTML = '<span class="share-stage-wait">重绘中……</span>';
+    document.querySelectorAll(".sv-chip").forEach(c => c.classList.toggle("wait", c.dataset.k === k));
+    try {
+      const cv = await (daily ? buildDailyShareCard(k) : (k === "long" ? buildShareCard() : buildSpreadMiniCard()));
+      const blob = await new Promise((res, rej) => {
+        if (cv.toBlob) { try { cv.toBlob(bb => bb ? res(bb) : rej(new Error("导出失败")), "image/png"); } catch (e) { rej(e); } }
+        else rej(new Error("no-blob"));
+      }).catch(() => null);
+      let url, mimeOk = true;
+      if (blob) {
+        if (window.__tataShareUrl) { try { URL.revokeObjectURL(window.__tataShareUrl); } catch (e) {} }
+        url = URL.createObjectURL(blob); window.__tataShareUrl = url; lastBlob = blob;
+      } else {
+        url = cv.toDataURL("image/png"); mimeOk = false; /* 老 Safari 无 toBlob：退化为 dataURL，仍可长按保存 */
+      }
+      if (stage) stage.innerHTML = `<img src="${url}" alt="占卜分享卡片" data-k="${k}" style="max-width:88%;width:520px;border-radius:12px;border:1px solid var(--gold-dim)">`;
+      const dl = $("#share-dl");
+      if (dl) { dl.href = url; if (!mimeOk) { dl.removeAttribute("download"); dl.target = "_blank"; dl.rel = "noopener"; } }
+      const sb = $("#share-img");
+      if (sb) sb.style.display = (!mimeOk ? false : (navigator.canShare && window.File && navigator.share && blob)) ? "" : "none";
+      document.querySelectorAll(".sv-chip").forEach(c => { c.classList.toggle("on", c.dataset.k === k); c.classList.remove("wait"); });
+      kind = k;
+    } catch (e) {
+      if (stage) stage.innerHTML = '<span class="share-stage-wait">生成失败</span>';
+      alert("分享图生成失败：" + (e.message || "画布被跨域图片污染，请刷新后重试"));
     }
-    const canSysShare = !!(!mimeOk ? false : (navigator.canShare && window.File && navigator.share && blob));
-    openInfoModal(`
-      <h4>分享图已生成</h4>
-      <div style="margin:2px auto 14px;max-width:460px;text-align:center;font-size:13px;line-height:1.7;color:#0b0917;background:linear-gradient(90deg,#e8c46a,#c9a86a);border-radius:10px;padding:9px 14px;font-weight:600">📱 手机上长按图片 →「存储到照片」，即可在相册看到。</div>
-      <div style="text-align:center"><img src="${url}" alt="占卜分享卡片" style="max-width:88%;width:520px;border-radius:12px;border:1px solid var(--gold-dim)"></div>
-      <div style="display:flex;gap:14px;justify-content:center;margin-top:22px;flex-wrap:wrap">
-        <a class="btn" href="${url}" ${mimeOk ? 'download="tata-tarot-share.png"' : 'target="_blank" rel="noopener"'} style="text-decoration:none">保存图片</a>
-        ${canSysShare ? '<button class="btn ghost" id="share-img" type="button">系统分享</button>' : ""}
-      </div>
-      <p class="note" style="margin-top:14px;text-align:center;line-height:1.9">安卓／电脑：点「保存图片」存入相册，或「系统分享」发到微信/QQ。</p>`);
-    if (canSysShare) $("#share-img")?.addEventListener("click", async () => {
-      try {
-        const file = new File([blob], "tata-tarot-share.png", { type: "image/png" });
-        if (navigator.canShare({ files: [file] })) await navigator.share({ files: [file], title: "塔塔🔮の心灵疗愈室" });
-      } catch (e) { /* 用户取消分享不提示 */ }
-    });
-  } catch (e) {
-    alert("分享图生成失败：" + (e.message || "画布被跨域图片污染，请刷新后重试"));
-  }
+    busy = false;
+  };
+  document.querySelectorAll(".sv-chip").forEach(c => c.addEventListener("click", () => { if (!busy && c.dataset.k !== kind) draw(c.dataset.k); }));
+  const sbEl = $("#share-img");
+  if (sbEl) sbEl.addEventListener("click", async () => {
+    try {
+      if (!lastBlob) return;
+      const file = new File([lastBlob], "tata-tarot-share.png", { type: "image/png" });
+      if (navigator.canShare({ files: [file] })) await navigator.share({ files: [file], title: "塔塔🔮の心灵疗愈室" });
+    } catch (e) { /* 用户取消分享不提示 */ }
+  });
+  await draw(kind);
   b.disabled = false; b.textContent = old;
 });
 
