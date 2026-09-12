@@ -4384,19 +4384,20 @@ async function buildDailyShareCard() {
   const D0 = { brand: 44, date: 34, cardPad: 26, name: 58, en: 30, rev: 28, orn: 46, energy: 58, foot: 150 };
   const D1 = { brand: 40, date: 30, cardPad: 20, name: 52, en: 26, rev: 24, orn: 36, energy: 52, foot: 136 };
   let D = D0, tight = false;
-  let cw = 316, lineH = 34, rowGap = 16;
-  const CB = { pad: 16, label: 40, padTop: 14, padBot: 14 };     /* 直觉框内边距（解读页 conclusion-banner 同款金框样式） */
+  let cw = 316, lineH = 34, rowGap = 24;
+  /* 直觉框内距（舒展版）：标题→正文、正文行距、框上下留白全面加大——canvas 里 25px 字配 32 行距视觉偏挤 */
+  const CB = { pad: 24, label: 66, padTop: 20, padBot: 26, cLineH: 40 };
   const CBOXW = W - PADX * 2;
   const measure = () => {
     const chh = Math.round(cw * 1.72);
-    const cLineH = tight ? 27 : 32;
-    const rowH = rows.map(r => 28 + countWrap(r.v, F.body, BODYW) * lineH);
+    const cLineH = tight ? 30 : CB.cLineH;
+    const rowH = rows.map(r => 32 + countWrap(r.v, F.body, BODYW) * lineH);
     const blocks = { brand: D.brand, date: D.date, card: chh + D.cardPad, name: D.name, en: enTxt ? D.en : 0, rev: revTxt ? D.rev : 0, orn: D.orn, energy: D.energy, concl: concl ? CB.padTop + CB.label + conclLines0() * cLineH + CB.padBot : 0, rows: rowH.reduce((a, b) => a + b + rowGap, 0), lucky: 0 };
     return { chh, rowH, cLineH, contentH: Object.values(blocks).reduce((a, b) => a + b, 0) };
   };
   const conclLines0 = () => Math.max(1, countWrap(`「${concl}」`, F.concl, CBOXW - CB.pad * 2 - 36));
   let M = measure();
-  const needH = TOP + D0.foot + M.contentH + 140;     /* 呼吸余量：7 个块间 gap(≥14) + 直觉框上下缓冲 */
+  const needH = TOP + D0.foot + M.contentH + 190;     /* 呼吸余量：块间 gap(≥14) + 直觉框/牌图上下缓冲 + 列表区分隔余量 */
   if (needH > H) { H = Math.min(1620, Math.ceil(needH / 30) * 30); cv.height = H; }   /* ⓪ 优先长高：1350→≤1620，文字保持舒展间距 */
   while (M.contentH > H - TOP - D.foot && cw > 268) { cw -= 12; M = measure(); }     /* ① 缩主图（下限 268：保住牌面可读性，宁可画布长高） */
   while (M.contentH > H - TOP - D.foot && lineH > 29) { lineH -= 2; rowGap = 12; M = measure(); }  /* ② 压行高 */
@@ -4435,10 +4436,10 @@ async function buildDailyShareCard() {
     ctx.strokeStyle = "rgba(201,168,106,.55)"; ctx.lineWidth = 2; rr(PADX, y, CBOXW, boxH, 14); ctx.stroke();
     ctx.strokeStyle = "rgba(238,224,178,.16)"; ctx.lineWidth = 1; rr(PADX + 5, y + 5, CBOXW - 10, boxH - 10, 10); ctx.stroke();
     let iy = y + CB.padTop;
-    ctx.fillStyle = "#c9a86a"; ctx.font = `600 22px ${SANS}`; ctx.fillText("塔 塔 的 直 觉", CX, iy + 22); iy += CB.label;
+    ctx.fillStyle = "#c9a86a"; ctx.font = `600 21px ${SANS}`; ctx.fillText("塔 塔 的 直 觉", CX, iy + 20); iy += CB.label;
     ctx.fillStyle = "#e8e2d4"; ctx.font = F.concl;
     const cInW = CBOXW - CB.pad * 2 - 36;
-    ctx.textAlign = "left"; let cCur = "", cLy = iy + 24;
+    ctx.textAlign = "left"; let cCur = "", cLy = iy + 26;
     for (const c3 of `「${concl}」`.split("")) {
       if (ctx.measureText(cCur + c3).width > cInW) { ctx.fillText(cCur, PADX + CB.pad + 18, cLy); cCur = c3; cLy += cLineH; } else cCur += c3;
     }
@@ -4465,10 +4466,10 @@ async function buildDailyShareCard() {
   if (d && d.reversed) { const bx = cx + cw - 2, by = y + 28; ctx.fillStyle = "#07070e"; ctx.beginPath(); ctx.arc(bx, by, 21, 0, 7); ctx.fill(); ctx.strokeStyle = "#c9a86a"; ctx.lineWidth = 2; ctx.stroke(); ctx.fillStyle = "#c9a86a"; ctx.font = `24px ${SANS}`; ctx.textBaseline = "middle"; ctx.fillText("逆", bx, by + 2); ctx.textBaseline = "alphabetic"; }
   y += chh + D.cardPad + gap;
 
-  /* 牌名：米金渐变 */
-  const nameGrad = ctx.createLinearGradient(0, y, 0, y + 52);
+  /* 牌名：米金渐变（行首上抬，消除牌框与名字之间的大空档） */
+  const nameGrad = ctx.createLinearGradient(0, y - 20, 0, y + 32);
   nameGrad.addColorStop(0, "#f7f1e2"); nameGrad.addColorStop(1, "#d8cdb0");
-  ctx.fillStyle = nameGrad; ctx.font = F.name; ctx.fillText(nameTxt, CX, y + D.name - 12); y += D.name;
+  ctx.fillStyle = nameGrad; ctx.font = F.name; ctx.fillText(nameTxt, CX, y + D.name - 32); y += D.name - 20;
   if (enTxt) { ctx.fillStyle = "#7f7866"; ctx.font = F.en; ctx.fillText(enTxt, CX, y + 18); y += D.en; }
   if (revTxt) { ctx.fillStyle = "#b9945f"; ctx.font = F.rev; ctx.fillText(revTxt, CX, y + 18); y += D.rev; }
   /* 月相饰线 ☽ ✦ ☾（与封面同一装饰语言；紧凑模式让位于内容，仅留呼吸间距） */
@@ -4487,18 +4488,28 @@ async function buildDailyShareCard() {
   if (rows.length) {
     const dg = ctx.createLinearGradient(PADX, 0, W - PADX, 0);
     dg.addColorStop(0, "rgba(201,168,106,0)"); dg.addColorStop(.5, "rgba(201,168,106,.4)"); dg.addColorStop(1, "rgba(201,168,106,0)");
-    ctx.fillStyle = dg; ctx.fillRect(PADX, y - 9, W - PADX * 2, 2);
-    sparkle(CX, y - 8, 6, .8);
+    ctx.fillStyle = dg; ctx.fillRect(PADX, y - 11, W - PADX * 2, 2);
+    sparkle(CX, y - 10, 6, .8);
     rows.forEach((r, i) => {
+      const isLast = i === rows.length - 1;
+      /* 今日指引（末行）：金底浅胶囊高亮——行动项比描述值得更显眼 */
+      if (isLast) {
+        const hb = ctx.createLinearGradient(0, y - 6, 0, y + rowH[i] + 6);
+        hb.addColorStop(0, "rgba(201,168,106,.13)"); hb.addColorStop(1, "rgba(201,168,106,.05)");
+        ctx.fillStyle = hb; rr(PADX - 14, y - 6, W - PADX * 2 + 28, rowH[i] + 12, 12); ctx.fill();
+        ctx.strokeStyle = "rgba(201,168,106,.28)"; ctx.lineWidth = 1; rr(PADX - 14, y - 6, W - PADX * 2 + 28, rowH[i] + 12, 12); ctx.stroke();
+      }
       ctx.textAlign = "left";
-      ctx.fillStyle = "#d4b57c"; ctx.font = F.key; ctx.fillText(r.k, PADX, y + 24);
-      ctx.fillStyle = i % 2 ? "#d9d3c3" : "#e6dfcd"; ctx.font = F.body;
-      let cur = "", ly = y + 24;
+      ctx.fillStyle = isLast ? "#eee0b2" : "#d4b57c"; ctx.font = F.key; ctx.fillText(r.k, PADX, y + 26);
+      ctx.fillStyle = isLast ? "#f0e9d8" : (i % 2 ? "#d9d3c3" : "#e6dfcd"); ctx.font = F.body;
+      let cur = "", ly = y + 26;
       for (const c2 of String(r.v).split("")) {
         if (ctx.measureText(cur + c2).width > BODYW) { ctx.fillText(cur, PADX + KEYW, ly); cur = c2; ly += lineH; } else cur += c2;
       }
       if (cur) ctx.fillText(cur, PADX + KEYW, ly);
       y += rowH[i] + rowGap;
+      /* 行间发丝分隔线（末行后不画，页脚金线接上） */
+      if (!isLast) { ctx.fillStyle = "rgba(201,168,106,.10)"; ctx.fillRect(PADX, y - rowGap / 2, W - PADX * 2, 1); }
     });
     ctx.textAlign = "center";
   }
