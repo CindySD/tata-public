@@ -4401,13 +4401,15 @@ async function buildDailyShareCard() {
   while (M.contentH > H - TOP - D.foot && cw > 208) { cw -= 12; M = measure(); }     /* ④ 主图再降一档 */
   const gap = Math.max(6, Math.min(48, Math.floor((H - TOP - D.foot - M.contentH) / 8)));
   const { chh, rowH, cLineH } = M;
+  const conclLines = concl ? Math.max(1, countWrap(`「${concl}」`, F.concl, W - PADX * 2)) : 0;
+  const conclH = concl ? 36 + conclLines * cLineH + 10 : 0;
   paintBG();
 
   /* ── 第二遍：按量好的高度顺序绘制（页脚锚底，内容不侵入） ── */
   let y = TOP;
   ctx.textAlign = "center";
-  /* 法环：两圈虚线椭圆绕牌图（画在所有文字之下，同站内仪式魔法圈） */
-  const cardTopY = y + (D.brand + gap) + (D.date + gap);
+  /* 法环：两圈虚线椭圆绕牌图（画在所有文字之下，同站内仪式魔法圈；直觉块置于牌图上方时中心相应下移） */
+  const cardTopY = y + (D.brand + gap) + (D.date + gap) + (concl ? conclH + gap : 0);
   const cardCY = cardTopY + 12 + chh / 2;
   ctx.save();
   ctx.strokeStyle = "rgba(201,168,106,.20)"; ctx.lineWidth = 1.5; ctx.setLineDash([10, 12]);
@@ -4419,6 +4421,19 @@ async function buildDailyShareCard() {
   ctx.save(); ctx.shadowColor = "rgba(201,168,106,.28)"; ctx.shadowBlur = 16;
   ctx.fillStyle = "#d4b57c"; ctx.font = F.brand; ctx.fillText("塔塔🔮の心灵疗愈室", CX, y + D.brand - 10); ctx.restore(); y += D.brand + gap;
   ctx.fillStyle = "#8a8271"; ctx.font = F.date; ctx.fillText(dateTxt, CX, y + 22); y += D.date + gap;
+
+  /* 塔塔的直觉：与页面直觉框同一句（shareSnapshot.conclusion），置于牌图上方——先给答案，再看牌面 */
+  if (concl) {
+    ctx.fillStyle = "#d4b57c"; ctx.font = `600 23px ${SANS}`; ctx.fillText("塔 塔 的 直 觉", CX, y + 24); y += 36;
+    ctx.fillStyle = "#e8e2d4"; ctx.font = F.concl;
+    ctx.textAlign = "left"; let cCur = "", cLy = y + 26;
+    for (const c3 of `「${concl}」`.split("")) {
+      if (ctx.measureText(cCur + c3).width > W - PADX * 2) { ctx.fillText(cCur, PADX, cLy); cCur = c3; cLy += cLineH; } else cCur += c3;
+    }
+    if (cCur) ctx.fillText(cCur, PADX, cLy);
+    ctx.textAlign = "center";
+    y += conclLines * cLineH + 10 + gap;
+  }
 
   const cx = CX - cw / 2;
   ctx.save();
@@ -4456,20 +4471,6 @@ async function buildDailyShareCard() {
   eg.addColorStop(0, "#f7edd4"); eg.addColorStop(.5, "#e6cd8f"); eg.addColorStop(1, "#b18e52");
   ctx.save(); ctx.shadowColor = "rgba(201,168,106,.35)"; ctx.shadowBlur = 22;
   ctx.fillStyle = eg; ctx.font = F.energy; ctx.fillText(energyTxt, CX, y + D.energy - 16); ctx.restore(); y += D.energy + gap;
-
-  /* 塔塔的直觉：与页面直觉框同一句（shareSnapshot.conclusion），顺序同通用长图——牌面之后、运势分项之前 */
-  if (concl) {
-    ctx.fillStyle = "#d4b57c"; ctx.font = `600 23px ${SANS}`; ctx.fillText("塔 塔 的 直 觉", CX, y + 24); y += 36;
-    ctx.fillStyle = "#e8e2d4"; ctx.font = F.concl;
-    const cLines = Math.max(1, countWrap(`「${concl}」`, F.concl, W - PADX * 2));
-    ctx.textAlign = "left"; let cCur = "", cLy = y + 26;
-    for (const c3 of `「${concl}」`.split("")) {
-      if (ctx.measureText(cCur + c3).width > W - PADX * 2) { ctx.fillText(cCur, PADX, cLy); cCur = c3; cLy += cLineH; } else cCur += c3;
-    }
-    if (cCur) ctx.fillText(cCur, PADX, cLy);
-    ctx.textAlign = "center";
-    y += cLines * cLineH + 10;
-  }
 
   if (rows.length) {
     const dg = ctx.createLinearGradient(PADX, 0, W - PADX, 0);
