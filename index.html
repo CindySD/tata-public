@@ -3688,6 +3688,8 @@ function renderDailyFortune() {
   if (!d || !d.card) return;
   const head = document.querySelector("#stage-reading .reading-head");
   if (!head) return;
+  /* 直觉框（直接回答）优先占位：运势卡插在它之后，避免把答案顶到长卡下方 */
+  const anchor = document.querySelector("#stage-reading .conclusion-banner") || head;
   const m = fortuneModel(d.card, d.reversed);
   const rd = new Date(state.readingDate || Date.now());
   const isToday = _dayStr(rd) === _dayStr(); /* 隔天的每日一牌回看：保留运势卡，但措辞改「当日」，不套用今天的打卡天数 */
@@ -3715,7 +3717,7 @@ function renderDailyFortune() {
     <div class="df-lucky"><span>🎨 幸运色 ${escHtml(m.colors)}</span><span>🔢 牌面吉数 ${m.luckyNum}</span><span>🧭 参考方位 ${escHtml(m.dir)}</span></div>
     <p class="df-src">↑ 以上分项、时段、吉数与方位，都由你抽到的这张 <b>${escHtml(m.suitName)}</b> 牌推得——它们是传统象征对应，不是日程预言。</p>
     <p class="df-note">牌是镜子，不是判决书——这是你此刻能量的一种读法，选择权始终在你手里。</p>`;
-  head.insertAdjacentElement("afterend", box);
+  anchor.insertAdjacentElement("afterend", box);
 }
 function renderSynthesisRule() {
   const syn = synthesize();
