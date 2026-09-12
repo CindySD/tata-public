@@ -4369,33 +4369,40 @@ async function buildDailyShareCard() {
   const enTxt = card ? (card.englishName || card.english || "") : "";
   const revTxt = (d && d.reversed) ? "Reversed · 能量内收" : "";
   const energyTxt = (state.shareSnapshot && state.shareSnapshot.energy) || (m && m.energy) || energyWord();
+  const concl = ((state.shareSnapshot && state.shareSnapshot.conclusion) || "").trim();
   const rows = [];
   if (m) { m.facets.slice(0, 4).forEach(f => rows.push({ k: f.k, v: f.v })); if (m.advice) rows.push({ k: (isToday ? "今日指引" : "当日指引"), v: m.advice }); }
   const lucky = m ? `幸运色 ${m.colors}　·　牌面吉数 ${m.luckyNum}　·　参考方位 ${m.dir}` : "";
   const note = "牌是镜子，不是判决书 · cindysd.github.io/tata-public";
 
-  /* ── 第一遍：量高 + 自适应（页脚固定锚底，内容放不下就先缩主图） ── */
-  const F = { brand: `600 38px ${SANS}`, date: `22px ${SANS}`, name: `600 52px ${SANS}`, en: `24px ${SERIF}`, rev: `20px ${SANS}`, energy: `600 46px ${SERIF}`, key: `600 23px ${SANS}`, body: `25px ${SANS}`, foot: `21px ${SANS}`, note: `19px ${SANS}` };
+  /* ── 第一遍：量高 + 自适应（页脚固定锚底；四级压缩：缩主图→压行高→紧凑模式→再缩主图） ── */
+  const F = { brand: `600 38px ${SANS}`, date: `22px ${SANS}`, name: `600 52px ${SANS}`, en: `24px ${SERIF}`, rev: `20px ${SANS}`, energy: `600 46px ${SERIF}`, concl: `600 25px ${SANS}`, key: `600 23px ${SANS}`, body: `25px ${SANS}`, foot: `21px ${SANS}`, note: `19px ${SANS}` };
   const KEYW = 168, BODYW = W - PADX * 2 - KEYW;
-  const TOP = 64, FOOT = 150;                       /* 页脚（幸运条 + 品牌行）预留 */
+  const TOP = 64;
+  const D0 = { brand: 44, date: 34, cardPad: 26, name: 58, en: 30, rev: 28, orn: 46, energy: 58, foot: 150 };
+  const D1 = { brand: 40, date: 30, cardPad: 20, name: 52, en: 26, rev: 24, orn: 36, energy: 52, foot: 136 };
+  let D = D0, tight = false;
   let cw = 356, lineH = 34, rowGap = 16;
   const measure = () => {
     const chh = Math.round(cw * 1.72);
+    const cLineH = tight ? 27 : 32;
     const rowH = rows.map(r => 28 + countWrap(r.v, F.body, BODYW) * lineH);
-    const blocks = { brand: 44, date: 34, card: chh + 26, name: 58, en: enTxt ? 30 : 0, rev: revTxt ? 28 : 0, orn: 46, energy: 58, rows: rowH.reduce((a, b) => a + b + rowGap, 0), lucky: 0 };
-    return { chh, rowH, contentH: Object.values(blocks).reduce((a, b) => a + b, 0) };
+    const blocks = { brand: D.brand, date: D.date, card: chh + D.cardPad, name: D.name, en: enTxt ? D.en : 0, rev: revTxt ? D.rev : 0, orn: D.orn, energy: D.energy, concl: concl ? 36 + countWrap(`「${concl}」`, F.concl, W - PADX * 2) * cLineH + 10 : 0, rows: rowH.reduce((a, b) => a + b + rowGap, 0), lucky: 0 };
+    return { chh, rowH, cLineH, contentH: Object.values(blocks).reduce((a, b) => a + b, 0) };
   };
   let M = measure();
-  while (M.contentH > H - TOP - FOOT && cw > 232) { cw -= 12; M = measure(); }     /* 先缩主图 */
-  while (M.contentH > H - TOP - FOOT && lineH > 29) { lineH -= 2; rowGap = 12; M = measure(); }  /* 再压行高 */
-  const gap = Math.max(8, Math.min(48, Math.floor((H - TOP - FOOT - M.contentH) / 8)));
-  const { chh, rowH } = M;
+  while (M.contentH > H - TOP - D.foot && cw > 232) { cw -= 12; M = measure(); }     /* ① 先缩主图 */
+  while (M.contentH > H - TOP - D.foot && lineH > 29) { lineH -= 2; rowGap = 12; M = measure(); }  /* ② 再压行高 */
+  if (M.contentH > H - TOP - D.foot) { tight = true; D = D1; rowGap = 10; M = measure(); }          /* ③ 紧凑模式：装饰块收缩+直觉段专用行高 */
+  while (M.contentH > H - TOP - D.foot && cw > 208) { cw -= 12; M = measure(); }     /* ④ 直觉段过长时主图再降一档 */
+  const gap = Math.max(6, Math.min(48, Math.floor((H - TOP - D.foot - M.contentH) / 8)));
+  const { chh, rowH, cLineH } = M;
 
   /* ── 第二遍：按量好的高度顺序绘制（页脚锚底，内容不侵入） ── */
   let y = TOP;
   ctx.textAlign = "center";
   /* 法环：两圈虚线椭圆绕牌图（画在所有文字之下，同站内仪式魔法圈） */
-  const cardTopY = y + (44 + gap) + (34 + gap);
+  const cardTopY = y + (D.brand + gap) + (D.date + gap);
   const cardCY = cardTopY + 12 + chh / 2;
   ctx.save();
   ctx.strokeStyle = "rgba(201,168,106,.20)"; ctx.lineWidth = 1.5; ctx.setLineDash([10, 12]);
@@ -4405,8 +4412,8 @@ async function buildDailyShareCard() {
   ctx.restore();
   /* 品牌行：微金晕 */
   ctx.save(); ctx.shadowColor = "rgba(201,168,106,.28)"; ctx.shadowBlur = 16;
-  ctx.fillStyle = "#d4b57c"; ctx.font = F.brand; ctx.fillText("塔塔🔮の心灵疗愈室", CX, y + 34); ctx.restore(); y += 44 + gap;
-  ctx.fillStyle = "#8a8271"; ctx.font = F.date; ctx.fillText(dateTxt, CX, y + 22); y += 34 + gap;
+  ctx.fillStyle = "#d4b57c"; ctx.font = F.brand; ctx.fillText("塔塔🔮の心灵疗愈室", CX, y + D.brand - 10); ctx.restore(); y += D.brand + gap;
+  ctx.fillStyle = "#8a8271"; ctx.font = F.date; ctx.fillText(dateTxt, CX, y + 22); y += D.date + gap;
 
   const cx = CX - cw / 2;
   ctx.save();
@@ -4424,23 +4431,40 @@ async function buildDailyShareCard() {
   else { ctx.fillStyle = "#c9a86a"; ctx.font = `56px ${SERIF}`; ctx.fillText("✶", CX, y + 12 + chh / 2 + 20); }
   ctx.restore();
   if (d && d.reversed) { const bx = cx + cw - 2, by = y + 28; ctx.fillStyle = "#07070e"; ctx.beginPath(); ctx.arc(bx, by, 21, 0, 7); ctx.fill(); ctx.strokeStyle = "#c9a86a"; ctx.lineWidth = 2; ctx.stroke(); ctx.fillStyle = "#c9a86a"; ctx.font = `24px ${SANS}`; ctx.textBaseline = "middle"; ctx.fillText("逆", bx, by + 2); ctx.textBaseline = "alphabetic"; }
-  y += chh + 26 + gap;
+  y += chh + D.cardPad + gap;
 
   /* 牌名：米金渐变 */
   const nameGrad = ctx.createLinearGradient(0, y, 0, y + 52);
   nameGrad.addColorStop(0, "#f7f1e2"); nameGrad.addColorStop(1, "#d8cdb0");
-  ctx.fillStyle = nameGrad; ctx.font = F.name; ctx.fillText(nameTxt, CX, y + 46); y += 58;
-  if (enTxt) { ctx.fillStyle = "#7f7866"; ctx.font = F.en; ctx.fillText(enTxt, CX, y + 20); y += 30; }
-  if (revTxt) { ctx.fillStyle = "#b9945f"; ctx.font = F.rev; ctx.fillText(revTxt, CX, y + 18); y += 28; }
-  /* 月相饰线 ☽ ✦ ☾（与封面同一装饰语言） */
-  ctx.fillStyle = "#c9a86a"; ctx.font = `28px ${SERIF}`;
-  ctx.fillText("☽", CX - 96, y + 30); ctx.fillText("☾", CX + 96, y + 30);
-  sparkle(CX, y + 21, 7, .9); y += 46;
+  ctx.fillStyle = nameGrad; ctx.font = F.name; ctx.fillText(nameTxt, CX, y + D.name - 12); y += D.name;
+  if (enTxt) { ctx.fillStyle = "#7f7866"; ctx.font = F.en; ctx.fillText(enTxt, CX, y + 18); y += D.en; }
+  if (revTxt) { ctx.fillStyle = "#b9945f"; ctx.font = F.rev; ctx.fillText(revTxt, CX, y + 18); y += D.rev; }
+  /* 月相饰线 ☽ ✦ ☾（与封面同一装饰语言；紧凑模式让位于内容，仅留呼吸间距） */
+  if (!tight) {
+    ctx.fillStyle = "#c9a86a"; ctx.font = `28px ${SERIF}`;
+    ctx.fillText("☽", CX - 96, y + 30); ctx.fillText("☾", CX + 96, y + 30);
+    sparkle(CX, y + 21, 7, .9);
+  }
+  y += D.orn;
   /* 能量词：鎏金渐变 + 金晕（同站内金箔标题） */
   const eg = ctx.createLinearGradient(0, y, 0, y + 48);
   eg.addColorStop(0, "#f7edd4"); eg.addColorStop(.5, "#e6cd8f"); eg.addColorStop(1, "#b18e52");
   ctx.save(); ctx.shadowColor = "rgba(201,168,106,.35)"; ctx.shadowBlur = 22;
-  ctx.fillStyle = eg; ctx.font = F.energy; ctx.fillText(energyTxt, CX, y + 42); ctx.restore(); y += 58 + gap;
+  ctx.fillStyle = eg; ctx.font = F.energy; ctx.fillText(energyTxt, CX, y + D.energy - 16); ctx.restore(); y += D.energy + gap;
+
+  /* 塔塔的直觉：与页面直觉框同一句（shareSnapshot.conclusion），顺序同通用长图——牌面之后、运势分项之前 */
+  if (concl) {
+    ctx.fillStyle = "#d4b57c"; ctx.font = `600 23px ${SANS}`; ctx.fillText("塔 塔 的 直 觉", CX, y + 24); y += 36;
+    ctx.fillStyle = "#e8e2d4"; ctx.font = F.concl;
+    const cLines = Math.max(1, countWrap(`「${concl}」`, F.concl, W - PADX * 2));
+    ctx.textAlign = "left"; let cCur = "", cLy = y + 26;
+    for (const c3 of `「${concl}」`.split("")) {
+      if (ctx.measureText(cCur + c3).width > W - PADX * 2) { ctx.fillText(cCur, PADX, cLy); cCur = c3; cLy += cLineH; } else cCur += c3;
+    }
+    if (cCur) ctx.fillText(cCur, PADX, cLy);
+    ctx.textAlign = "center";
+    y += cLines * cLineH + 10;
+  }
 
   if (rows.length) {
     const dg = ctx.createLinearGradient(PADX, 0, W - PADX, 0);
@@ -4460,12 +4484,12 @@ async function buildDailyShareCard() {
     });
     ctx.textAlign = "center";
   }
-  /* 页脚：渐隐金线起首（同站内页脚手法） */
+  /* 页脚：渐隐金线起首（同站内页脚手法；位置随 D.foot 自适应） */
   const fg2 = ctx.createLinearGradient(PADX, 0, W - PADX, 0);
   fg2.addColorStop(0, "rgba(201,168,106,0)"); fg2.addColorStop(.5, "rgba(201,168,106,.45)"); fg2.addColorStop(1, "rgba(201,168,106,0)");
-  ctx.fillStyle = fg2; ctx.fillRect(PADX, H - 156, W - PADX * 2, 2);
-  if (lucky) { ctx.fillStyle = "#a89e88"; ctx.font = F.foot; ctx.fillText(lucky, CX, H - 104); }
-  ctx.fillStyle = "#6f6959"; ctx.font = F.note; ctx.fillText("✦  " + note + "  ✦", CX, H - 56);
+  ctx.fillStyle = fg2; ctx.fillRect(PADX, H - D.foot - 6, W - PADX * 2, 2);
+  if (lucky) { ctx.fillStyle = "#a89e88"; ctx.font = F.foot; ctx.fillText(lucky, CX, H - D.foot + 46); }
+  ctx.fillStyle = "#6f6959"; ctx.font = F.note; ctx.fillText("✦  " + note + "  ✦", CX, H - D.foot + 94);
   return cv;
 }
 $("#btn-card").addEventListener("click", async () => {
