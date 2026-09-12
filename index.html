@@ -650,10 +650,167 @@ footer .gold{color:var(--gold)}
 .reading-meta .echo-code:hover{color:var(--gold-hi);border-bottom-color:var(--gold)}
 .reading-meta .echo-code.copied{color:#9ac97c;border-bottom-color:#9ac97c}
 
+/* ============================================================
+   美学升级 · 神秘墨金（2026-09-12）
+   纯增量样式层：氛围星云 / 胶片颗粒 / 晕影 / 鎏金面板 / 金箔文字 /
+   流光按钮 / 仪式魔法圈 / 静心光环 / 页脚装饰。不改任何功能逻辑。
+   动画统一被文末已有的 prefers-reduced-motion 全局块降级。
+   ============================================================ */
+
+/* ---------- ① 星云氛围层（星野之后的深空底色） ---------- */
+body::before{
+  content:"";position:fixed;inset:-18%;z-index:0;pointer-events:none;
+  background:
+    radial-gradient(14% 10% at 82% 12%, rgba(238,224,178,.12), transparent 70%),
+    radial-gradient(60% 45% at 78% 8%, rgba(88,60,160,.15), transparent 60%),
+    radial-gradient(55% 40% at 12% 22%, rgba(36,64,140,.13), transparent 62%),
+    radial-gradient(75% 50% at 50% 110%, rgba(201,168,106,.08), transparent 62%);
+  animation:mysticDrift 46s ease-in-out infinite alternate;
+  will-change:transform;
+}
+@keyframes mysticDrift{from{transform:translate3d(-1.5%,-1%,0) scale(1.04)}to{transform:translate3d(1.5%,1%,0) scale(1.12)}}
+
+/* ---------- ② 晕影（四角收暗，聚焦中央） ---------- */
+body::after{
+  content:"";position:fixed;inset:0;z-index:70;pointer-events:none;
+  background:radial-gradient(130% 110% at 50% 38%, transparent 55%, rgba(2,2,8,.5) 100%);
+}
+/* 胶片颗粒（独立一层，盖在内容之上、不参与交互） */
+.grain{
+  position:fixed;inset:0;z-index:65;pointer-events:none;opacity:.05;
+  background:url("data:image/svg+xml,%3Csvg viewBox='0 0 240 240' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size:240px 240px;
+}
+
+/* ---------- ③ 鎏金面板：内缘发丝线 + 顶部天光 ---------- */
+.ask-panel,.care-panel,.modal,.reading-card{position:relative}
+.ask-panel::before,.care-panel::before,.modal::before,.reading-card::before{
+  content:"";position:absolute;inset:5px;border:1px solid rgba(201,168,106,.09);border-radius:11px;pointer-events:none
+}
+.ask-panel,.reading-card,.care-panel{background-image:linear-gradient(180deg,rgba(201,168,106,.05),transparent 140px)}
+.synthesis{background-image:linear-gradient(180deg,rgba(201,168,106,.09),rgba(201,168,106,.015) 55%,transparent)}
+
+/* 今日运势卡：缓慢掠过的金光（命运之光扫过卡面） */
+.daily-fortune::after{
+  content:"";position:absolute;inset:0;border-radius:16px;pointer-events:none;
+  background:linear-gradient(115deg,transparent 42%,rgba(238,224,178,.10) 50%,transparent 58%);
+  clip-path:inset(0 round 16px);
+  transform:translateX(-120%);animation:dfSheen 9s ease-in-out 2s infinite
+}
+@keyframes dfSheen{0%,12%{transform:translateX(-120%)}30%,100%{transform:translateX(120%)}}
+
+/* ---------- ④ 金箔标题字（渐变墨金 + 光晕） ---------- */
+.synthesis h3,.energy-word .ew,.modal h4,#reading-spread-name{
+  background:linear-gradient(180deg,#f7edd4 0%,#e6cd8f 46%,#b18e52 100%);
+  -webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent
+}
+.cover-title{filter:drop-shadow(0 4px 22px rgba(201,168,106,.22))}
+.cover-title .gt{
+  background:linear-gradient(180deg,#f7edd4 0%,#e6cd8f 46%,#b18e52 100%);
+  -webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent
+}
+.energy-word .ew{filter:drop-shadow(0 0 18px rgba(201,168,106,.28))}
+.care-panel .hotline{text-shadow:0 0 18px rgba(201,168,106,.35)}
+
+/* ---------- ⑤ 按钮：流光扫过 + 主 CTA 呼吸辉光 ---------- */
+.btn{position:relative;overflow:hidden}
+.btn::after{
+  content:"";position:absolute;top:0;bottom:0;left:-60%;width:40%;pointer-events:none;
+  background:linear-gradient(105deg,transparent,rgba(238,224,178,.18),transparent);
+  transform:skewX(-18deg);transition:left .65s ease
+}
+.btn:hover::after{left:120%}
+.btn.ghost:hover{box-shadow:0 0 16px rgba(201,168,106,.14)}
+#btn-start,#btn-ask,#btn-serene-next{animation:ctaBreath 4.6s ease-in-out infinite}
+@keyframes ctaBreath{0%,100%{box-shadow:0 0 14px rgba(201,168,106,.10)}50%{box-shadow:0 0 30px rgba(201,168,106,.30)}}
+
+/* ---------- ⑥ 舞台眉题：✦ 饰角 ---------- */
+.kicker::before,.kicker::after{
+  content:"✦";display:inline-block;margin:0 14px;color:var(--gold-dim);font-size:9px;vertical-align:2px;
+  animation:breathe-txt 3.4s ease-in-out infinite
+}
+
+/* ---------- ⑦ 封面：月相饰线 + 品牌徽标环绕星 ---------- */
+.cover-orn{
+  margin:26px auto 2px;text-align:center;font-family:var(--serif);font-size:15px;
+  color:var(--gold);letter-spacing:1.2em;text-indent:1.2em;opacity:.85
+}
+.cover-orn .o-star{display:inline-block;animation:twinkle 3.2s ease-in-out infinite}
+@keyframes twinkle{0%,100%{opacity:.45;text-shadow:0 0 6px rgba(201,168,106,.3)}50%{opacity:1;text-shadow:0 0 16px rgba(201,168,106,.8)}}
+.brand-mark{position:relative}
+.brand-mark::after{
+  content:"✦";position:absolute;left:50%;top:50%;margin:-7px 0 0 -5px;font-size:10px;
+  color:var(--gold-hi);text-shadow:0 0 10px rgba(201,168,106,.8);
+  animation:orbitStar 18s linear infinite
+}
+@keyframes orbitStar{from{transform:rotate(0deg) translateY(-60px)}to{transform:rotate(360deg) translateY(-60px)}}
+
+/* ---------- ⑧ 仪式区：牌座魔法圈 + 桌面光雾 + 凝神光环 ---------- */
+.pedestal::before{
+  content:"";position:absolute;inset:-30px -22px;border:1px dashed rgba(201,168,106,.16);border-radius:50%;
+  animation:ringSpin 36s linear infinite
+}
+@keyframes ringSpin{to{transform:rotate(360deg)}}
+.ritual-arena::before{
+  content:"";position:absolute;left:50%;bottom:-10px;transform:translateX(-50%);width:min(560px,96%);height:150px;
+  background:radial-gradient(50% 50% at 50% 50%,rgba(201,168,106,.07),transparent 70%);pointer-events:none
+}
+.hold-btn::before{
+  content:"";position:absolute;inset:-16px;border-radius:50%;border:1px solid rgba(201,168,106,.12);
+  animation:holdHalo 3.8s ease-in-out infinite;pointer-events:none
+}
+@keyframes holdHalo{0%,100%{transform:scale(1);opacity:.5}50%{transform:scale(1.08);opacity:1}}
+
+/* ---------- ⑨ 静心：双层缓旋法轮 ---------- */
+.serene-breath{position:relative}
+.serene-breath::before{
+  content:"";position:absolute;inset:-24px;border:1px dashed rgba(201,168,106,.18);border-radius:50%;
+  animation:ringSpin 42s linear infinite
+}
+.serene-breath::after{
+  content:"";position:absolute;inset:-52px;border:1px dotted rgba(201,168,106,.10);border-radius:50%;
+  animation:ringSpin 64s linear infinite reverse
+}
+
+/* ---------- ⑩ 牌背/明牌：边缘金晕 ---------- */
+.tcard .back{box-shadow:inset 0 0 24px rgba(201,168,106,.06),0 8px 26px -14px rgba(0,0,0,.9)}
+.tcard .front{box-shadow:0 0 0 1px rgba(201,168,106,.14),0 10px 30px -14px rgba(0,0,0,.9)}
+
+/* ---------- ⑪ 解读页细节 ---------- */
+.reading-nav{box-shadow:0 6px 18px -12px rgba(0,0,0,.8)}
+.rn-btn.on{box-shadow:0 0 12px rgba(201,168,106,.35)}
+.rc-ori{background:linear-gradient(180deg,rgba(201,168,106,.14),rgba(201,168,106,.04))}
+.rc-ori.rev{background:linear-gradient(180deg,rgba(176,142,198,.14),rgba(176,142,198,.04))}
+.conclusion-banner{position:relative;box-shadow:0 0 30px -10px rgba(201,168,106,.25)}
+.spread-strip .mini:hover .tcard{filter:drop-shadow(0 0 12px rgba(201,168,106,.4))}
+
+/* ---------- ⑫ 输入 / 选项细节 ---------- */
+textarea,.num-input{caret-color:var(--gold)}
+textarea:focus,.num-input:focus{box-shadow:0 0 0 3px rgba(201,168,106,.08),0 0 26px -6px rgba(201,168,106,.25)}
+.chip{transition:all .3s}
+.chip:hover{transform:translateY(-1px)}
+.chip.on{box-shadow:inset 0 0 0 1px var(--gold),0 0 18px -6px rgba(201,168,106,.45)}
+
+/* ---------- ⑬ 历史条目：悬停金色侧签 ---------- */
+.hist-item{position:relative}
+.hist-item::before{
+  content:"";position:absolute;left:0;top:12%;bottom:12%;width:2px;border-radius:2px;
+  background:linear-gradient(180deg,transparent,var(--gold-dim),transparent);opacity:0;transition:opacity .3s
+}
+.hist-item:hover::before{opacity:1}
+
+/* ---------- ⑭ 页脚：金线起首 ---------- */
+footer{position:relative}
+footer::before{
+  content:"";display:block;height:1px;margin:0 auto 26px;max-width:520px;
+  background:linear-gradient(90deg,transparent,var(--gold-dim),transparent)
+}
+
 </style>
 </head>
 <body>
 <canvas id="stars" aria-hidden="true"></canvas>
+<div class="grain" aria-hidden="true"></div>
 <div class="shell">
 
   <!-- ===== S0 封面 ===== -->
@@ -664,8 +821,9 @@ footer .gold{color:var(--gold)}
         <path d="M24 9 L27 21 L39 24 L27 27 L24 39 L21 27 L9 24 L21 21 Z" fill="#c9a86a" opacity=".85"/>
       </svg>
     </div>
-    <h1 class="cover-title">塔塔🔮の心灵疗愈室</h1>
+    <h1 class="cover-title"><span class="gt">塔塔</span><span class="tata-emoji">🔮</span><span class="gt">の心灵疗愈室</span></h1>
     <p class="cover-sub">牌不是水晶球，而是一面镜子。<br>在这里，安静地照见你自己的心。</p>
+    <div class="cover-orn" aria-hidden="true">☽ <span class="o-star">✦</span> ☾</div>
     <div class="cover-cta">
       <button class="btn" id="btn-start" type="button">开 启 占 卜</button>
     </div>
