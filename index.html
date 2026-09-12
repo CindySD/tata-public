@@ -4320,24 +4320,13 @@ async function buildShareCard() {
 }
 /* 今日一牌·4:5 竖版紧凑分享（社媒信息流友好）；与通用动态长图分开，避免把富信息版硬塞进 1350 高而截断 */
 async function buildDailyShareCard() {
-  const W = 1080, H = 1350, CX = W / 2, PADX = 96;
+  const W = 1080; let H = 1350; const CX = W / 2, PADX = 96;
   const cv = document.createElement("canvas"); cv.width = W; cv.height = H;
   const ctx = cv.getContext("2d");
   const SANS = '"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif';
   const SERIF = '"Cormorant Garamond",Georgia,serif';
   const d = state.draws[0]; const card = d && d.card;
   const m = card ? fortuneModel(card, d.reversed) : null;
-  /* ── 氛围底：墨金渐变 + 星云 + 星野 + 四芒星 + 晕影（与站内神秘墨金同一语言） ── */
-  const g = ctx.createLinearGradient(0, 0, 0, H);
-  g.addColorStop(0, "#0e0b1c"); g.addColorStop(.52, "#110e20"); g.addColorStop(1, "#07070e");
-  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
-  const neb = (x, y, r, c) => { const ng = ctx.createRadialGradient(x, y, 0, x, y, r); ng.addColorStop(0, c); ng.addColorStop(1, "rgba(0,0,0,0)"); ctx.fillStyle = ng; ctx.fillRect(x - r, y - r, r * 2, r * 2); };
-  neb(W * .84, 110, 560, "rgba(96,66,170,.16)");
-  neb(W * .10, 330, 520, "rgba(34,62,140,.13)");
-  neb(CX, H + 60, 760, "rgba(201,168,106,.12)");
-  let s = (state.seed || 20260911) >>> 0; const rnd = () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; };
-  for (let i = 0; i < 110; i++) { ctx.globalAlpha = .08 + rnd() * .42; ctx.fillStyle = i % 9 ? "#c9a86a" : "#eee0b2"; ctx.beginPath(); ctx.arc(rnd() * W, rnd() * H, rnd() * 1.7 + .4, 0, 7); ctx.fill(); }
-  ctx.globalAlpha = 1;
   /* 四芒星光斑（带金晕，画在晕影之前保持亮度） */
   const sparkle = (x, y, r, a) => {
     ctx.save(); ctx.globalAlpha = a; ctx.fillStyle = "#eee0b2";
@@ -4347,18 +4336,31 @@ async function buildDailyShareCard() {
     ctx.quadraticCurveTo(x, y, x - r, y); ctx.quadraticCurveTo(x, y, x, y - r);
     ctx.fill(); ctx.restore();
   };
-  sparkle(152, 214, 9, .85); sparkle(W - 168, 148, 7, .7); sparkle(W - 118, 640, 6, .55); sparkle(126, 1000, 6, .5); sparkle(W - 196, 1086, 8, .6);
-  /* 晕影：四角收暗聚焦中央 */
-  const vg = ctx.createRadialGradient(CX, H * .42, H * .32, CX, H * .42, H * .9);
-  vg.addColorStop(0, "rgba(0,0,0,0)"); vg.addColorStop(1, "rgba(2,2,8,.5)");
-  ctx.fillStyle = vg; ctx.fillRect(0, 0, W, H);
-  /* 双线鎏金框：外框 + 内缘发丝线（同站内鎏金面板），框顶中央✦印记 */
-  ctx.strokeStyle = "rgba(201,168,106,.5)"; ctx.lineWidth = 2; ctx.strokeRect(34, 34, W - 68, H - 68);
-  ctx.strokeStyle = "rgba(201,168,106,.12)"; ctx.lineWidth = 1; ctx.strokeRect(48, 48, W - 96, H - 96);
-  ctx.fillStyle = "#0e0b1c"; ctx.fillRect(CX - 26, 25, 52, 20);
-  sparkle(CX, 35, 8, .95);
   const rr = (x, y, w, h, r) => { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); };
   const countWrap = (text, font, maxW) => { ctx.font = font; const cs = String(text || "").split(""); let ln = 1, cur = ""; for (const c1 of cs) { if (ctx.measureText(cur + c1).width > maxW) { ln++; cur = c1; } else cur += c1; } return Math.max(1, ln); };
+  /* ── 氛围底：墨金渐变 + 星云 + 星野 + 四芒星 + 晕影（与站内神秘墨金同一语言）；延迟到画布高度定型后绘制 ── */
+  const paintBG = () => {
+    const g = ctx.createLinearGradient(0, 0, 0, H);
+    g.addColorStop(0, "#0e0b1c"); g.addColorStop(.52, "#110e20"); g.addColorStop(1, "#07070e");
+    ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+    const neb = (x, y, r, c) => { const ng = ctx.createRadialGradient(x, y, 0, x, y, r); ng.addColorStop(0, c); ng.addColorStop(1, "rgba(0,0,0,0)"); ctx.fillStyle = ng; ctx.fillRect(x - r, y - r, r * 2, r * 2); };
+    neb(W * .84, 110, 560, "rgba(96,66,170,.16)");
+    neb(W * .10, 330, 520, "rgba(34,62,140,.13)");
+    neb(CX, H + 60, 760, "rgba(201,168,106,.12)");
+    let s = (state.seed || 20260911) >>> 0; const rnd = () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; };
+    for (let i = 0; i < 110; i++) { ctx.globalAlpha = .08 + rnd() * .42; ctx.fillStyle = i % 9 ? "#c9a86a" : "#eee0b2"; ctx.beginPath(); ctx.arc(rnd() * W, rnd() * H, rnd() * 1.7 + .4, 0, 7); ctx.fill(); }
+    ctx.globalAlpha = 1;
+    sparkle(152, 214, 9, .85); sparkle(W - 168, 148, 7, .7); sparkle(W - 118, 640, 6, .55); sparkle(126, H * .74, 6, .5); sparkle(W - 196, H * .80, 8, .6);
+    /* 晕影：四角收暗聚焦中央 */
+    const vg = ctx.createRadialGradient(CX, H * .42, H * .32, CX, H * .42, H * .9);
+    vg.addColorStop(0, "rgba(0,0,0,0)"); vg.addColorStop(1, "rgba(2,2,8,.5)");
+    ctx.fillStyle = vg; ctx.fillRect(0, 0, W, H);
+    /* 双线鎏金框：外框 + 内缘发丝线（同站内鎏金面板），框顶中央✦印记 */
+    ctx.strokeStyle = "rgba(201,168,106,.5)"; ctx.lineWidth = 2; ctx.strokeRect(34, 34, W - 68, H - 68);
+    ctx.strokeStyle = "rgba(201,168,106,.12)"; ctx.lineWidth = 1; ctx.strokeRect(48, 48, W - 96, H - 96);
+    ctx.fillStyle = "#0e0b1c"; ctx.fillRect(CX - 26, 25, 52, 20);
+    sparkle(CX, 35, 8, .95);
+  };
 
   /* ── 内容 ── */
   const t = new Date(state.readingDate || Date.now());
@@ -4391,12 +4393,15 @@ async function buildDailyShareCard() {
     return { chh, rowH, cLineH, contentH: Object.values(blocks).reduce((a, b) => a + b, 0) };
   };
   let M = measure();
-  while (M.contentH > H - TOP - D.foot && cw > 232) { cw -= 12; M = measure(); }     /* ① 先缩主图 */
-  while (M.contentH > H - TOP - D.foot && lineH > 29) { lineH -= 2; rowGap = 12; M = measure(); }  /* ② 再压行高 */
-  if (M.contentH > H - TOP - D.foot) { tight = true; D = D1; rowGap = 10; M = measure(); }          /* ③ 紧凑模式：装饰块收缩+直觉段专用行高 */
-  while (M.contentH > H - TOP - D.foot && cw > 208) { cw -= 12; M = measure(); }     /* ④ 直觉段过长时主图再降一档 */
+  const needH = TOP + D0.foot + M.contentH + 40;      /* +40：给 gap 呼吸余量 */
+  if (needH > H) { H = Math.min(1560, Math.ceil(needH / 30) * 30); cv.height = H; }   /* ⓪ 优先长高：1350→≤1560，文字保持舒展间距；比率仍介于 4:5 与 2:3 */
+  while (M.contentH > H - TOP - D.foot && cw > 232) { cw -= 12; M = measure(); }     /* ① 缩主图 */
+  while (M.contentH > H - TOP - D.foot && lineH > 29) { lineH -= 2; rowGap = 12; M = measure(); }  /* ② 压行高 */
+  if (M.contentH > H - TOP - D.foot) { tight = true; D = D1; rowGap = 10; M = measure(); }          /* ③ 紧凑模式：装饰块收缩+直觉段专用行高（极端长文才动用） */
+  while (M.contentH > H - TOP - D.foot && cw > 208) { cw -= 12; M = measure(); }     /* ④ 主图再降一档 */
   const gap = Math.max(6, Math.min(48, Math.floor((H - TOP - D.foot - M.contentH) / 8)));
   const { chh, rowH, cLineH } = M;
+  paintBG();
 
   /* ── 第二遍：按量好的高度顺序绘制（页脚锚底，内容不侵入） ── */
   let y = TOP;
