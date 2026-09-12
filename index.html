@@ -3706,7 +3706,7 @@ function renderDailyFortune() {
       <div class="df-hero-txt">
         <div class="df-title">✦ ${isToday ? "今 日" : "当 日"} 运 势</div>
         <div class="df-theme">${dayWord}为你翻到 <b>「${escHtml(m.name)}${m.reversed ? "（逆位）" : ""}」</b><span class="df-energy">${escHtml(m.energy)}</span>${m.reversed ? '<span class="df-revtag">能量内收</span>' : ""}</div>
-        ${m.keywords.length ? `<div class="df-kws">${m.keywords.map(k => `<span class="df-kw">${escHtml(k)}</span>`).join("")}</div>` : ""}
+        ${m.keywords.filter(k => k !== m.energy).length ? `<div class="df-kws">${m.keywords.filter(k => k !== m.energy).map(k => `<span class="df-kw">${escHtml(k)}</span>`).join("")}</div>` : ""}
       </div>
     </div>
     ${streakLine}
