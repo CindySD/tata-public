@@ -4430,8 +4430,8 @@ function restoreReading(rec) {
     ? (rec.sp === "single" && /今天我需要留意什么|今日指引/.test(String(rec.q || "")))
     : !!rec.dm;
   state.readingDate = rec.t || Date.now();
-  state.cutCard = rec.c ? (cardById[rec.c] || null) : null; /* 切牌入档后回看才能还原"心态底色"；老记录无 c → 与从前一致 */
-  state.cutNumber = (+rec.ck > 0) ? Math.floor(+rec.ck) : 0; /* 那一刀的厚度一起还原；老记录无 ck → 置 0，文案显示"?"不编造 */
+  state.cutCard = (!state.dailyMode && rec.c) ? (cardById[rec.c] || null) : null; /* 切牌入档后回看才能还原"心态底色"；每日一牌永无切牌（改版前的旧 daily 记录带 c 也不再显示） */
+  state.cutNumber = (state.cutCard && +rec.ck > 0) ? Math.floor(+rec.ck) : 0; /* 那一刀的厚度一起还原；无切牌或老记录无 ck → 置 0，文案不编造 */
   state.domain = detectDomain(rec.q); state.seed = rec.seed || 0; state.spreadManual = true;
   const positions = SPREADS[rec.sp].positions;
   state.draws = rec.d.map((x, i) => ({ pos: positions[i] || positions[positions.length - 1], card: cardById[x.id], reversed: !!x.r })).filter(d => d.card);
