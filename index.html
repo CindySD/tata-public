@@ -1565,7 +1565,7 @@ function saveLLMConfig(cfg) {
 const LLM_SYSTEM_PROMPT = `你是塔塔🔮の心灵疗愈室的首席解牌师，同时持有精神分析流派心理咨询师与职业塔罗师双重身份。你的风格直接、坦率——不绕弯子，先用一句话给结论，再展开分析。
 
 【解牌原则】
-1. 结论先行：先回答用户最想知道的答案（一句话），再逐牌展开。不要让用户读完三张牌才看到方向。
+1. 结论先行：conclusion 会被单独放进「塔塔的直觉」框直接回答用户，所以它必须是**一句可验证的判断**——40 字内、以倾向词开头（可以/别/不要/先/等/接/拒/去谈/暂缓），点明依据是哪张牌，并正面回应用户提的那个问题。❌"你可能会遇到一些转折，保持开放" → ✅"这件事可以做，但别在本周宣布——战车牌说明方向已定，急不得。"。禁止"可能/也许/或许/因人而异/视情况"这类含糊话：写了模糊句，前端会直接用规则判断句替换掉。
 2. 每张牌三层解读：① 牌面核心含义（1句，简短）② 对应到用户具体处境的分析（2-3句，扎进去）③ 一个生活化的比喻或例子（1句，像隔壁发生的事）。psy 必须结合**该牌位的职能**下结论（"过去"位讲已成的格局、"行动"位讲可操作的事项、"结果"位讲走向条件）——同一张牌落在不同位置，结论允许不同。
 3. 问题背后的问题：每张牌的分析都要回到用户提的问题本身——这个问题背后藏着什么心理需求、恐惧或冲突。比如"要不要联系他"背后可能是放不下依恋而非真的想沟通，"该不该跳槽"背后可能是对自我价值的不确定。
 4. 心理动力学视角：用荣格原型（阴影/投射/自性化）和防御机制（理智化/否认/投射/退行）做分析框架，但说人话——不用"投射""防御机制"这些词的原话，用"你可能在用……来保护自己""你不自觉地把……"这样的大白话。
@@ -2317,6 +2317,52 @@ function synthesize() {
     echo,
     q: qShort
   };
+}
+/* ---------- 直接回答：一句话给出可验证的倾向（页面直觉框 / 规则快照 / AI 兜底 共用；同牌同问必得同一句） ---------- */
+const AGENCY_CARDS = ["力量", "战车", "太阳", "星星", "魔术师", "皇帝", "节制", "审判", "命运之轮", "权杖八", "权杖三", "星币八"];
+const HOLD_CARDS = ["宝剑四", "倒吊人", "隐士", "圣杯四", "月亮"];
+const VERDICT_LEX = {
+  go:   { love: "主动一次，但只谈事实不翻旧账", career: "接——条件对你有利", finance: "可以投，先把金额封顶在你亏得起的数", general: "去做，别再拖到「下次一定」" },
+  wait: { love: "先别推进，这周把话收住", career: "暂缓，等关键条件补齐再谈", finance: "这笔钱先按住，别加杠杆", general: "先等一等，本周不做不可逆的决定" },
+  no:   { love: "别走这条路，勉强只会把痛拉长", career: "不要接，牌面写着你兜不住的那部分", finance: "不要投，风险大于你看到的收益", general: "答案偏向不——现在不是时候" },
+  talk: { love: "去谈一次，把需求说成请求而不是控诉", career: "先把边界谈清楚再动手", finance: "把账摊开算一遍，再决定要不要开始", general: "把话问出口，别自己替对方猜" }
+};
+const DAILY_LEX = {
+  go: "今天适合主动出手，把拖着的那一步推出去",
+  wait: "今天适合收着做，不宜摊牌，也不宜做大决定",
+  no: "今天别硬推——这件事今天不是你的战场",
+  talk: "今天适合把憋着的那句话说清楚，只说感受，不下判决"
+};
+function directAnswer() {
+  const ds = state.draws;
+  if (!ds || !ds.length) return "";
+  const qShort = (state.question || "").replace(/\s+/g, " ").trim().replace(/[？?。.!！]+$/g, "");
+  const revRatio = ds.filter(d => d.reversed).length / ds.length;
+  const agencyOpen = ds.some(d => AGENCY_CARDS.includes(d.card.name) && !d.reversed);
+  const agencyBlocked = ds.some(d => AGENCY_CARDS.includes(d.card.name) && d.reversed);
+  const holding = ds.some(d => HOLD_CARDS.includes(d.card.name));
+  let key;
+  if (revRatio >= 0.5) key = "no";
+  else if (agencyBlocked && !agencyOpen) key = "talk";
+  else if (!agencyOpen && (revRatio >= 0.34 || holding)) key = "wait";
+  else if (agencyOpen && !revRatio) key = "go";
+  else key = holding ? "wait" : "talk";
+  const dm = DOMAIN_NAME[state.domain] ? state.domain : "general";
+  const verdict = state.dailyMode ? (DAILY_LEX[key] || DAILY_LEX.talk)
+    : (((VERDICT_LEX[key] || VERDICT_LEX.talk)[dm]) || VERDICT_LEX[key].general);
+  /* 依据牌：优先那张决定倾向的牌（主动能量 / 第一张逆位），再退回牌阵末位 */
+  const dec = ds.find(d => AGENCY_CARDS.includes(d.card.name)) || ds.find(d => d.reversed) || ds[ds.length - 1];
+  const o = dec.reversed ? dec.card.reversed : dec.card.upright;
+  const kw = (o.keywords || []).slice(0, 2).join("、");
+  /* 动作：只取 2–4 字、以动作动词开头的候选（牌库里混着"确信能熬过去"这类状态语，不能当动作使） */
+  const ACT_HEAD = /^[写谈说列做约查算定给发问记整复开答核排试去停放看准]/;
+  const acts = (typeof CARD_ACTIONS !== "undefined" && CARD_ACTIONS[dec.card.name]) || [];
+  const pick = acts.map(a => String(a || "").trim()).filter(v => /^[一-龥]{2,4}$/.test(v) && ACT_HEAD.test(v));
+  const verb = pick[0] || "写下你现在要做的第一步";
+  const anchors = ["今晚睡前", "明天中午之前", "48 小时之内", "本周五之前"];
+  const anchor = anchors[(state.seed >>> 2) % anchors.length];
+  const lead = state.dailyMode ? "今天" : (qShort ? `关于「${qShort}」` : (DOMAIN_NAME[dm] || "这件事"));
+  return `${lead}：${verdict}。依据是${dec.pos.n}位置的「${dec.card.name}${dec.reversed ? "（逆位）" : ""}」——${kw}。${anchor}，先做一件最小的事：${verb}。做完回来看它对不对。`;
 }
 const SAFETY_RE = /自杀|轻生|自残|不想活|活不下去|结束生命|想死|了结自己/;
 /* P0-D 高危预测分级：预测措辞 × 健康生死/官司判决/买卖涨跌主题 双命中才拦截（普通"会不会复合"不拦截，交给提示词重构） */
@@ -3136,7 +3182,14 @@ function polishReading(d) {
       why: "牌给的是方向；落到一个带期限的小动作，才算真的接住它，而不是读完就忘。"
     });
   }
-  /* (2) 去重复免责：谨慎起见不在句中硬删（易把中文删出病句），仅保证结论不被"可能"堆砌——交由提示词与模型，此处不动 */
+  /* (2) 直觉结论兜底：不指望弱模型自觉——没有倾向、满是 hedge 或过短，就直接换成规则判断句 */
+  const HEDGE_RE = /可能|也许|或许|大概|因人而异|视情况|说不准|谁知道|难以预料/;
+  const VERDICT_RE = /可以|别|不要|不宜|建议|先|等|去做|接|拒|谈|放下|承认|停|推进|主动|封顶|走|留|按|摊开|暂缓|不——|偏向/;
+  const c0 = typeof d.conclusion === "string" ? d.conclusion.trim() : "";
+  const cProbe = c0.replace(/「[^」]*」/g, ""); /* 用户问题里常带"可能/会不会"，剥掉引文只看结论自己的措辞 */
+  const da = (typeof directAnswer === "function") ? directAnswer() : "";
+  if (da && (!c0 || c0.length < 14 || HEDGE_RE.test(cProbe) || !VERDICT_RE.test(cProbe))) d.conclusion = da;
+  else if (!c0) d.conclusion = da;
   return d;
 }
 async function renderReading() {
@@ -3666,10 +3719,19 @@ function renderDailyFortune() {
 }
 function renderSynthesisRule() {
   const syn = synthesize();
+  const da = directAnswer();
   const synEl = $("#synthesis");
+  document.querySelectorAll(".conclusion-banner").forEach(b => b.remove());
+  if (da) {
+    const banner = document.createElement("div");
+    banner.className = "conclusion-banner";
+    banner.innerHTML = `<span class="cb-label">塔 塔 的 直 觉</span><p>${escHtml(da)}</p>`;
+    const head = document.querySelector(".reading-head");
+    head?.parentNode.insertBefore(banner, head.nextSibling);
+  }
   synEl.innerHTML = `
     <h3>综 合 解 读</h3>
-    ${syn.q ? `<div class="syn-block q-echo"><div class="sb-label">回 应 你 的 问 题</div><p>你问的是「${escHtml(syn.q)}」。牌不替${DOMAIN_NAME[state.domain]}给"是/否"，但它把这件事此刻真正在动的东西摆到你面前——</p></div>` : ""}
+    ${syn.q ? `<div class="syn-block q-echo"><div class="sb-label">回 应 你 的 问 题</div><p>你问的是「${escHtml(syn.q)}」。上面那句就是${DOMAIN_NAME[state.domain]}此刻的判断——它照的是"照目前状况推演"的方向，不是注定；你换了行动，这句就得重算。</p></div>` : ""}
     ${cutLine()}
     <div class="syn-block"><div class="sb-label">能 量 概 览</div><p>${syn.overview}</p></div>
     ${syn.relation ? `<div class="syn-block"><div class="sb-label">牌 与 牌 之 间</div><p>${syn.relation}</p></div>` : ""}
@@ -3680,7 +3742,7 @@ function renderSynthesisRule() {
     <div class="energy-word"><div class="ew">${energyWord()}</div><div class="ew-sub">本 次 能 量 之 词 · 如果它击中了你，就多停留一会儿</div></div>
     <div class="syn-block"><div class="sb-label">回 响</div><p>${syn.echo}</p></div>
     <p class="sovereign">牌显示的是当下的能量，不是注定的结局。<br>你的选择，随时可以改变走向。</p>`;
-  state.shareSnapshot = { energy: energyWord(), conclusion: syn.overview, judgment: syn.exit };
+  state.shareSnapshot = { energy: energyWord(), conclusion: da || syn.overview, judgment: syn.exit };
 }
 function escapeHtml(s) { return escHtml(s); }
 
