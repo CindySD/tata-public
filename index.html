@@ -3962,7 +3962,13 @@ async function buildShareCard() {
   const imgH = Math.round(size * 1.72);
   const rowPitch = imgH + 96;
   const cardBot = 520 + (rows - 1) * rowPitch + imgH + 44;
-  SHARE_H = Math.max(1440, cardBot + (hasRead ? 840 : 460));
+  /* 「塔塔的直觉」按实际行数占高：短结论不留大空洞，长结论不再被 3 行截断 */
+  const _mc = document.createElement("canvas").getContext("2d");
+  const cntLines = (txt, font, maxW, cap) => { if (!txt) return 0; _mc.font = font; let ln = 1, cur = ""; for (const chx of String(txt).split("")) { if (_mc.measureText(cur + chx).width > maxW) { ln++; cur = chx; if (ln >= cap) return cap; } else cur += chx; } return ln; };
+  const _concl = hasRead ? String(snap.conclusion || "").trim() : "", _judg = hasRead ? String(snap.judgment || "").trim() : "";
+  const CL = cntLines(`「${_concl}」`, `30px "PingFang SC","Microsoft YaHei",sans-serif`, 780, 6), JL = cntLines(_judg, `25px "PingFang SC","Microsoft YaHei",sans-serif`, 780, 6);
+  const READ_H = hasRead ? (212 + CL * 46 + 36 + JL * 38 + 330) : 460;   /* 末尾 330 = 能量词 + 本次能量之词标签 + 印记 + 品牌行（它们锚在画布底部） */
+  SHARE_H = Math.max(1440, cardBot + READ_H);
   const showFortune = !!state.dailyMode && n === 1 && state.draws[0] && state.draws[0].card; /* 运势分项只随「今日一牌」进分享图；普通占卜（含单牌阵）不绘 */
   const fM = showFortune ? fortuneModel(state.draws[0].card, state.draws[0].reversed) : null;
   if (fM) SHARE_H += 560 + fM.facets.length * 150 + (fM.advice ? 150 : 0) + (fM.timing ? 160 : 0);
@@ -4050,16 +4056,16 @@ async function buildShareCard() {
     const concl = (snap.conclusion || "").trim();
     if (concl) {
       ctx.fillStyle = "#e8e2d4"; ctx.font = `30px ${SANS}`;
-      yy += 46 * wrapText(ctx, `「${concl}」`, CX, yy, 780, 46, 3) + 36;
+      yy += 46 * wrapText(ctx, `「${concl}」`, CX, yy, 780, 46, 6) + 36;
     }
     const judg = (snap.judgment || "").trim();
     if (judg) {
       ctx.fillStyle = "#b3a992"; ctx.font = `25px ${SANS}`;
-      wrapText(ctx, judg, CX, yy, 780, 38, 3);
+      wrapText(ctx, judg, CX, yy, 780, 38, 6);
     }
   }
   if (fM) {
-    let fy = cardBot + (hasRead ? 840 : 460) + 40;
+    let fy = cardBot + READ_H + 40;
     ctx.textAlign = "center";
     ctx.strokeStyle = "rgba(201,168,106,.25)"; ctx.beginPath(); ctx.moveTo(150, fy); ctx.lineTo(SHARE_W - 150, fy); ctx.stroke(); fy += 70;
     const fdw = fortuneDayWord();
@@ -4092,7 +4098,7 @@ async function buildShareCard() {
 }
 /* 今日一牌·4:5 竖版紧凑分享（社媒信息流友好）；与通用动态长图分开，避免把富信息版硬塞进 1350 高而截断 */
 async function buildDailyShareCard() {
-  const W = 1080, H = 1350, CX = W / 2;
+  const W = 1080, H = 1350, CX = W / 2, PADX = 96;
   const cv = document.createElement("canvas"); cv.width = W; cv.height = H;
   const ctx = cv.getContext("2d");
   const SANS = '"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif';
@@ -4106,47 +4112,86 @@ async function buildDailyShareCard() {
   for (let i = 0; i < 90; i++) { ctx.globalAlpha = .1 + rnd() * .4; ctx.fillStyle = "#c9a86a"; ctx.beginPath(); ctx.arc(rnd() * W, rnd() * H, rnd() * 1.6 + .4, 0, 7); ctx.fill(); }
   ctx.globalAlpha = 1;
   ctx.strokeStyle = "rgba(201,168,106,.5)"; ctx.lineWidth = 2; ctx.strokeRect(34, 34, W - 68, H - 68);
-  ctx.textAlign = "center";
-  ctx.fillStyle = "#c9a86a"; ctx.font = `600 40px ${SANS}`; ctx.fillText("塔塔🔮の心灵疗愈室", CX, 108);
+  const rr = (x, y, w, h, r) => { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); };
+  const countWrap = (text, font, maxW) => { ctx.font = font; const cs = String(text || "").split(""); let ln = 1, cur = ""; for (const c1 of cs) { if (ctx.measureText(cur + c1).width > maxW) { ln++; cur = c1; } else cur += c1; } return Math.max(1, ln); };
+
+  /* ── 内容 ── */
   const t = new Date(state.readingDate || Date.now());
-  ctx.fillStyle = "#847c6a"; ctx.font = `22px ${SANS}`; ctx.fillText(`${t.getFullYear()} 年 ${t.getMonth() + 1} 月 ${t.getDate()} 日 · ${_dayStr(t) === _dayStr() ? "今 日" : "当 日"} 一 牌`, CX, 150);
-  ctx.strokeStyle = "rgba(201,168,106,.32)"; ctx.beginPath(); ctx.moveTo(300, 182); ctx.lineTo(W - 300, 182); ctx.stroke();
-  const cw = 300, ch = Math.round(cw * 1.72), cx = CX - cw / 2, cy = 200;
+  const isToday = _dayStr(t) === _dayStr();
+  const tagTxt = isToday ? "今 日 一 牌" : "当 日 一 牌";
+  const dateTxt = `${t.getFullYear()} 年 ${t.getMonth() + 1} 月 ${t.getDate()} 日　·　${tagTxt}`;
+  const nameTxt = card ? card.name : "";
+  const enTxt = card ? (card.englishName || card.english || "") : "";
+  const revTxt = (d && d.reversed) ? "Reversed · 能量内收" : "";
+  const energyTxt = (state.shareSnapshot && state.shareSnapshot.energy) || (m && m.energy) || energyWord();
+  const rows = [];
+  if (m) { m.facets.slice(0, 4).forEach(f => rows.push({ k: f.k, v: f.v })); if (m.advice) rows.push({ k: (isToday ? "今日指引" : "当日指引"), v: m.advice }); }
+  const lucky = m ? `幸运色 ${m.colors}　·　牌面吉数 ${m.luckyNum}　·　参考方位 ${m.dir}` : "";
+  const note = "牌是镜子，不是判决书 · cindysd.github.io/tata-public";
+
+  /* ── 第一遍：量高 + 自适应（页脚固定锚底，内容放不下就先缩主图） ── */
+  const F = { brand: `600 38px ${SANS}`, date: `22px ${SANS}`, name: `600 52px ${SANS}`, en: `24px ${SERIF}`, rev: `20px ${SANS}`, energy: `600 46px ${SERIF}`, key: `600 23px ${SANS}`, body: `25px ${SANS}`, foot: `21px ${SANS}`, note: `19px ${SANS}` };
+  const KEYW = 168, BODYW = W - PADX * 2 - KEYW;
+  const TOP = 64, FOOT = 150;                       /* 页脚（幸运条 + 品牌行）预留 */
+  let cw = 356, lineH = 34, rowGap = 16;
+  const measure = () => {
+    const chh = Math.round(cw * 1.72);
+    const rowH = rows.map(r => 28 + countWrap(r.v, F.body, BODYW) * lineH);
+    const blocks = { brand: 44, date: 34, card: chh + 26, name: 58, en: enTxt ? 30 : 0, rev: revTxt ? 28 : 0, energy: 58, rows: rowH.reduce((a, b) => a + b + rowGap, 0), lucky: 0 };
+    return { chh, rowH, contentH: Object.values(blocks).reduce((a, b) => a + b, 0) };
+  };
+  let M = measure();
+  while (M.contentH > H - TOP - FOOT && cw > 232) { cw -= 12; M = measure(); }     /* 先缩主图 */
+  while (M.contentH > H - TOP - FOOT && lineH > 29) { lineH -= 2; rowGap = 12; M = measure(); }  /* 再压行高 */
+  const gap = Math.max(8, Math.min(48, Math.floor((H - TOP - FOOT - M.contentH) / 8)));
+  const { chh, rowH } = M;
+
+  /* ── 第二遍：按量好的高度顺序绘制（页脚锚底，内容不侵入） ── */
+  let y = TOP;
+  ctx.textAlign = "center";
+  ctx.fillStyle = "#c9a86a"; ctx.font = F.brand; ctx.fillText("塔塔🔮の心灵疗愈室", CX, y + 34); y += 44 + gap;
+  ctx.fillStyle = "#8a8271"; ctx.font = F.date; ctx.fillText(dateTxt, CX, y + 22); y += 34 + gap;
+
+  const cx = CX - cw / 2;
+  ctx.save();
+  ctx.shadowColor = "rgba(201,168,106,.45)"; ctx.shadowBlur = 46;
+  ctx.fillStyle = "#141122"; rr(cx - 12, y, cw + 24, chh + 24, 18); ctx.fill();
+  ctx.shadowBlur = 0; ctx.strokeStyle = "rgba(201,168,106,.8)"; ctx.lineWidth = 2; rr(cx - 12, y, cw + 24, chh + 24, 18); ctx.stroke();
+  ctx.restore();
+  ctx.save();
+  rr(cx, y + 12, cw, chh, 12); ctx.clip();
+  if (d && d.reversed) { ctx.translate(CX, y + 12 + chh / 2); ctx.rotate(Math.PI); ctx.translate(-CX, -(y + 12 + chh / 2)); }
   let im = await loadCardImg(IMG_BASE + (card && card.image));
   if (!im && CDN_BASE) im = await loadCardImg(CDN_BASE + (card && card.image));
-  const rr = (x, y, w, h, r) => { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); };
-  ctx.save();
-  ctx.shadowColor = "rgba(201,168,106,.5)"; ctx.shadowBlur = 42;
-  ctx.fillStyle = "#141122"; rr(cx - 11, cy - 11, cw + 22, ch + 22, 18); ctx.fill();
-  ctx.shadowBlur = 0;
-  ctx.strokeStyle = "rgba(201,168,106,.82)"; ctx.lineWidth = 2; rr(cx - 11, cy - 11, cw + 22, ch + 22, 18); ctx.stroke();
+  if (im) ctx.drawImage(im, cx, y + 12, cw, chh);
+  else { ctx.fillStyle = "#c9a86a"; ctx.font = `56px ${SERIF}`; ctx.fillText("✶", CX, y + 12 + chh / 2 + 20); }
   ctx.restore();
-  ctx.save();
-  rr(cx, cy, cw, ch, 12); ctx.clip();
-  if (d && d.reversed) { ctx.translate(CX, cy + ch / 2); ctx.rotate(Math.PI); ctx.translate(-CX, -(cy + ch / 2)); }
-  if (im) ctx.drawImage(im, cx, cy, cw, ch);
-  else { ctx.fillStyle = "#c9a86a"; ctx.font = `52px ${SERIF}`; ctx.textAlign = "center"; ctx.fillText("✶", CX, cy + ch / 2 + 18); }
-  ctx.restore();
-  if (d && d.reversed) { const bx = cx + cw - 6, by = cy + 16; ctx.fillStyle = "#07070e"; ctx.beginPath(); ctx.arc(bx, by, 20, 0, 7); ctx.fill(); ctx.strokeStyle = "#c9a86a"; ctx.lineWidth = 2; ctx.stroke(); ctx.fillStyle = "#c9a86a"; ctx.font = `24px ${SANS}`; ctx.textBaseline = "middle"; ctx.fillText("逆", bx, by + 2); ctx.textBaseline = "alphabetic"; }
-  let y = cy + ch + 50;
-  ctx.fillStyle = "#e8e2d4"; ctx.font = `600 42px ${SANS}`;
-  ctx.fillText((card ? card.name : "") + (d && d.reversed ? "（逆位）" : ""), CX, y); y += 36;
-  if (card && (card.englishName || card.english)) { ctx.fillStyle = "#847c6a"; ctx.font = `24px ${SERIF}`; ctx.fillText(card.englishName || card.english, CX, y); y += 34; }
-  ctx.fillStyle = "#c9a86a"; ctx.font = `600 44px ${SERIF}`;
-  ctx.fillText((state.shareSnapshot && state.shareSnapshot.energy) || (m && m.energy) || energyWord(), CX, y); y += 40;
-  if (m) {
-    ctx.textAlign = "left"; const fx = 118, fmax = W - 236;
-    m.facets.slice(0, 2).forEach(f => {
-      ctx.fillStyle = "#c9a86a"; ctx.font = `600 24px ${SANS}`; ctx.fillText(`${f.i} ${f.k}`, fx, y); y += 30;
-      ctx.fillStyle = "#ddd6c4"; ctx.font = `22px ${SANS}`; y += wrapText(ctx, f.v, fx, y, fmax, 29, 3) * 29 + 12;
+  if (d && d.reversed) { const bx = cx + cw - 2, by = y + 28; ctx.fillStyle = "#07070e"; ctx.beginPath(); ctx.arc(bx, by, 21, 0, 7); ctx.fill(); ctx.strokeStyle = "#c9a86a"; ctx.lineWidth = 2; ctx.stroke(); ctx.fillStyle = "#c9a86a"; ctx.font = `24px ${SANS}`; ctx.textBaseline = "middle"; ctx.fillText("逆", bx, by + 2); ctx.textBaseline = "alphabetic"; }
+  y += chh + 26 + gap;
+
+  ctx.fillStyle = "#f0ead9"; ctx.font = F.name; ctx.fillText(nameTxt, CX, y + 46); y += 58;
+  if (enTxt) { ctx.fillStyle = "#7f7866"; ctx.font = F.en; ctx.fillText(enTxt, CX, y + 20); y += 30; }
+  if (revTxt) { ctx.fillStyle = "#b9945f"; ctx.font = F.rev; ctx.fillText(revTxt, CX, y + 18); y += 28; }
+  ctx.fillStyle = "#c9a86a"; ctx.font = F.energy; ctx.fillText(energyTxt, CX, y + 42); y += 58 + gap;
+
+  if (rows.length) {
+    ctx.strokeStyle = "rgba(201,168,106,.2)"; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(PADX, y - 8); ctx.lineTo(W - PADX, y - 8); ctx.stroke();
+    rows.forEach((r, i) => {
+      ctx.textAlign = "left";
+      ctx.fillStyle = "#c9a86a"; ctx.font = F.key; ctx.fillText(r.k, PADX, y + 24);
+      ctx.fillStyle = i % 2 ? "#d9d3c3" : "#e6dfcd"; ctx.font = F.body;
+      let cur = "", ly = y + 24;
+      for (const c2 of String(r.v).split("")) {
+        if (ctx.measureText(cur + c2).width > BODYW) { ctx.fillText(cur, PADX + KEYW, ly); cur = c2; ly += lineH; } else cur += c2;
+      }
+      if (cur) ctx.fillText(cur, PADX + KEYW, ly);
+      y += rowH[i] + rowGap;
     });
-    if (m.advice) { ctx.fillStyle = "#c9a86a"; ctx.font = `600 24px ${SANS}`; ctx.fillText(`🧭 ${fortuneDayWord()}指引`, fx, y); y += 30; ctx.fillStyle = "#ddd6c4"; ctx.font = `22px ${SANS}`; y += wrapText(ctx, m.advice, fx, y, fmax, 29, 2) * 29 + 10; }
     ctx.textAlign = "center";
-    ctx.fillStyle = "#847c6a"; ctx.font = `21px ${SANS}`;
-    ctx.fillText(`🎨 ${m.colors}　🔢 牌面吉数 ${m.luckyNum}　🧭 ${m.dir}`, CX, Math.min(y + 8, H - 108));
   }
-  ctx.fillStyle = "#847c6a"; ctx.font = `20px ${SANS}`;
-  ctx.fillText("牌是镜子，不是判决书 · cindysd.github.io/tata-public", CX, H - 56);
+  if (lucky) { ctx.fillStyle = "#9c9482"; ctx.font = F.foot; ctx.fillText(lucky, CX, H - 104); }
+  ctx.fillStyle = "#6f6959"; ctx.font = F.note; ctx.fillText(note, CX, H - 56);
   return cv;
 }
 $("#btn-card").addEventListener("click", async () => {
