@@ -545,6 +545,14 @@ footer .gold{color:var(--gold)}
 .cut-flip{width:120px;height:200px}
 .cut-hint{font-size:13px;color:var(--gold);letter-spacing:.2em}
 .cut-result{font-size:14px;color:var(--ink);letter-spacing:.08em;text-align:center;line-height:1.9;min-height:66px}
+.cut-ask{display:flex;gap:10px;align-items:center;justify-content:center;flex-wrap:wrap}
+.cut-num{width:88px;padding:10px 12px;text-align:center;font-size:17px;letter-spacing:.06em;font-family:var(--sans);color:var(--ink);background:rgba(255,255,255,.045);border:1px solid var(--gold-faint);border-radius:11px;transition:border-color .25s,background .25s}
+.cut-num:focus{outline:none;border-color:var(--gold-dim);background:rgba(201,168,106,.07)}
+.cut-num::placeholder{color:var(--ink-faint);font-size:13px;letter-spacing:.02em}
+#btn-cut{font-size:14px;padding:11px 22px}
+#btn-cut:disabled,#btn-cut[disabled]{opacity:.34;cursor:not-allowed;filter:saturate(.5)}
+#btn-cut-skip{font-size:13px;padding:11px 18px}
+.cut-dup{color:var(--gold-hi);font-size:13px}
 
 /* 阶段④-1 应期参考 */
 .timing-block{margin-top:26px;border:1px dashed var(--gold-dim);border-radius:14px;padding:20px 24px;background:rgba(201,168,106,.03)}
@@ -1565,6 +1573,7 @@ const LLM_SYSTEM_PROMPT = `你是塔塔🔮の心灵疗愈室的首席解牌师�
 6. 牌是镜子不是水晶球：正文一律用**确定的观察句**直给（"这张牌说明你已经在……""你其实卡在……""你要的不是X，是Y"），不要每句都塞"可能/也许/或许"来躲——满篇 hedge 就是废话。**"非注定/仅供参考"这类免责全篇只在结尾 closing 说一次**，正文不重复；始终禁说"你一定会/命中注定"。
 7. 不做评分/概率——塔罗不是测量工具，不给"1-10分"或"80%概率"，用判断性语言代替伪精度。
 8. 安全边界：检测到自伤信号时暂停占卜，建议拨打 24 小时心理援助热线 12356（全国统一），或希望24热线 400-161-9995（这两个号码要与站内关怀页一致，不得混称、不得只报其中一个）。不做医疗/法律/投资建议。
+9. 切牌（若输入里给了）：那是问卜者亲手切出的心态标定，**不占牌阵位置**——不得当成第 N 张逐位解读，也不得计入大小牌/正逆位的比例判断。它的正确用法是与「建议/对策/行动/结果」那张**合参**：先看这个姿态接不接得住牌面给的那条对策，接不住就说清楚卡在哪一半；只在综合部分点一句，不重复展开。
 
 【逆位总纲】逆位不是"坏牌"——它是正位的能量受阻或失衡的状态，牌的原义仍然存在，不会变成另一张牌。解读逆位时按牌类型择用角度：①数字牌看程度——能量"过度"或"不足"（如圣杯三逆=欢乐过度乐极生悲）；②大牌看内心——被压抑否认的情绪、或牌面图景倒转的演绎（如塔逆=骤变来自内在）；③宫廷牌逆位一律看"过度或不足"的人物化表达（如星币骑士逆=工作狂或闲混，权杖国王逆=暴君或懦夫）。
 
@@ -1648,7 +1657,17 @@ function readingDataBlocks(question, spreadName, draws) {
     const g = (SPREADS[state.spreadKey] || {}).guide;
     if (g) guide = "\n【牌阵解读主线】" + g;
   } catch (e) { /* 无 guide 的牌阵正常降级 */ }
-  return `当前日期：${dateStr}\n问题：${question}\n牌阵：${spreadName}\n抽到的牌：\n${cardLines}${rel}${guide}`;
+  /* 切牌进 AI 输入：过去只在前端贴一段"心态底色"，模型其实从没看过它 → 现在真的喂进去，并当场限定用法 */
+  let cutBlk = "";
+  try {
+    const cc = state.cutCard;
+    if (cc) {
+      const ckw = (cc.upright.keywords || []).slice(0, 3).join("、");
+      cutBlk = `\n【切牌·问者心态（问卜者亲手切在 ${state.cutNumber || "?"} 厚，取那一叠最底一张）】${cc.name}｜${cc.suitName || "大阿卡纳"}｜关键词：${ckw}` +
+        `\n　用途：它不占牌阵位置、不要当第 ${draws.length + 1} 张来解、不要计入大小牌/正逆比例；只与「建议/对策/行动/结果」那张合参——判断这个姿态接不接得住牌面给的对策，接不住就说清卡在哪一半，只在综合部分点一句。`;
+    }
+  } catch (e) { /* 切牌信息缺失不影响主解读 */ }
+  return `当前日期：${dateStr}\n问题：${question}\n牌阵：${spreadName}\n抽到的牌：\n${cardLines}${rel}${guide}${cutBlk}`;
 }
 
 async function llmFetch(url, options, timeoutMs) {
@@ -2150,7 +2169,7 @@ const state = {
   question: "", number: 0, numbers: [], spreadKey: "three_time", spreadManual: false,
   draws: [], revealed: 0, seed: 0, domain: "general",
   deck: [], offer: [], markedCards: [], deckRev: [],
-  dailyMode: false, cutCard: null, readingDate: 0, /* 本次解读属于哪一天：运势卡/竖版分享图的「今日/当日」措辞与日期以此为准 */
+  dailyMode: false, cutCard: null, cutNumber: 0, readingDate: 0, /* 本次解读属于哪一天（运势卡/分享图措辞）；cutNumber=你亲手切下的厚度（刀口），切牌＝那一叠最底一张 */
   shareSnapshot: null, lastHistT: 0, restoreRec: null
 };
 
@@ -2724,29 +2743,50 @@ function startRitual() {
   }, SHUFFLE_MS);
 }
 
-/* ---------- 阶段④-3: 切牌环节（书中标准流程：切牌映照问者心态） ---------- */
+/* ---------- 阶段④-3: 切牌环节（书中定义：问卜者亲手切，取切起那一叠的最底一张 → 映照问者对这个问题的心态） ---------- */
 let cutGen = 0;
 function showCutStep() {
   const gen = ++cutGen;
-  skipBtn.style.display = "none"; /* 洗牌已跳过/结束：切牌是亲手环节，不再提供跳过 */
-  state.cutCard = null;
+  skipBtn.style.display = "none"; /* 洗牌已跳过/结束：不再提供跳过洗牌 */
+  state.cutCard = null; state.cutNumber = 0;
+  /* 每日一牌是单张练习（书《塔罗日记》亦无此步）：那张牌本身就是今天的全部，不再叠一张心态牌 */
+  if (state.dailyMode) { setTimeout(() => { if (gen === cutGen) showSpread(); }, 80); return; }
+  const optional = SPREADS[state.spreadKey].positions.length < 2; /* 只有一个位置时切牌是锦上添花 → 可不切；多张阵保留亲手环节 */
   const layer = document.createElement("div");
   layer.className = "cut-layer";
   layer.innerHTML = `
-    <div class="cut-deck" role="button" tabindex="0" aria-label="轻触牌叠切牌">
+    <div class="cut-deck" aria-hidden="true">
       <div class="tcard cut-stack"><div class="face back"><span class="sigil">✶</span></div></div>
     </div>
-    <div class="cut-hint">轻触牌叠 · 切出你的「心态牌」</div>
+    <div class="cut-hint">你切多厚，就拿起多厚一叠 · 那一叠最底的一张是你的切牌</div>
+    <div class="cut-ask">
+      <input id="cut-thick" class="cut-num" type="text" inputmode="numeric" maxlength="2" placeholder="1–78" aria-label="切牌厚度：1 到 78 之间的整数">
+      <button class="btn" id="btn-cut" type="button" disabled>切 下 这 一 刀</button>
+      ${optional ? '<button class="btn ghost" id="btn-cut-skip" type="button">这次不切</button>' : ''}
+    </div>
     <div class="cut-result"></div>`;
   arena.appendChild(layer);
+  const inp = layer.querySelector("#cut-thick"), btn = layer.querySelector("#btn-cut");
+  const valid = () => /^\d+$/.test(inp.value) && +inp.value >= 1 && +inp.value <= 78;
+  inp.addEventListener("input", () => {
+    const v = inp.value.replace(/[^0-9]/g, "").slice(0, 2); if (v !== inp.value) inp.value = v;
+    btn.disabled = !valid();
+    const deckEl = layer.querySelector(".cut-deck");
+    if (deckEl) deckEl.style.transform = valid() ? `translateY(${-Math.min(+inp.value, 78) * 0.5}px)` : "";
+  });
+  const finish = (leaveMs) => {
+    layer.style.transition = "opacity .5s"; layer.style.opacity = "0";
+    setTimeout(() => { if (gen !== cutGen) return; layer.remove(); showSpread(); }, leaveMs + 520);
+  };
   const cut = () => {
-    if (layer.dataset.done) return;
+    if (layer.dataset.done || !valid()) return;
     layer.dataset.done = "1";
-    /* 切牌由本局 seed 派生（可随印记复现），且不从阵内牌里取（避免与牌阵某张同名） */
-    const cutPool = CARDS.filter(c => !state.markedCards.some(m => m.card === c));
-    const cutRng = mulberry32((state.seed ^ 0x9e3779b9) >>> 0);
-    const card = (state.seed ? cutPool[Math.floor(cutRng() * cutPool.length)] : null) || cutPool[Math.floor(Math.random() * cutPool.length)] || CARDS[0];
+    const k = Math.min(Math.max(+inp.value, 1), state.deck.length);
+    state.cutNumber = k;
+    const card = state.deck[k - 1]; /* 你切起 k 厚 → 那一叠最底一张＝从牌堆顶数第 k 张 */
+    if (!card) { finish(0); return; }
     state.cutCard = card;
+    btn.disabled = true; inp.disabled = true;
     const el = makeCardEl(card, false);
     el.classList.add("cut-flip");
     layer.querySelector(".cut-deck").replaceWith(el);
@@ -2756,21 +2796,23 @@ function showCutStep() {
       el.classList.add("flipped");
       setTimeout(() => {
         if (gen !== cutGen || !layer.isConnected) return;
+        const alsoIn = state.draws.find(d => d.card === card) || state.markedCards.find(m => m.card === card);
         layer.querySelector(".cut-result").innerHTML =
-          `<b>${card.name}</b> — ${card.upright.keywords.slice(0, 2).join(" · ")}<br><span style="font-size:11px;color:var(--ink-faint)">这张切牌映照你此刻的心态</span>`;
+          `<b>${card.name}</b> — ${card.upright.keywords.slice(0, 2).join(" · ")}<br>` +
+          `<span style="font-size:11px;color:var(--ink-faint)">你切在 ${k} 厚 · 这张映照你走进这一局时的姿态</span>` +
+          (alsoIn ? `<br><span style="font-size:11.5px;color:var(--gold-hi)">它同时也在阵里出现了——同一张牌被翻两次，传统上读作"这件事的分量很重"</span>` : "");
       }, 450);
     }, 250);
-    setTimeout(() => {
-      if (gen !== cutGen || !layer.isConnected) return;
-      layer.style.transition = "opacity .5s"; layer.style.opacity = "0";
-      setTimeout(() => {
-        if (gen !== cutGen) return;
-        layer.remove(); showSpread();
-      }, 520);
-    }, 2600);
+    finish(2600);
   };
-  layer.querySelector(".cut-deck").addEventListener("click", cut);
-  layer.querySelector(".cut-deck").addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); cut(); } });
+  btn.addEventListener("click", cut);
+  inp.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); cut(); } });
+  layer.querySelector("#btn-cut-skip")?.addEventListener("click", () => {
+    if (layer.dataset.done) return;
+    layer.dataset.done = "1"; state.cutCard = null; state.cutNumber = 0;
+    finish(120);
+  });
+  setTimeout(() => { try { inp.focus(); } catch (e) {} }, 120);
 }
 function showSpread() {
   /* 全副 78 张牌背铺成牌桌，每个数字标记一张牌（不同序号颜色） */
@@ -3642,11 +3684,20 @@ function renderSynthesisRule() {
 }
 function escapeHtml(s) { return escHtml(s); }
 
-/* 切牌（心态牌）：meta 行可点击查看 + 综合解读开头关联一句 */
+/* 切牌（心态牌）：meta 行可点击查看 + 综合解读里与「建议/对策」位合参 */
+function cutPartnerDraw() {
+  try { return state.draws.find(d => d && d.pos && /建议|对策|行动|出口|结果|该做|怎么做/.test(d.pos.n || "")) || null; }
+  catch (e) { return null; }
+}
 function cutLine() {
-  if (!state.cutCard) return "";
-  const kw = state.cutCard.upright.keywords.slice(0, 2).join(" · ");
-  return `<div class="syn-block"><div class="sb-label">心 态 底 色 · 切 牌</div><p>开牌前你切到了「${state.cutCard.name}」（${kw}）——这是你走进这次解读时的心态。若它说中了现在的你，下面的指引会更贴合；若完全不像，也许你比自己以为的，已经走远了一步。</p></div>`;
+  const c = state.cutCard;
+  if (!c) return "";
+  const kw = c.upright.keywords.slice(0, 2).join(" · ");
+  const p = cutPartnerDraw();
+  const rel = p ? `它要和「${escHtml(p.pos.n)}·${escHtml(p.card.name)}」对着读：牌面把路指到这里，而${escHtml(c.name)}说的是你此刻有没有心力走这条路——接得住就照做，接不住就先承认卡在哪一半，别怪牌不给力。`
+    : `它不占牌阵位置，只作背景：先看清自己带着什么状态来问，后面的指引才知道该往哪儿使劲。`;
+  const dup = state.draws.some(d => d.card === c) || state.markedCards.some(m => m.card === c);
+  return `<div class="syn-block"><div class="sb-label">心 态 底 色 · 切 牌</div><p>你切在 ${state.cutNumber || "?"} 厚，那一叠最底一张是「${escHtml(c.name)}」（${kw}）——这是你走进这一局时的姿态。${rel}${dup ? `<br><span class="cut-dup">它也出现在阵里：同一张牌被翻两次，传统上读作这件事此刻的分量很重。</span>` : ""}<br><span style="font-size:12px;color:var(--ink-faint)">若它不像现在的你，就当作不符合——跳过这句，别硬套。</span></p></div>`;
 }
 function openCutDeep() {
   const c = state.cutCard;
@@ -3658,7 +3709,8 @@ function openCutDeep() {
     <div class="m-en">${c.englishName} · 你此刻的心态底色</div>
     <div class="m-row"><div class="m-label">关 键 词</div><p>${c.upright.keywords.join(" / ")}</p></div>
     <div class="m-row"><div class="m-label">牌 面 之 言</div><p>${c.upright.meaning}</p></div>
-    <div class="m-row"><div class="m-label">为 什 么 重 要</div><p>切牌映照你问这个问题时的心态——牌阵是同一副，但带着不同的心态去行动，走向也会不同。先确认这张牌说的状态像不像现在的你，再往下读指引。</p></div>`);
+    <div class="m-row"><div class="m-label">为 什 么 重 要</div><p>切牌映照你问这个问题时的心态——牌阵是同一副，但带着不同的心态去行动，走向也会不同。它不占牌阵位置，也不参与牌阵内部的比例判断，只和「建议/对策」那张对着读：先看这个姿态接不接得住牌面给的路。先确认这张牌说的状态像不像现在的你，再往下读指引。</p></div>
+    <div class="m-row"><div class="m-label">这 一 刀 怎 么 来 的</div><p>由你亲手切下：你报了 <b>${state.cutNumber || "?"}</b> 的厚度，取那一叠最底的一张——也就是从洗好的牌堆顶上数第 ${state.cutNumber || "?"} 张。系统不替你选，点一下牌堆不算数。</p></div>`);
 }
 
 /* 深读弹窗 */
@@ -3899,6 +3951,7 @@ async function buildShareCard() {
   const _q = state.question;
   const _spreadName = (SPREADS[state.spreadKey] || {}).name || "";
   const snap = state.shareSnapshot;
+  const _cut = state.cutCard, _cutK = state.cutNumber; /* 切牌同样走快照：绘制含 await，防新局改写 state */
   const hasRead = !!(snap && (((snap.conclusion || "").trim()) || ((snap.judgment || "").trim())));
   /* 布局预计算（移动端目检修复）：>6 牌自动双行防牌名重叠；画布高度随行数与解读区动态伸缩 */
   const n = _draws.length;
@@ -3951,6 +4004,10 @@ async function buildShareCard() {
   /* 牌阵名 */
   ctx.fillStyle = "#c9a86a"; ctx.font = `26px ${SANS}`;
   ctx.fillText(`——「${_spreadName}」——`, CX, 436);
+  if (_cut) { /* 问者亲手切的切牌（不占阵位）→ 分享卡上也留一行来历 */
+    ctx.fillStyle = "#9c9482"; ctx.font = `22px ${SANS}`;
+    ctx.fillText(`心态底色 · 切牌：${_cut.name}${_cutK ? `（你切在 ${_cutK} 厚）` : ""}`, CX, 484);
+  }
   /* 牌缩略图 + 牌名（>6 牌双行，行内居中） */
   const rowY = 520;
   for (let i = 0; i < n; i++) {
@@ -4157,7 +4214,8 @@ function saveHistory() {
       t: now, q: state.question, n: state.number, sp: state.spreadKey, seed: state.seed,
       dm: !!state.dailyMode, /* 记录本次是否「今日一牌」，回看时据此还原模式（运势卡/打卡/竖版分享图） */
       d: state.draws.map(x => ({ id: x.card.id, r: x.reversed })), e: (state.shareSnapshot && state.shareSnapshot.energy) || energyWord(),
-      c: state.cutCard ? state.cutCard.id : null /* 切牌（心态牌）也要入档：否则回看时"心态底色"整块凭空消失 */
+      c: state.cutCard ? state.cutCard.id : null, /* 切牌（心态牌）也要入档：否则回看时"心态底色"整块凭空消失 */
+      ck: state.cutNumber || null /* 你切下的厚度：切牌来历可核对（第 ck 张＝那一叠最底一张） */
     };
     state.lastHistT = now;
     mutateHistory((h) => {
@@ -4373,6 +4431,7 @@ function restoreReading(rec) {
     : !!rec.dm;
   state.readingDate = rec.t || Date.now();
   state.cutCard = rec.c ? (cardById[rec.c] || null) : null; /* 切牌入档后回看才能还原"心态底色"；老记录无 c → 与从前一致 */
+  state.cutNumber = (+rec.ck > 0) ? Math.floor(+rec.ck) : 0; /* 那一刀的厚度一起还原；老记录无 ck → 置 0，文案显示"?"不编造 */
   state.domain = detectDomain(rec.q); state.seed = rec.seed || 0; state.spreadManual = true;
   const positions = SPREADS[rec.sp].positions;
   state.draws = rec.d.map((x, i) => ({ pos: positions[i] || positions[positions.length - 1], card: cardById[x.id], reversed: !!x.r })).filter(d => d.card);
