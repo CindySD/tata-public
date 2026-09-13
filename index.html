@@ -2430,14 +2430,15 @@ const CIRCLED = "①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮"; /* 徽章序号
 const MK_COLORS = ["#e8c46a", "#7cb8c9", "#c97ca8", "#9ac97c", "#c97c7c", "#c9a47c", "#8d7cc9", "#7cc9bd", "#c9c47c", "#b08ac9"];
 function markColor(order) { return MK_COLORS[order % MK_COLORS.length]; }
 function markLabel(order) { return CIRCLED[order] || String(order + 1); }
-/* P2·今日牌色 accent：22 张大牌各有主调（小牌退到花色色），只染点缀位（封面条/运势卡/分享图饰线），不是全站换肤 */
+/* P2·今日牌色 accent：22 张大牌各有主调（小牌退到花色色），只染点缀位（封面条/运势卡/分享图饰线），不是全站换肤。
+   ⚠ id 按站内 RWS 现代序：力量=major-08、倒吊人=12、死神=13、高塔=16、星星=17、审判=20（线上看图抓过按黄金黎明序错位一次的坑） */
 const MAJOR_ACCENTS = {
   "major-00": "#8fd6c0", "major-01": "#e0b96a", "major-02": "#7fa8d9", "major-03": "#d98fb4",
   "major-04": "#c98a5a", "major-05": "#b9a3d9", "major-06": "#e8c96a", "major-07": "#d96f5a",
   "major-08": "#c9a86a", "major-09": "#9ac4e8", "major-10": "#a3b8d9", "major-11": "#d9b06f",
-  "major-12": "#9d8fd9", "major-13": "#e8e0c8", "major-14": "#d9d07c", "major-15": "#d97c9d",
-  "major-16": "#8fb8d9", "major-17": "#d95a5a", "major-18": "#e0c24f", "major-19": "#7cd9b0",
-  "major-20": "#c98fd9", "major-21": "#e8d5a3"
+  "major-12": "#7c9ac9", "major-13": "#cfc4d6", "major-14": "#d9d07c", "major-15": "#d97c9d",
+  "major-16": "#d95a5a", "major-17": "#7fd9c8", "major-18": "#9d8fd9", "major-19": "#e8b84f",
+  "major-20": "#d98f6f", "major-21": "#7cd9b0"
 };
 const SUIT_ACCENTS = { "权杖": "#d98a5a", "圣杯": "#6fa8dc", "宝剑": "#b8c4d6", "星币": "#c9a86a", "大阿卡纳": "" };
 function accentForCard(card) {
