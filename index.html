@@ -3668,6 +3668,16 @@ function polishReading(d) {
   const da = (typeof directAnswer === "function") ? directAnswer() : "";
   if (da && (!c0 || c0.length < 14 || HEDGE_RE.test(cProbe) || !VERDICT_RE.test(cProbe))) d.conclusion = da;
   else if (!c0) d.conclusion = da;
+  /* (2b) P3：有立场、没期限的"伪判断"（如"需要更多时间看清全貌"）→ 确定性补时间锚。
+     期限存在，用户才可能回来打"应验/没应验"——回访与「时间的镜子」闭环靠它。
+     锚由印记派生（同局同句，回放/分享快照一致）；补入句自带时间词 → 缓存回放重跑 polish 幂等不叠句。 */
+  const cNow = typeof d.conclusion === "string" ? d.conclusion.trim() : "";
+  const cProbe2 = cNow.replace(/「[^」]*」/g, "");
+  const HAS_TIME = /(今晚|今天|明天|后天|本周|这周|周内|一周内|这个月|一个月内|\d+\s*(小时|天|周|个月)|睡前|周末|之前|之内|死线|期限)/;
+  if (cNow.length >= 14 && VERDICT_RE.test(cProbe2) && !HEDGE_RE.test(cProbe2) && !HAS_TIME.test(cProbe2)) {
+    const ANCHORS = ["今晚睡前", "明天中午之前", "48 小时之内", "本周五之前", "这周末之前"];
+    d.conclusion = cNow + `（给自己定个限：${ANCHORS[(state.seed >>> 3) % ANCHORS.length]}，到时候回来看这句还成不成立。）`;
+  }
   /* (3) 反谄媚张力兜底：AI 若顺着用户期待说好话、tension 缺失或过短，规则引擎强制补一个"不顺着期待"的观察点（锚定牌，不写预言/读心） */
   if (!d.synthesis || typeof d.synthesis !== "object") d.synthesis = {};
   const tn = typeof d.synthesis.tension === "string" ? d.synthesis.tension.trim() : "";
