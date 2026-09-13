@@ -589,14 +589,11 @@ footer .gold{color:var(--gold)}
 
 /* Bunning 行动指引 + 牌阵联动 */
 .rc-actions{margin-top:16px;font-size:13px;color:var(--gold-hi);background:rgba(201,168,106,.06);border:1px solid var(--gold-faint);border-radius:10px;padding:10px 14px;letter-spacing:.04em;line-height:1.9}
-.links-block{margin-top:26px;border:1px solid var(--gold-dim);border-radius:14px;padding:20px 24px;background:rgba(201,168,106,.03)}
-.link-line{display:flex;align-items:center;gap:10px;font-size:13.5px;padding:7px 0;border-bottom:1px solid rgba(201,168,106,.08)}
-.link-line:last-of-type{border-bottom:none}
-.link-line .l-icon{flex:none}
-.link-line .l-label{color:var(--gold);letter-spacing:.15em;flex:none}
-.link-line .l-pair{color:var(--ink);letter-spacing:.04em}
-
-.link-sub{font-size:12px;color:var(--ink-dim);padding:2px 0 8px 30px;letter-spacing:.03em;line-height:1.8}
+.links-block{margin-top:22px;border-left:2px solid var(--gold-dim);border-radius:0 12px 12px 0;padding:14px 20px;background:rgba(201,168,106,.04)}
+.links-insight{display:flex;gap:12px;align-items:flex-start;font-size:13.5px;line-height:1.95;letter-spacing:.03em}
+.links-insight .li-label{color:var(--gold);letter-spacing:.12em;flex:none;white-space:nowrap}
+.links-insight .li-text{color:var(--ink)}
+.timing-pace{font-size:13.5px;color:var(--gold-hi);line-height:1.95;letter-spacing:.03em}
 
 /* 反馈入口 */
 .footer-feedback{display:inline-block;margin-top:14px;color:var(--gold);text-decoration:none;letter-spacing:.12em;font-size:13px;
@@ -4122,76 +4119,52 @@ function renderReadingNav() {
   setActive();
 }
 
-/* ---------- Bunning 配对：牌阵联动（对冲/共振） ---------- */
+/* ---------- 方案D：牌阵联动降级为"一句话洞察"（绑定牌位、去掉来源编号与图例） ----------
+   引擎（analyzeRelations / CARD_PAIRS / COMBOS）不变，仍供 AI prompt 注入；这里只改呈现层：
+   取优先级最高的一组关系（Bunning 对冲/共振 > 经典组合 > 泛化），翻成一句人话。 */
+/* 纯逻辑：按优先级给出一句联动人话（绑定牌位）；无有效关系返回 "" */
+function linksInsightLine(draws, spread) {
+  const names = (draws || []).map(d => d && d.card && d.card.name).filter(Boolean);
+  if (names.length < 2) return "";
+  const posName = (i) => (spread && spread.positions && spread.positions[i] && spread.positions[i].n) || ("第" + (i + 1) + "张");
+  const idxOf = (n) => names.indexOf(n);
+  const REL = (typeof CARD_PAIRS !== "undefined" && CARD_PAIRS) ? CARD_PAIRS : { opposite: [], reinforce: [] };
+  const findPair = (list) => (list || []).find(p => Array.isArray(p) && p.length >= 2 && names.includes(p[0]) && names.includes(p[1]));
+  let insight = "";
+  const opp = findPair(REL.opposite), rei = findPair(REL.reinforce);
+  if (opp) {
+    const a = opp[0], b = opp[1];
+    insight = "「" + posName(idxOf(a)) + "」的" + a + " 与「" + posName(idxOf(b)) + "」的" + b + " 在互相较劲——这正是这件事里的矛盾点，两张要一起看，别只盯一张。";
+  } else if (rei) {
+    const a = rei[0], b = rei[1];
+    insight = "「" + posName(idxOf(a)) + "」的" + a + " 与「" + posName(idxOf(b)) + "」的" + b + " 其实在说同一件事——这个信号被反复强调，值得当真。";
+  }
+  if (!insight && typeof COMBOS !== "undefined" && Array.isArray(COMBOS)) {
+    const c = COMBOS.find(x => Array.isArray(x) && names.includes(x[0]) && names.includes(x[1]));
+    if (c) insight = "「" + posName(idxOf(c[0])) + "」的" + c[0] + " 与「" + posName(idxOf(c[1])) + "」的" + c[1] + "：" + String(c[2]).replace(/^[^：]*：/, "");
+  }
+  if (!insight && typeof analyzeRelations === "function") {
+    try {
+      const rel = analyzeRelations(draws, typeof COMBOS !== "undefined" ? COMBOS : null);
+      const p = (rel.pairs || [])[0];
+      if (p) {
+        const REL_HUMAN = { "转折": "两股能量碰头，事情在这里容易拐个弯", "递进": "前后衔接，方向在往前推进", "对话": "像在一唱一和，得放在一起读", "因果": "一张推着一张，前后有关联" };
+        const clean = String(p.note || "").replace(/（含逆位[^）]*）/, "").replace(/^[^：]*：/, "").trim();
+        insight = "「" + posName(idxOf(p.a)) + "」的" + p.a + " 与「" + posName(idxOf(p.b)) + "」的" + p.b + "：" + (REL_HUMAN[p.rel] || "彼此呼应") + (clean ? "——" + clean : "");
+      }
+    } catch (e) { /* 引擎异常：不产出联动行 */ }
+  }
+  return insight;
+}
 function renderLinks() {
   document.querySelectorAll(".links-block").forEach(b => b.remove());
   const synEl = document.getElementById("synthesis");
   if (!synEl || state.draws.length < 2) return;
-  const names = state.draws.map(d => d.card.name);
-  const lines = [];
-  const REL = (typeof CARD_PAIRS !== "undefined" && CARD_PAIRS) ? CARD_PAIRS : { opposite: [], reinforce: [] };
-  const check = (list, icon, label, note) => {
-    for (const pair of (list || [])) {
-      if (!Array.isArray(pair) || pair.length < 2) continue;
-      const [a, b] = pair;
-      if (names.includes(a) && names.includes(b)) {
-        lines.push(`<div class="link-line"><span class="l-icon">${icon}</span><span class="l-label">${label}</span><span class="l-pair">${a} ↔ ${b}</span></div>`);
-      }
-    }
-  };
-  check(REL.opposite, "⚖", "对冲", "");
-  check(REL.reinforce, "✦", "共振", "");
-  /* 宫廷牌同现：按 Bunning 宫廷配对系统做组合解读（元素×角色元数据） */
-  const SUIT_META = { "权杖": ["火", "行动与创造"], "圣杯": ["水", "情感与人际"], "宝剑": ["风", "思考与冲突"], "星币": ["土", "物质与现实"] };
-  const RANK_META = { "国王": "成熟的掌控者", "王后": "成熟的照顾者·内在面", "骑士": "冲劲十足的青年行动派", "侍从": "学习探索的孩童·信使" };
-  const elFlow = (a, b) => {
-    if (a === b) return "性质加强";
-    const FLOW = { "火|风": "相生·情况改善", "风|火": "相生·情况改善", "水|土": "相生·情况改善", "土|水": "相生·情况改善", "火|水": "相克·易生拉扯", "水|火": "相克·易生拉扯", "风|土": "相克·易生拉扯", "土|风": "相克·易生拉扯", "火|土": "需落地·有能量缺执行", "土|火": "需落地·有能量缺执行", "水|风": "情绪化思考·先分清感受与事实", "风|水": "情绪化思考·先分清感受与事实" }; /* R5：补齐 火土/土火/水风/风水，与牌阵联动 REL_A3 判定对齐，避免同屏两种说法 */
-    return FLOW[a + "|" + b] || "性质并立·维持现状";
-  };
-  const courts = names.filter(n => /侍从|骑士|王后|国王/.test(n));
-  const courtShown = new Set(); /* P0.1：已展示宫廷对，🧭 行据此去重 */
-  const pairKey = (a, b) => (a < b ? a + "|" + b : b + "|" + a);
-  if (courts.length >= 2) {
-    let combos = 0;
-    for (let i = 0; i < courts.length && combos < 2; i++) {
-      for (let j = i + 1; j < courts.length && combos < 2; j++) {
-        const A = courts[i], B = courts[j];
-        const suitA = Object.keys(SUIT_META).find(s2 => A.includes(s2));
-        const suitB = Object.keys(SUIT_META).find(s2 => B.includes(s2));
-        const rankA = Object.keys(RANK_META).find(r => A.includes(r));
-        const rankB = Object.keys(RANK_META).find(r => B.includes(r));
-        if (!suitA || !suitB || !rankA || !rankB) continue;
-        const flow = elFlow(SUIT_META[suitA][0], SUIT_META[suitB][0]);
-        const note = suitA === suitB
-          ? "同一元素（" + SUIT_META[suitA][0] + "·" + SUIT_META[suitA][1] + "）的两个阶段：" + RANK_META[rankA] + " 与 " + RANK_META[rankB] + "——课题是该以哪种成熟度行事"
-          : "不同元素同台（" + flow + "）：" + RANK_META[rankA] + "（" + suitA + "）与 " + RANK_META[rankB] + "（" + suitB + "）——留意谁主导、谁被影响";
-        lines.push('<div class="link-line"><span class="l-icon">👥</span><span class="l-label">宫廷组合</span><span class="l-pair">' + A + " ↔ " + B + '</span></div><div class="link-sub">' + note + "</div>");
-        courtShown.add(pairKey(A, B));
-        combos++;
-      }
-    }
-    if (combos === 0) {
-      lines.push('<div class="link-line"><span class="l-icon">👥</span><span class="l-label">宫廷同现</span><span class="l-pair">' + courts.join(" ↔ ") + "</span></div>");
-      for (let i = 0; i < courts.length; i++) for (let j = i + 1; j < courts.length; j++) courtShown.add(pairKey(courts[i], courts[j]));
-    }
-  }
-  /* P0-A：相邻牌泛化关系（Bunning 静态表与 👥 宫廷组合已展示的对跳过，避免同对重复出现） */
-  try {
-    if (typeof analyzeRelations === "function") {
-      const rel = analyzeRelations(state.draws, typeof COMBOS !== "undefined" ? COMBOS : null);
-      rel.pairs.filter(p => p.src.indexOf("Bunning") !== 0 && !courtShown.has(pairKey(p.a, p.b))).forEach(p => {
-        lines.push('<div class="link-line"><span class="l-icon">🧭</span><span class="l-label">' + p.rel + '</span><span class="l-pair">' + p.a + " ↔ " + p.b + '</span></div><div class="link-sub">' + p.src + "｜" + p.note + "</div>");
-      });
-    }
-  } catch (e) { /* 泛化引擎异常：维持原联动区块 */ }
-  if (!lines.length) return;
+  const insight = linksInsightLine(state.draws, SPREADS[state.spreadKey]);
+  if (!insight) return;
   const block = document.createElement("div");
   block.className = "links-block";
-  block.innerHTML = `
-    <div class="tb-title">🔗 牌阵联动</div>
-    ${lines.join("")}
-    <p class="tb-note">⚖ 对冲 / ✦ 共振＝Bunning 配对法；🧭 ＝相邻两牌的泛化关系（愚人之旅·数字旅程·元素尊严·镜像·宫廷事件）。</p>`;
+  block.innerHTML = '<div class="links-insight"><span class="li-label">🔗 牌面呼应</span><span class="li-text">' + escHtml(insight) + "</span></div>";
   synEl.parentNode.insertBefore(block, synEl.nextSibling);
 }
 
@@ -4236,25 +4209,66 @@ function timingFor(name) {
   if (ace) return TIMING_ACE[ace] + "——具体时机需看后续发展牌";
   return null;
 }
+/* ---------- 方案A：应期从"预测日历日期"改为"节奏感"，锚定占卜日；方案B：只对"问时间"的问题显示 ----------
+   依据：《塔罗葵花宝典》应期五法 + 西方主流共识"timing 描述动量不是日期"（花色定快慢、数字给量级、
+   宫廷=人非时间线、大牌=篇章非事件、逆位减速）。旧的固定日历窗口（如 1/10–1/19）不锚定当下、
+   对是非题也照贴，属"伪精确"，已从解读页废弃。TIMING_* 表仍保留给「今日一牌·传统对应时段」(fortuneModel)。 */
+const PACE_SUIT = {
+  "权杖": { tier: 0, lo: 3,  hi: 21,  desc: "火元素，行动一起步就有动静" },
+  "宝剑": { tier: 1, lo: 14, hi: 60,  desc: "风元素，随厘清与对话推进" },
+  "圣杯": { tier: 1, lo: 21, hi: 90,  desc: "水元素，关系与感受慢慢化开" },
+  "星币": { tier: 2, lo: 45, hi: 180, desc: "土元素，现实层面的改变急不来" }
+};
+/* 方案B：应期只对"问时间"的问题有意义；是非题/对策题/每日一牌贴时间表反而误导 */
+const TIMING_Q_RE = /(什么时候|何时|几时|啥时候|多久|多长时间|来得及|赶得上|要等多久|等多久|还要等多久|哪一天|哪天|时机|今年|明年|后年|这个月|下个月|这周|下周|半年内|一年内|月内|周内)/;
+function timingRelevant() {
+  if (state.dailyMode) return false;
+  const q = (state.question || "").trim();
+  return !!q && TIMING_Q_RE.test(q);
+}
+function _fmtMD(ts) { const d = new Date(ts); return (d.getMonth() + 1) + "月" + d.getDate() + "日"; }
+/* 纯逻辑：把一组牌算成一句"节奏感"应期（锚定 base 起算）；无可谈时机的牌返回 ""（诚实隐藏） */
+function timingPaceLine(draws, base) {
+  let tiers = [], lo = Infinity, hi = 0, majors = 0, courts = 0, revs = 0;
+  (draws || []).forEach(d => {
+    if (!d || !d.card) return;
+    const n = d.card.name, major = d.card.group === "major", court = /侍从|骑士|王后|国王/.test(n);
+    if (d.reversed) revs++;
+    if (major) { majors++; return; }
+    if (court) { courts++; return; }
+    const s = PACE_SUIT[d.card.suitName];
+    if (s) { tiers.push(s.tier); lo = Math.min(lo, s.lo); hi = Math.max(hi, s.hi); }
+  });
+  if (!tiers.length && !majors && !courts) return ""; /* 无可谈时机的牌：诚实隐藏，不硬凑 */
+  const avg = tiers.length ? tiers.reduce((a, b) => a + b, 0) / tiers.length : 2;
+  const tierWord = avg < 0.5 ? "偏快" : avg < 1.5 ? "节奏适中" : "偏慢";
+  const slow = revs > 0;
+  const hiAdj = slow ? Math.round(hi * 1.6) : hi;
+  const parts = [];
+  if (tiers.length) {
+    const fromTs = base + lo * 864e5, toTs = base + hiAdj * 864e5;
+    parts.push("这组牌整体" + tierWord + "——以今天（" + _fmtMD(base) + "）起算，大致落在 " + _fmtMD(fromTs) + " 前后到 " + _fmtMD(toTs) + " 之间。");
+  } else {
+    parts.push("这局里没有以“日期”论的牌，时机不落在具体某一天。");
+  }
+  if (majors) parts.push((majors === 1 ? "有一张" : "有" + majors + "张") + "大阿卡纳，说的是人生篇章的转向，本就急不来、也不看日历。");
+  if (courts) parts.push("宫廷牌更多指向“相关的人什么时候出手”，节奏取决于人，不取决于钟。");
+  if (slow) parts.push((revs === 1 ? "有一张" : "有" + revs + "张") + "逆位，提示中间会有拖延或要先解开的结，实际可能比上面再往后一些。");
+  return parts.join(" ");
+}
 function renderTiming() {
   document.querySelectorAll(".timing-block").forEach(b => b.remove());
   const synEl = document.getElementById("synthesis");
   if (!synEl || !state.draws.length) return;
-  const usable = state.draws.filter(d => timingFor(d.card.name));
-  /* 全部牌都无传统时间对应：整块隐藏，避免零信息区块 */
-  if (!usable.length) return;
-  const lines = usable.map(d => {
-    const t = timingFor(d.card.name);
-    return `<div class="timing-line"><span class="t-card">${d.card.name}${d.reversed ? "（逆）" : ""}</span><span class="t-time">${t}</span></div>`;
-  });
+  if (!timingRelevant()) return; /* 方案B 门控：非时间类问题不出应期块 */
+  const line = timingPaceLine(state.draws, state.readingDate || Date.now());
+  if (!line) return;
   const block = document.createElement("div");
   block.className = "timing-block";
-  block.innerHTML = `
-    <div class="tb-title">⏳ 应期参考</div>
-    ${lines.join("")}
-    <p class="tb-note">应期出自传统时间对应法，仅按牌面推演大致区间——时机终究操之在己，不是注定。</p>`;
+  block.innerHTML = '<div class="tb-title">⏳ 应期参考</div><div class="timing-pace">' + escHtml(line) + '</div><p class="tb-note">应期谈的是节奏不是判决——时机终究操之在己，不是注定。</p>';
   synEl.parentNode.insertBefore(block, synEl.nextSibling);
 }
+
 /* ---------- 今日一牌·今日运势卡（多面分项 + 派生幸运；DOM 与分享图共用 fortuneModel，无重复逻辑，无星级/无健康断言） ---------- */
 const FORTUNE_SUIT = {
   "权杖": { colors: ["红色", "橙色"], dir: "南方", el: "火" },
