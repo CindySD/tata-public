@@ -4876,7 +4876,7 @@ async function buildShareCard() {
 /* 今日一牌·4:5 竖版紧凑分享（社媒信息流友好）；与通用动态长图分开，避免把富信息版硬塞进 1350 高而截断 */
 async function buildDailyShareCard(kind) {
   /* 三规格并存、同一快照数据源：full=4:5 竖版（默认，行为与旧版逐字一致）；mini=3:4 小红书向；story=9:16 大字状态/快拍向 */
-  const V = kind === "mini" ? { H: 1440, grow: false, rows: false, lucky: false, orn: true, en: true, cw: 330 }
+  const V = kind === "mini" ? { H: 1440, grow: false, rows: false, lucky: true, orn: true, en: true, cw: 330 }
     : kind === "story" ? { H: 1920, grow: false, rows: false, lucky: false, orn: false, en: false, cw: 460, big: true }
     : { rows: true, lucky: true, orn: true, en: true };
   const W = 1080; let H = 1350; const CX = W / 2, PADX = 96;
@@ -4969,7 +4969,7 @@ async function buildDailyShareCard(kind) {
   while (M.contentH > H - TOP - D.foot && lineH > 29) { lineH -= 2; rowGap = 12; M = measure(); }  /* ② 压行高 */
   if (M.contentH > H - TOP - D.foot) { tight = true; D = D1; rowGap = 10; M = measure(); }          /* ③ 紧凑模式：装饰块收缩+直觉段专用行高（极端长文才动用） */
   while (M.contentH > H - TOP - D.foot && cw > 208) { cw -= 12; M = measure(); }     /* ④ 主图再降一档 */
-  const gap = Math.max(14, Math.min(V.big ? 90 : 48, Math.floor((H - TOP - D.foot - M.contentH) / (V.big ? 5 : 8))));
+  const gap = Math.max(14, Math.min(V.big ? 90 : V.rows ? 48 : 72, Math.floor((H - TOP - D.foot - M.contentH) / (V.big ? 5 : V.rows ? 8 : 5)))); /* mini 块少：5 个间距点、上限 72，余量摊进块间不留底部死区（full 除数 8/上限 48 原样） */
   const { chh, rowH, cLineH } = M;
   const conclLines = conclLines0();
   const conclH = concl ? CB.padTop + CB.label + conclLines * cLineH + CB.padBot : 0;
@@ -5136,9 +5136,11 @@ async function buildSpreadMiniCard() {
   const n = _draws.length;
   const rowsN = n > 4 ? 2 : 1;
   const perRow = Math.ceil(n / rowsN);
-  let size = Math.min(230, Math.floor((W - PADX * 2 - (perRow - 1) * 24) / perRow));
-  const totalH = () => TOP + 44 + 30 + qLines * 44 + 36 + rowsN * (Math.round(size * 1.72) + 40) + (rowsN - 1) * 16 + (conclH ? conclH + 26 : 0) + 110 + FOOT;
-  while (totalH() > H && size > 118) size -= 12; /* 溢出只缩牌图：文字与金框不动（防紧凑红线同源） */
+  let size = Math.min(300, Math.floor((W - PADX * 2 - (perRow - 1) * 24) / perRow)); /* 3:4 画布高：牌图上限 230→300，先让大图吃掉纵向空间 */
+  const contentH = () => 44 + 30 + qLines * 44 + 36 + rowsN * (Math.round(size * 1.72) + 40) + (rowsN - 1) * 16 + conclH + 60;
+  while (H - FOOT - TOP - contentH() < 72 && size > 118) size -= 12; /* 溢出只缩牌图：文字与金框不动（防紧凑红线同源）；72 = 三段自适应间距×24 的底线 */
+  /* 自适应块距：画布余量均分三段（牌阵行前 / 判词框前 / 能量词前），消除"内容堆顶部、底部大空洞"；钳 24–80 防极端拉伸 */
+  const GAPB = Math.max(24, Math.min(80, Math.floor((H - FOOT - TOP - contentH()) / 3)));
   /* 绘制：顶向下排布，页脚锚底 */
   let y = TOP;
   ctx.textAlign = "center";
@@ -5150,7 +5152,7 @@ async function buildSpreadMiniCard() {
     for (const c2 of `「${_q}」`.split("")) { if (ctx.measureText(cur + c2).width > W - 320) { ctx.fillText(cur, CX, ly); cur = c2; ly += 44; } else cur += c2; }
     if (cur) ctx.fillText(cur, CX, ly); }
   y += qLines * 44;
-  ctx.fillStyle = "#c9a86a"; ctx.font = `24px ${SANS}`; ctx.fillText(`——「${_sp}」——`, CX, y + 24); y += 36;
+  ctx.fillStyle = "#c9a86a"; ctx.font = `24px ${SANS}`; ctx.fillText(`——「${_sp}」——`, CX, y + 24); y += 36 + GAPB;
   /* 牌图行（>4 张双行；每张带金边与逆位徽点 + 下方牌名小字） */
   const imgH = Math.round(size * 1.72);
   for (let i = 0; i < n; i++) {
@@ -5174,10 +5176,14 @@ async function buildSpreadMiniCard() {
     if (d.reversed) { const bx = x + size - 2, by = iy + 16; ctx.fillStyle = "#07070e"; ctx.beginPath(); ctx.arc(bx, by, 15, 0, 7); ctx.fill(); ctx.strokeStyle = "#c9a86a"; ctx.lineWidth = 2; ctx.stroke(); ctx.fillStyle = "#c9a86a"; ctx.font = `17px ${SANS}`; ctx.textBaseline = "middle"; ctx.fillText("逆", bx, by + 1); ctx.textBaseline = "alphabetic"; }
     ctx.fillStyle = "#b8ad93"; ctx.font = `21px ${SANS}`; ctx.fillText(d.card.name + (d.reversed ? "·逆" : ""), x + size / 2, iy + imgH + 30);
   }
-  y += rowsN * (imgH + 40) + (rowsN - 1) * 16;
+  y += rowsN * (imgH + 40) + (rowsN - 1) * 16 + GAPB;
+  /* 饰线分隔：渐变发丝线 + 中央四芒星（同每日一牌列表分隔线手法），衔接牌阵行与判词框 */
+  { const dg = ctx.createLinearGradient(PADX, 0, W - PADX, 0);
+    dg.addColorStop(0, "rgba(201,168,106,0)"); dg.addColorStop(.5, "rgba(201,168,106,.4)"); dg.addColorStop(1, "rgba(201,168,106,0)");
+    ctx.fillStyle = dg; ctx.fillRect(PADX, y - GAPB / 2 - 1, W - PADX * 2, 2);
+    sparkle(CX, y - GAPB / 2, 6, .8); }
   /* 塔塔的直觉：与页面/长图同一句、同款金框（复刻 .conclusion-banner） */
   if (concl) {
-    y += 26;
     const bg = ctx.createLinearGradient(0, y, 0, y + conclH);
     bg.addColorStop(0, "rgba(201,168,106,.14)"); bg.addColorStop(1, "rgba(201,168,106,.03)");
     ctx.fillStyle = bg; rr(PADX, y, CBOXW, conclH, 14); ctx.fill();
@@ -5193,8 +5199,9 @@ async function buildSpreadMiniCard() {
     if (cur) ctx.fillText(cur, PADX + CB.pad + 18, ly);
     ctx.textAlign = "center";
   }
-  /* 能量词：鎏金渐变——紧跟判词流式排布（锚页脚会在少牌阵时留大空洞，看图抓出） */
-  y += concl ? conclH + 40 : 26;
+  /* 能量词：鎏金渐变——流式跟随自适应间距（锚页脚会在少牌阵时留大空洞，看图抓出；先越过判词框全高再推进，量高与绘制同源） */
+  y += (concl ? conclH : 0) + GAPB;
+  y = Math.min(y, H - FOOT - 70);
   const eg = ctx.createLinearGradient(0, y, 0, y + 56);
   eg.addColorStop(0, "#f7edd4"); eg.addColorStop(.5, "#e6cd8f"); eg.addColorStop(1, "#b18e52");
   ctx.save(); ctx.shadowColor = "rgba(201,168,106,.35)"; ctx.shadowBlur = 22;
