@@ -915,6 +915,16 @@ footer::before{
 .reflect-block .rb-memo-row{display:flex;gap:10px;align-items:center;margin-top:6px}
 .reflect-block .rb-memo-st{font-size:11.5px;color:var(--ink-faint)}
 
+/* ---------- ⑳ P2·今日牌色 accent：只染每日一牌相关点缀位（var 缺省回金色——"今日是什么色"由抽出的牌决定，非全站换肤） ---------- */
+.daily-fortune{border-color:var(--tata-accent, var(--gold-dim))}
+.daily-fortune::before{color:var(--tata-accent, var(--gold))}
+.daily-fortune .df-art{border-color:var(--tata-accent, var(--gold-dim))}
+.daily-fortune .df-title,.daily-fortune .df-streak{color:var(--tata-accent, var(--gold))}
+.daily-fortune .df-energy{color:var(--tata-accent, var(--gold));border-color:var(--tata-accent, var(--gold-dim))}
+.daily-fortune .df-item{border-top-color:var(--tata-accent, rgba(201,168,106,.3))}
+.cover-daily-hint.done .cdh-text b{color:var(--tata-accent, var(--gold-hi))}
+.cover-daily-hint.done .cdh-link{border-color:var(--tata-accent, var(--gold-faint))}
+
 </style>
 </head>
 <body>
@@ -1937,6 +1947,19 @@ function readingDataBlocks(question, spreadName, draws) {
     const g = (SPREADS[state.spreadKey] || {}).guide;
     if (g) guide = "\n【牌阵解读主线】" + g;
   } catch (e) { /* 无 guide 的牌阵正常降级 */ }
+  /* P2·愚人之旅三段统计：本局大牌的旅程重心（仅主题素材，供 overview 一句话引用） */
+  let journey = "";
+  try {
+    const nums = draws.map(d => /^major-/.test(String((d.card || {}).id || "")) ? parseInt(String(d.card.id).split("-")[1], 10) : null).filter(x => x !== null);
+    if (nums.length) {
+      const s = [nums.filter(n => n <= 7).length, nums.filter(n => n >= 8 && n <= 14).length, nums.filter(n => n >= 15).length];
+      const N = ["立势（0-7：开始与行动）", "考验（8-14：内心与阴影）", "转化（15-21：收束与整合）"];
+      const mx = Math.max(s[0], s[1], s[2]), dom = s.indexOf(mx);
+      journey = `\n【大牌阶段分布】${N[0]}×${s[0]}｜${N[1]}×${s[1]}｜${N[2]}×${s[2]}` +
+        (mx > 0 ? `——本局重心「${N[dom]}」` : "") +
+        `\n　用途：可作 overview 的一句主题素材；它只是象征分组的计数，不是心理阶段判定，更不是时间表。`;
+    }
+  } catch (e) { /* 统计异常不阻断解读 */ }
   /* 切牌进 AI 输入：过去只在前端贴一段"心态底色"，模型其实从没看过它 → 现在真的喂进去，并当场限定用法 */
   let cutBlk = "";
   try {
@@ -1953,7 +1976,7 @@ function readingDataBlocks(question, spreadName, draws) {
     if (state.anchor) anchorBlk = `\n【问者亲笔底线】“${state.anchor}”\n　用法：这是用户为这个重大决策亲手写下的现实约束——解读必须与之合参（牌面方向和这句话哪里咬合、哪里冲突要讲明白），不得当成新问题重复展开，也不得借此许诺结果。`;
   } catch (e) { /* 无锚点属正常路径 */ }
   const boundsBlk = `\n盘面边界：以上牌面由随机抽得，是象征层的事实描述，不是现实判定——不得按逆位数量或牌号换算概率、成功率或绝对日期；统计与联动只作叙事素材。`;
-  return `当前日期：${dateStr}\n问题：${question}\n牌阵：${spreadName}\n抽到的牌：\n${cardLines}${rel}${guide}${cutBlk}${anchorBlk}${boundsBlk}`;
+  return `当前日期：${dateStr}\n问题：${question}\n牌阵：${spreadName}\n抽到的牌：\n${cardLines}${rel}${guide}${journey}${cutBlk}${anchorBlk}${boundsBlk}`;
 }
 
 async function llmFetch(url, options, timeoutMs) {
@@ -2382,10 +2405,18 @@ const SPREADS = {
       { n: "你的状态", lens: "镜子" }, { n: "环境与他人", lens: "窗户" }, { n: "希望与恐惧", lens: "窗户" }, { n: "最终走向", lens: "门" }],
     reason: "这件事足够复杂，值得一副全景。",
     guide: "十张全景：先读十字（1核心×2挑战的张力），再读时间轴（4根基→5近期过去→6近期未来），最后读竖列（7自我状态→8环境→9希望恐惧→10走向收束）；逐张务必精简（每张≤2句）避免超时，综合段以第10位为落点。", deck: "rws"
+  },
+  seasons: {
+    name: "四季轮转", positions: [
+      { n: "春·萌动", lens: "窗户", suit: "权杖" }, { n: "夏·生长", lens: "窗户", suit: "圣杯" },
+      { n: "秋·收获", lens: "镜子", suit: "宝剑" }, { n: "冬·沉淀", lens: "锚", suit: "星币" },
+      { n: "年·全景", lens: "门", major: true }],
+    reason: "这件事适合放到一整年里看：哪个季节发力、哪个季节收藏、什么在托底。",
+    guide: "主线：春(权杖·行动)→夏(圣杯·情感)→秋(宝剑·思路)→冬(星币·现实) 四时各司其职，第五位大牌是这一年的基调。⚠ 此阵每个位置只从限定花色里抽出——「某花色在别处缺席」不是缺失信号，不要拿它做牌组比例解读；重点讲每个季节里这股能量在忙什么、四季连起来是什么节奏。", deck: "rws"
   }
 };
-const SPREAD_ORDER = ["single", "three_time", "relation", "choice", "action", "celtic"];
-const SPREAD_HINT = { single: "一问一答", three_time: "过去 · 现在 · 未来", relation: "你 · 对方 · 关系", choice: "两条路的对照", action: "现状 · 行动 · 结果", celtic: "十张全景" };
+const SPREAD_ORDER = ["single", "three_time", "relation", "choice", "action", "seasons", "celtic"];
+const SPREAD_HINT = { single: "一问一答", three_time: "过去 · 现在 · 未来", relation: "你 · 对方 · 关系", choice: "两条路的对照", action: "现状 · 行动 · 结果", seasons: "四时各安其位", celtic: "十张全景" };
 /* ============================================================
    ★ 新增牌阵接入说明（2026-09 事故复盘固化）
    只需：① 在 SPREADS 加条目（positions 决定要抽几张）
@@ -2399,6 +2430,68 @@ const CIRCLED = "①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮"; /* 徽章序号
 const MK_COLORS = ["#e8c46a", "#7cb8c9", "#c97ca8", "#9ac97c", "#c97c7c", "#c9a47c", "#8d7cc9", "#7cc9bd", "#c9c47c", "#b08ac9"];
 function markColor(order) { return MK_COLORS[order % MK_COLORS.length]; }
 function markLabel(order) { return CIRCLED[order] || String(order + 1); }
+/* P2·今日牌色 accent：22 张大牌各有主调（小牌退到花色色），只染点缀位（封面条/运势卡/分享图饰线），不是全站换肤 */
+const MAJOR_ACCENTS = {
+  "major-00": "#8fd6c0", "major-01": "#e0b96a", "major-02": "#7fa8d9", "major-03": "#d98fb4",
+  "major-04": "#c98a5a", "major-05": "#b9a3d9", "major-06": "#e8c96a", "major-07": "#d96f5a",
+  "major-08": "#c9a86a", "major-09": "#9ac4e8", "major-10": "#a3b8d9", "major-11": "#d9b06f",
+  "major-12": "#9d8fd9", "major-13": "#e8e0c8", "major-14": "#d9d07c", "major-15": "#d97c9d",
+  "major-16": "#8fb8d9", "major-17": "#d95a5a", "major-18": "#e0c24f", "major-19": "#7cd9b0",
+  "major-20": "#c98fd9", "major-21": "#e8d5a3"
+};
+const SUIT_ACCENTS = { "权杖": "#d98a5a", "圣杯": "#6fa8dc", "宝剑": "#b8c4d6", "星币": "#c9a86a", "大阿卡纳": "" };
+function accentForCard(card) {
+  if (!card) return "";
+  return MAJOR_ACCENTS[card.id] || SUIT_ACCENTS[card.suitName] || "";
+}
+function hexTri(h) { return String(h || "").length === 7 ? [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16)).join(",") : ""; }
+function applyDailyAccent(forCard) {
+  try {
+    /* 审查必修#3：回看旧每日一牌时传入本局牌——点缀色跟着"你在看的这一局"走；不传参（封面）才读当日锁 */
+    const lock = forCard ? null : dailyLockedToday();
+    const hex = accentForCard(forCard || (lock && cardById[lock.id]));
+    if (hex) document.documentElement.style.setProperty("--tata-accent", hex);
+    else document.documentElement.style.removeProperty("--tata-accent");
+  } catch (e) { /* 无痕存储下静默走金色默认 */ }
+}
+/* P2·可复现洗牌与限定牌池抽取：buildDraws 与「这局怎么发出来的」事实面板共用同一实现（单一真源，防两处漂移） */
+function shuffleDeck(seed) {
+  const rng = mulberry32(seed >>> 0);
+  const deck = CARDS.slice();
+  for (let i = deck.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    [deck[i], deck[j]] = [deck[j], deck[i]];
+  }
+  const deckRev = deck.map(() => rng() < REVERSED_CHANCE);
+  deck.forEach((c, i) => { c.__deckIdx = i; }); /* 把"洗牌既定序号"钉在牌上：查 deckRev 用它，别用活数组 indexOf（splice 后会整体左移） */
+  return { deck, deckRev };
+}
+function poolFor(deck, pos) {
+  if (pos && pos.suit) return deck.map((c, ix) => (c.suitName === pos.suit ? ix : -1)).filter(ix => ix >= 0);
+  if (pos && pos.major) return deck.map((c, ix) => (c.group === "major" ? ix : -1)).filter(ix => ix >= 0);
+  return deck.map((c, ix) => ix);
+}
+function pickMarked(deck, numbers, spreadKey) {
+  const positions = (SPREADS[spreadKey] || {}).positions || [];
+  const marked = [], picks = [], used = new Set();
+  for (let i = 0; i < numbers.length; i++) {
+    const pos = positions[i] || {};
+    const pool = poolFor(deck, pos);
+    const num = Math.min(Math.max(numbers[i] || 1, 1), 78);
+    let k = (num - 1) % pool.length, guard = 0;
+    while (used.has(pool[k]) && guard++ < pool.length) k = (k + 1) % pool.length; /* 池内撞车确定性顺延（限定池才可能触发） */
+    const idx = pool[k];
+    used.add(idx);
+    marked.push({ card: deck[idx], idx, order: i });
+    picks.push({ num, idx, k, poolLabel: pos.suit ? pos.suit + "池（14张）" : pos.major ? "大阿卡纳池（22张）" : "整副（78张）" });
+  }
+  return { marked, picks };
+}
+function deriveFacts(seed, numbers, spreadKey) {
+  const { deck, deckRev } = shuffleDeck(seed >>> 0);
+  const { picks } = pickMarked(deck, numbers, spreadKey);
+  return picks.map(p => ({ ...p, id: deck[p.idx].id, name: deck[p.idx].name, rev: !!deckRev[p.idx] }));
+}
 
 function pickSpread(q) {
   /* 权重打分制：每个牌阵的关键词赋分，取总分最高，解决"我和他合伙做生意"等边界case */
@@ -2406,6 +2499,7 @@ function pickSpread(q) {
   if (!t) return "three_time";
   const KW = {
     celtic:   { "凯尔特":5,"十字":5,"全面":3,"深度":3,"彻底":3,"详细":3,"全景":3 },
+    seasons:  { "四季":5,"季节":4,"时令":4,"这一整年":4,"一整年":3,"这一年":4,"一年里":3 },
     choice:    { "选":3,"还是":4,"哪条":4,"哪边":4,"哪个":4,"两家":3,"二者":4,"二选":4,"A还是B":5,"跳槽还是":4 },
     relation:  { "他":2,"她":2,"对方":4,"感情":4,"喜欢":3,"爱":2,"恋":3,"婚":3,"复合":4,"暧昧":4,"分手":4,"桃花":3,"男友":4,"女友":4,"老公":4,"老婆":4,"对象":4,"表白":3,"脱单":3,"在一起":4,"亲密":3,"暗恋":4 },
     action:    { "工作":3,"事业":3,"职业":3,"项目":2,"晋升":3,"离职":3,"跳槽":3,"创业":3,"学业":3,"考试":3,"面试":3,"offer":3,"入职":3,"老板":2,"领导":2,"同事":2,"钱":2,"财":2,"投资":2,"理财":2,"生意":3,"副业":3,"涨薪":3,"合伙":3 },
@@ -2458,7 +2552,7 @@ const state = {
   draws: [], revealed: 0, seed: 0, domain: "general",
   deck: [], offer: [], markedCards: [], deckRev: [],
   dailyMode: false, cutCard: null, cutNumber: 0, readingDate: 0, anchor: "", /* 本次解读属于哪一天（运势卡/分享图措辞）；cutNumber=你亲手切下的厚度（刀口），切牌＝那一叠最底一张；anchor=重大决策时用户亲笔底线 */
-  shareSnapshot: null, lastHistT: 0, restoreRec: null
+  shareSnapshot: null, lastHistT: 0, restoreRec: null, facts: null
 };
 
 let preheatGen = 0; /* 牌图预加载链代 token：新一轮 buildDraws 作废旧的 idle 分块链，防并发抢带宽 */
@@ -2470,24 +2564,15 @@ function buildDraws() {
     ? (crypto.getRandomValues(new Uint32Array(1))[0] >>> 0)
     : (Date.now() >>> 0);
   state.seed = (seedSrc ^ hashStr(state.question || "") ^ Math.imul(state.numbers[0] || 1, 2654435761)) >>> 0;
-  const rng = mulberry32(state.seed);
-  /* 洗牌：Fisher-Yates，由 seed 驱动 —— 每次顺序都不同，但同一 seed 可复现 */
-  const deck = CARDS.slice();
-  for (let i = deck.length - 1; i > 0; i--) {
-    const j = Math.floor(rng() * (i + 1));
-    [deck[i], deck[j]] = [deck[j], deck[i]];
-  }
-  /* 逆位预分配：开牌前整副 deck 正逆已定，翻牌只是揭示（保证可复现） */
-  state.deckRev = deck.map(() => rng() < REVERSED_CHANCE);
-  deck.forEach((c, i) => { c.__deckIdx = i; }); /* 把"洗牌既定序号"钉在牌上：查 deckRev 用它，别用活数组 indexOf（splice 后会整体左移） */
-  /* 多数字标记：每个数字标记一张牌（不同序号颜色），严格按顺序对应牌阵位置 */
+  /* 洗牌+逆位预分配+按位取牌：与「发牌事实」面板共用 shuffleDeck/pickMarked（单一真源） */
+  const { deck, deckRev } = shuffleDeck(state.seed);
+  state.deckRev = deckRev;
   state.deck = deck;
-  /* 严格按数字顺序抽牌：第 i 个数字 → 洗牌后牌堆的第 num 张 → 落在牌阵第 i 个位置。
-     数字已在入口校验为「个数=位置数、互不相同、1~78」，故不再补随机、不再顺延去重。 */
-  state.markedCards = state.numbers.map((num, i) => {
-    const idx = (num - 1) % deck.length;
-    return { card: deck[idx], idx, order: i };
-  });
+  /* 严格按数字顺序抽牌：第 i 个数字 → 该位置牌池里的对位牌 → 落在牌阵第 i 个位置。
+     数字已在入口校验为「个数=位置数、互不相同、1~78」；四季等限定池阵由 pickMarked 内确定性顺延去重。 */
+  const { marked, picks } = pickMarked(deck, state.numbers, state.spreadKey);
+  state.markedCards = marked;
+  state.facts = { seed: state.seed, spreadKey: state.spreadKey, numbers: state.numbers.slice(), picks };
   /* F-009 今日一牌：每日一次、专属于你的随机单牌（塔罗重在私人机缘，不再宣称"全站同频/所有人同一张"）。
      沿用个人随机牌序——你凭直觉翻开的那张（或数字标记的这张），就是你今天的牌。 */
   if (state.dailyMode) {
@@ -3639,8 +3724,9 @@ async function renderReading() {
   }
   const h = new Date(state.readingDate || Date.now()).getHours();
   const daypart = h >= 6 && h < 12 ? "晨光初启的时分" : h < 18 ? "日光渐沉的时分" : "夜色渐深的时分";
-  $("#reading-meta").innerHTML = `${state.numbers.length ? "直觉数字 " + state.numbers.join(" ") : "分享牌局"} · ${daypart} · 印记 <button class="echo-code" id="echo-code" type="button" title="这次占卜的唯一印记，点一下即可复制。想原样回看这一局，去「占卜记录」点开它即可（印记用来标识与核对，不支持手动输入重演）。">${seedHex()}</button>` + (state.cutCard ? ` · <button class="meta-cut" id="meta-cut" type="button" title="点开看这张心态牌的牌义">切牌：${state.cutCard.name}（${state.cutCard.upright.keywords[0]}）</button>` : "");
+  $("#reading-meta").innerHTML = `${state.numbers.length ? "直觉数字 " + state.numbers.join(" ") : state.number ? "直觉数字 " + state.number : "分享牌局"} · ${daypart} · 印记 <button class="echo-code" id="echo-code" type="button" title="这次占卜的唯一印记，点一下即可复制。想原样回看这一局，去「占卜记录」点开它即可（印记用来标识与核对，不支持手动输入重演）。">${seedHex()}</button>` + (state.cutCard ? ` · <button class="meta-cut" id="meta-cut" type="button" title="点开看这张心态牌的牌义">切牌：${state.cutCard.name}（${state.cutCard.upright.keywords[0]}）</button>` : "") + ((state.numbers.length || state.number) ? ` · <button class="meta-cut" id="draw-facts" type="button" title="洗牌方法、每个数字怎么对上这张牌——全部由印记确定，可复算">🧾 这局怎么发出来的</button>` : "");
   $("#meta-cut")?.addEventListener("click", openCutDeep);
+  $("#draw-facts")?.addEventListener("click", openFactsModal);
   $("#echo-code")?.addEventListener("click", () => {
     copyToClipboard(`塔塔🔮 占卜印记：${seedHex()}（${fmtTime(state.readingDate || Date.now())} · ${SPREADS[state.spreadKey].name} · 问：${state.question || "今日一牌"}${state.numbers.length ? " · 数字：" + state.numbers.join(" ") : ""}）`, () => {
       const b = $("#echo-code"); if (!b) return; b.classList.add("copied"); setTimeout(() => b.classList.remove("copied"), 1500);
@@ -3887,7 +3973,7 @@ async function renderReading() {
   renderReflectBlock(wasRestore);
   renderTimeMirror(wasRestore); /* P1 时间的镜子：所有内容落定后、导航生成前插入——四条渲染路径（AI 流式/权威/规则/回看）都经此函数，逐路径不再各挂各的 */
   renderReadingNav(); /* Feature B：子块渲染完成后再生成章节导航，能探测到实际存在的锚点 */
-  if (state.dailyMode) renderDailyFortune(); /* 今日运势卡只属于「今日一牌」；普通占卜（含手选/自动选中的单牌阵）一律不渲染 */
+  if (state.dailyMode) { applyDailyAccent(state.draws[0] && state.draws[0].card); renderDailyFortune(); } /* 今日运势卡只属于「今日一牌」；普通占卜（含手选/自动选中的单牌阵）一律不渲染；P2：accent 跟"你在看的这一局"走（隔天回看不串色） */
   setTimeout(() => document.getElementById("reading-spread-name")?.scrollIntoView({ block: "start" }), 60);
 }
 
@@ -4117,6 +4203,7 @@ function replayDailyFromLock(lock) {
   state.spreadKey = "single"; state.spreadManual = true; state.dailyMode = true;
   state.domain = detectDomain(state.question); state.seed = lock.seed >>> 0; state.cutCard = null;
   state.anchor = ""; /* 审查#2：每日一牌与上一局的"亲笔底线"无关，必须显式清（否则污染 daily judgment 并写脏缓存） */
+  state.facts = null; /* 审查阻断#1：同理清上一局的发牌事实（否则面板拿旧数字配当日 seed 编造映射） */
   state.draws = [{ pos: SPREADS.single.positions[0], card, reversed: !!lock.rev }];
   state.revealed = 1;
   const cached = loadHistory().find(r => r && r.sp === "single" && (r.seed >>> 0) === (lock.seed >>> 0) && Array.isArray(r.d) && r.d[0] && r.d[0].id === card.id && r.a && typeof r.a === "object");
@@ -4192,6 +4279,33 @@ function renderSynthesisRule() {
   state.shareSnapshot = { energy: energyWord(), conclusion: da || syn.overview, judgment: syn.exit };
 }
 function escapeHtml(s) { return escHtml(s); }
+
+/* P2·发牌事实面板：把「随机怎么变成你这一局」摊开可查（印记+数字即可复算，与"亲手切牌"同一套信任体系） */
+function openFactsModal() {
+  const nums = (state.facts && state.facts.numbers.length) ? state.facts.numbers : (state.numbers.length ? state.numbers.slice() : (state.number ? [state.number] : []));
+  const spreadKey = (state.facts && state.facts.spreadKey) || state.spreadKey;
+  if (!nums.length) { openInfoModal(`<h4>🧾 这局怎么发出来的</h4><div class="m-row"><p>这局的发牌数字没有随记录保存（旧记录或分享链接）。牌面与印记 <b>${seedHex()}</b> 都已还原，可在「占卜记录」原样回看。</p></div>`); return; }
+  let picks;
+  if (state.facts && state.facts.seed === state.seed && state.facts.numbers.length === nums.length)
+    picks = state.facts.picks.map((p, i) => ({ ...p, id: (state.markedCards[i] && state.markedCards[i].card.id) || "" }));
+  else picks = deriveFacts(state.seed, nums, spreadKey);
+  /* 审查必修#2：逐位对账——复算出的牌必须与当局实际展示的牌一一对上，否则整面板降级（每日一牌可任选翻牌、旧记录数字残缺、牌库版本漂移、手改链接都走这里，绝不编造映射） */
+  const aligned = picks.length === state.draws.length && picks.every((p, i) => !p.id || !state.draws[i] || p.id === state.draws[i].card.id);
+  if (!aligned) {
+    openInfoModal(`<h4>🧾 这局怎么发出来的</h4><div class="m-row"><p>印记 <b>${seedHex()}</b> 与牌面都已还原，但这局的「数字 ↔ 牌」映射无法从留存信息完整复算（每日一牌允许翻任意一张、旧记录可能只存了部分数字、或牌库版本已更新）。</p></div><div class="m-row"><p>能确定的是：洗牌与正逆位都由印记唯一决定，翻牌只是揭示——塔塔没有偷偷换牌，更替不了你的直觉。</p></div>`);
+    return;
+  }
+  const withCards = picks.map((p, i) => ({ ...p, name: (state.draws[i] && state.draws[i].card.name) || p.name || "", rev: state.draws[i] ? !!state.draws[i].reversed : !!p.rev }));
+  const rows = withCards.map((p, i) => `<p style="margin:6px 0;font-size:13px">${i + 1}. 你的数字 <b>${p.num}</b> → 在${p.poolLabel}里对位第 ${p.k + 1} 个 → 洗牌后整副第 ${p.idx + 1} 张 →「${escHtml(p.name)}」${p.rev ? "（逆位）" : "（正位）"}</p>`).join("");
+  const suitLine = (SPREADS[spreadKey] || {}).positions && withCards.some((p, i) => { const pos = (SPREADS[spreadKey].positions || [])[i] || {}; return pos.suit || pos.major; }) ? `<div class="m-row"><p>本阵为花色限定抽牌：每个位置只从牌阵说明标定的牌池里取（撞车时按池内顺序顺延一位）。</p></div>` : "";
+  openInfoModal(`
+    <h4>🧾 这局是怎么发出来的</h4>
+    <div class="m-row"><p>洗牌：Fisher-Yates，由印记 <b>${seedHex()}</b> 的确定性随机流驱动——同一个印记永远洗出同一副顺序；正逆位在洗牌时就已整副既定（约 1/3 逆位），翻牌只是揭示。</p></div>
+    <div class="m-row">${rows}</div>
+    ${suitLine}
+    ${(state.cutCard && state.cutNumber) ? `<div class="m-row"><p>切牌：你亲手报的 ${state.cutNumber} 厚，取那一叠最底一张「${escHtml(state.cutCard.name)}」。</p></div>` : ""}
+    <div class="m-row"><p style="color:var(--ink-faint);font-size:12px">可复算：印记+这些数字决定了全部牌面，任何人用同样的洗牌规则都能算出同一局——塔塔没有偷偷换牌，更替不了你的直觉。</p></div>`);
+}
 
 /* 切牌（心态牌）：meta 行可点击查看 + 综合解读里与「建议/对策」位合参 */
 function anchorLine() {
@@ -4359,6 +4473,7 @@ const REMIND_KEY = "tata-remind-v1";
 function _readRemind() { try { return JSON.parse(localStorage.getItem(REMIND_KEY) || "null"); } catch (e) { return null; } }
 function updateCoverDailyHint() {
   const el = $("#cover-daily-hint"); if (!el) return;
+  applyDailyAccent(); /* P2：今日牌色 accent 随封面刷新（未抽牌自动清回金色默认） */
   const lock = _readDaily(), today = dailyLockedToday();
   const y = _dayStr(new Date(Date.now() - 864e5));
   let txt;
@@ -4479,6 +4594,7 @@ $("#btn-link").addEventListener("click", () => {
     p.set("sp", state.spreadKey); p.set("sd", seedHex());
     p.set("q", state.question || "");
     p.set("cd", state.draws.map(d => d.card.id + (d.reversed ? "r" : "u")).join("."));
+    if (state.numbers.length) p.set("nu", state.numbers.join(".")); /* 数字随行：打开方也能看"这局怎么发出来的" */
     const url = location.origin + location.pathname + "#spread=" + p.toString();
     copyToClipboard(url, () => flashBtnText($("#btn-link"), "已复制 ✓ 朋友打开即见同一局牌", 2400));
   } catch (e) { flashBtnText($("#btn-link"), "复制没成功，试试长按地址栏分享", 2200); }
@@ -4736,6 +4852,9 @@ async function buildDailyShareCard(kind) {
   const SERIF = '"Cormorant Garamond",Georgia,serif';
   const d = state.draws[0]; const card = d && d.card;
   const m = card ? fortuneModel(card, d.reversed) : null;
+  /* P2·今日牌色：分享图饰线（外框/发丝环/牌图光环）取今日抽中牌的 accent 色；品牌行与直觉金框不动 */
+  let AC = "201,168,106";
+  try { const tri = hexTri(accentForCard(card)); if (tri) AC = tri; } catch (e) { /* 拿不到就保持金色 */ }
   /* 四芒星光斑（带金晕，画在晕影之前保持亮度） */
   const sparkle = (x, y, r, a) => {
     ctx.save(); ctx.globalAlpha = a; ctx.fillStyle = "#eee0b2";
@@ -4764,9 +4883,9 @@ async function buildDailyShareCard(kind) {
     const vg = ctx.createRadialGradient(CX, H * .42, H * .32, CX, H * .42, H * .9);
     vg.addColorStop(0, "rgba(0,0,0,0)"); vg.addColorStop(1, "rgba(2,2,8,.5)");
     ctx.fillStyle = vg; ctx.fillRect(0, 0, W, H);
-    /* 双线鎏金框：外框 + 内缘发丝线（同站内鎏金面板），框顶中央✦印记 */
-    ctx.strokeStyle = "rgba(201,168,106,.5)"; ctx.lineWidth = 2; ctx.strokeRect(34, 34, W - 68, H - 68);
-    ctx.strokeStyle = "rgba(201,168,106,.12)"; ctx.lineWidth = 1; ctx.strokeRect(48, 48, W - 96, H - 96);
+    /* 双线鎏金框：外框 + 内缘发丝线（同站内鎏金面板），框顶中央✦印记；P2：每日一牌框色随今日牌色 */
+    ctx.strokeStyle = `rgba(${AC},.5)`; ctx.lineWidth = 2; ctx.strokeRect(34, 34, W - 68, H - 68);
+    ctx.strokeStyle = `rgba(${AC},.12)`; ctx.lineWidth = 1; ctx.strokeRect(48, 48, W - 96, H - 96);
     ctx.fillStyle = "#0e0b1c"; ctx.fillRect(CX - 26, 25, 52, 20);
     sparkle(CX, 35, 8, .95);
   };
@@ -4828,9 +4947,9 @@ async function buildDailyShareCard(kind) {
   const cardTopY = y + (D.brand + gap) + (D.date + gap) + (concl ? conclH + gap : 0);
   const cardCY = cardTopY + 12 + chh / 2;
   ctx.save();
-  ctx.strokeStyle = "rgba(201,168,106,.20)"; ctx.lineWidth = 1.5; ctx.setLineDash([10, 12]);
+  ctx.strokeStyle = `rgba(${AC},.20)`; ctx.lineWidth = 1.5; ctx.setLineDash([10, 12]);
   ctx.beginPath(); ctx.ellipse(CX, cardCY, cw * .8, chh * .66, 0, 0, 7); ctx.stroke();
-  ctx.setLineDash([2, 10]); ctx.strokeStyle = "rgba(201,168,106,.13)";
+  ctx.setLineDash([2, 10]); ctx.strokeStyle = `rgba(${AC},.13)`;
   ctx.beginPath(); ctx.ellipse(CX, cardCY, cw * .93, chh * .76, 0, 0, 7); ctx.stroke();
   ctx.restore();
   /* 品牌行：微金晕 */
@@ -4862,9 +4981,9 @@ async function buildDailyShareCard(kind) {
 
   const cx = CX - cw / 2;
   ctx.save();
-  ctx.shadowColor = "rgba(201,168,106,.45)"; ctx.shadowBlur = 46;
+  ctx.shadowColor = `rgba(${AC},.45)`; ctx.shadowBlur = 46;
   ctx.fillStyle = "#141122"; rr(cx - 12, y, cw + 24, chh + 24, 18); ctx.fill();
-  ctx.shadowBlur = 0; ctx.strokeStyle = "rgba(201,168,106,.8)"; ctx.lineWidth = 2; rr(cx - 12, y, cw + 24, chh + 24, 18); ctx.stroke();
+  ctx.shadowBlur = 0; ctx.strokeStyle = `rgba(${AC},.8)`; ctx.lineWidth = 2; rr(cx - 12, y, cw + 24, chh + 24, 18); ctx.stroke();
   ctx.strokeStyle = "rgba(238,224,178,.28)"; ctx.lineWidth = 1; rr(cx - 4, y + 8, cw + 8, chh + 8, 14); ctx.stroke();
   ctx.restore();
   ctx.save();
@@ -5154,7 +5273,8 @@ function saveHistory() {
       d: state.draws.map(x => ({ id: x.card.id, r: x.reversed })), e: (state.shareSnapshot && state.shareSnapshot.energy) || energyWord(),
       c: state.cutCard ? state.cutCard.id : null, /* 切牌（心态牌）也要入档：否则回看时"心态底色"整块凭空消失 */
       ck: state.cutNumber || null, /* 你切下的厚度：切牌来历可核对（第 ck 张＝那一叠最底一张） */
-      an: state.anchor || null /* 重大决策时用户亲笔底线：回看追问/日记导出要还原同一语境 */
+      an: state.anchor || null, /* 重大决策时用户亲笔底线：回看追问/日记导出要还原同一语境 */
+      nu: (state.numbers || []).slice(0, 10).map(x => Math.floor(+x) || 0).filter(x => x >= 1 && x <= 78) /* 发牌数字入档：回看事实面板可逐张复算（旧记录无此字段自动降级） */
     };
     state.lastHistT = now;
     mutateHistory((h) => {
@@ -5447,6 +5567,8 @@ function restoreReading(rec) {
   state.cutNumber = (state.cutCard && +rec.ck > 0) ? Math.floor(+rec.ck) : 0; /* 那一刀的厚度一起还原；无切牌或老记录无 ck → 置 0，文案不编造 */
   state.domain = detectDomain(rec.q); state.seed = rec.seed || 0; state.spreadManual = true;
   state.anchor = (typeof rec.an === "string") ? rec.an.slice(0, 60) : ""; /* 回看还原当时的"亲笔底线"；旧记录没有则留空，绝不残留上一局的 */
+  state.numbers = Array.isArray(rec.nu) ? rec.nu.map(x => Math.floor(+x) || 0).filter(x => x >= 1 && x <= 78).slice(0, 10) : (rec.n ? [rec.n] : []);
+  state.facts = null; /* 回放不带实时 facts：面板用 deriveFacts(印记+数字) 现场复算，与发牌共用同一真源 */
   const positions = SPREADS[rec.sp].positions;
   state.draws = rec.d.map((x, i) => ({ pos: positions[i] || positions[positions.length - 1], card: cardById[x.id], reversed: !!x.r })).filter(d => d.card);
   if (!state.draws.length) {
@@ -5576,11 +5698,13 @@ if ("serviceWorker" in navigator && location.protocol === "https:") {
       draws.push({ pos: pos[i], card: c, reversed: /r$/.test(t) });
     }
     let sd = parseInt(p.get("sd") || "0", 16); if (!isFinite(sd)) sd = 0;
+    let nus = (p.get("nu") || "").split(".").map(x => Math.floor(+x) || 0).filter(x => x >= 1 && x <= 78);
+    if (nus.length !== pos.length || new Set(nus).size !== nus.length) nus = []; /* 数字与位置数不齐/有重复就不采信：事实面板自动降级，meta 不编造 */
     state.spreadKey = sp; state.spreadManual = true; state.dailyMode = false;
     state.question = String(p.get("q") || "").slice(0, 120) || "朋友分享的牌局";
-    state.numbers = []; state.number = 0;
+    state.numbers = nus; state.number = nus[0] || 0;
     state.seed = sd >>> 0; state.draws = draws; state.revealed = draws.length;
-    state.cutCard = null; state.cutNumber = 0; state.anchor = "";
+    state.cutCard = null; state.cutNumber = 0; state.anchor = ""; state.facts = null;
     state.readingDate = Date.now();
     shareLinkView = true; __restoreMode = true; state.restoreRec = null;
     renderReading().catch(() => {});
