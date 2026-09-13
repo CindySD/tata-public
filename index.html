@@ -915,15 +915,26 @@ footer::before{
 .reflect-block .rb-memo-row{display:flex;gap:10px;align-items:center;margin-top:6px}
 .reflect-block .rb-memo-st{font-size:11.5px;color:var(--ink-faint)}
 
-/* ---------- ⑳ P2·今日牌色 accent：只染每日一牌相关点缀位（var 缺省回金色——"今日是什么色"由抽出的牌决定，非全站换肤） ---------- */
-.daily-fortune{border-color:var(--tata-accent, var(--gold-dim))}
-.daily-fortune::before{color:var(--tata-accent, var(--gold))}
-.daily-fortune .df-art{border-color:var(--tata-accent, var(--gold-dim))}
-.daily-fortune .df-title,.daily-fortune .df-streak{color:var(--tata-accent, var(--gold))}
-.daily-fortune .df-energy{color:var(--tata-accent, var(--gold));border-color:var(--tata-accent, var(--gold-dim))}
-.daily-fortune .df-item{border-top-color:var(--tata-accent, rgba(201,168,106,.3))}
-.cover-daily-hint.done .cdh-text b{color:var(--tata-accent, var(--gold-hi))}
-.cover-daily-hint.done .cdh-link{border-color:var(--tata-accent, var(--gold-faint))}
+/* ---------- ⑳ P2·今日牌色 accent v2「月光宝石」：颜色是光，不是框——四层低透明度渗进夜色，卡片描边回归品牌金 ---------- */
+/* 原则：低饱和才高级、微光感才神秘、文字不上色才优雅（彩色小字显廉价）；色随"你在看的这一局"，缺省全部回金色 */
+/* 层1 · 环境光晕：卡后一团自顶部渗下的月色 + 外缘微光（inset:-3px 让光溢出边界成"气"） */
+.daily-fortune::after{content:"";position:absolute;inset:-3px;border-radius:19px;pointer-events:none;z-index:-1;
+  background:radial-gradient(85% 52% at 50% 0%,rgba(var(--tata-accent-rgb,201,168,106),.16),transparent 68%);
+  box-shadow:0 0 46px -24px rgba(var(--tata-accent-rgb,201,168,106),.65)}
+/* 层2 · ✦ 印记取今日色：全卡唯一的高饱和点，画龙点睛 */
+.daily-fortune::before{color:rgb(var(--tata-accent-rgb,201,168,106))}
+/* 层3 · 牌图光环：描边与辉光同色，与顶部月色呼应 */
+.daily-fortune .df-art{border-color:rgba(var(--tata-accent-rgb,201,168,106),.55);box-shadow:0 0 0 1px rgba(var(--tata-accent-rgb,201,168,106),.14),0 10px 24px -12px rgba(0,0,0,.85),0 0 34px -6px rgba(var(--tata-accent-rgb,201,168,106),.55)}
+/* 层4 · 能量词胶囊：底色与描边微染，文字保持香槟金 */
+.daily-fortune .df-energy{color:var(--gold-hi);border-color:rgba(var(--tata-accent-rgb,201,168,106),.5);background:rgba(var(--tata-accent-rgb,201,168,106),.12)}
+/* 四维项发丝线：极淡，让颜色贯穿而非孤点 */
+.daily-fortune .df-item{border-top-color:rgba(var(--tata-accent-rgb,201,168,106),.4)}
+/* 标题/打卡行文字回金色（v1 直接染字是"突兀"根因之一） */
+.daily-fortune .df-title,.daily-fortune .df-streak{color:var(--gold)}
+/* 封面已抽态：加一枚呼吸的今日色光点，链接描边同色——封面从"没有色"变成"一点月色" */
+.cover-daily-hint.done .cdh-text b{color:var(--gold-hi)}
+.cover-daily-hint.done .cdh-text::before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:rgb(var(--tata-accent-rgb,201,168,106));box-shadow:0 0 10px rgba(var(--tata-accent-rgb,201,168,106),.7);margin-right:8px;vertical-align:1px}
+.cover-daily-hint.done .cdh-link{border-color:rgba(var(--tata-accent-rgb,201,168,106),.5)}
 
 </style>
 </head>
@@ -2430,17 +2441,18 @@ const CIRCLED = "①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮"; /* 徽章序号
 const MK_COLORS = ["#e8c46a", "#7cb8c9", "#c97ca8", "#9ac97c", "#c97c7c", "#c9a47c", "#8d7cc9", "#7cc9bd", "#c9c47c", "#b08ac9"];
 function markColor(order) { return MK_COLORS[order % MK_COLORS.length]; }
 function markLabel(order) { return CIRCLED[order] || String(order + 1); }
-/* P2·今日牌色 accent：22 张大牌各有主调（小牌退到花色色），只染点缀位（封面条/运势卡/分享图饰线），不是全站换肤。
-   ⚠ id 按站内 RWS 现代序：力量=major-08、倒吊人=12、死神=13、高塔=16、星星=17、审判=20（线上看图抓过按黄金黎明序错位一次的坑） */
+/* P2·今日牌色 accent v2「月光宝石」：色相按牌义、饱和度统一压到 22–38%、明度锁 60–68 窄带（对 #0d0b16 面板对比度全部 ≥6:1）。
+   低饱和才高级、微光感才神秘、同族窄带才优雅——v1 的高饱和糖果色在黑底上"贴"得突兀，v2 是"渗"进夜色的月光。
+   ⚠ id 按站内 RWS 现代序：力量=08、高塔=16、星星=17、审判=20（错位坑已锁 verify-p0 P2-COL-1） */
 const MAJOR_ACCENTS = {
-  "major-00": "#8fd6c0", "major-01": "#e0b96a", "major-02": "#7fa8d9", "major-03": "#d98fb4",
-  "major-04": "#c98a5a", "major-05": "#b9a3d9", "major-06": "#e8c96a", "major-07": "#d96f5a",
-  "major-08": "#c9a86a", "major-09": "#9ac4e8", "major-10": "#a3b8d9", "major-11": "#d9b06f",
-  "major-12": "#7c9ac9", "major-13": "#cfc4d6", "major-14": "#d9d07c", "major-15": "#d97c9d",
-  "major-16": "#d95a5a", "major-17": "#7fd9c8", "major-18": "#9d8fd9", "major-19": "#e8b84f",
-  "major-20": "#d98f6f", "major-21": "#7cd9b0"
+  "major-00": "#8dc4b9", "major-01": "#c2b484", "major-02": "#819abb", "major-03": "#c28ea5",
+  "major-04": "#b8917a", "major-05": "#a792bf", "major-06": "#bd8992", "major-07": "#bf8a7d",
+  "major-08": "#c1a37b", "major-09": "#90b0c1", "major-10": "#85b7b6", "major-11": "#8ba6bb",
+  "major-12": "#8391b9", "major-13": "#b495bb", "major-14": "#8bbba3", "major-15": "#b785b1",
+  "major-16": "#be8174", "major-17": "#8dbec4", "major-18": "#9692bf", "major-19": "#ccbc8e",
+  "major-20": "#c19f86", "major-21": "#88bfa5"
 };
-const SUIT_ACCENTS = { "权杖": "#d98a5a", "圣杯": "#6fa8dc", "宝剑": "#b8c4d6", "星币": "#c9a86a", "大阿卡纳": "" };
+const SUIT_ACCENTS = { "权杖": "#bd947f", "圣杯": "#819cbb", "宝剑": "#97a4ba", "星币": "#bca076", "大阿卡纳": "" };
 function accentForCard(card) {
   if (!card) return "";
   return MAJOR_ACCENTS[card.id] || SUIT_ACCENTS[card.suitName] || "";
@@ -2451,8 +2463,13 @@ function applyDailyAccent(forCard) {
     /* 审查必修#3：回看旧每日一牌时传入本局牌——点缀色跟着"你在看的这一局"走；不传参（封面）才读当日锁 */
     const lock = forCard ? null : dailyLockedToday();
     const hex = accentForCard(forCard || (lock && cardById[lock.id]));
-    if (hex) document.documentElement.style.setProperty("--tata-accent", hex);
-    else document.documentElement.style.removeProperty("--tata-accent");
+    if (hex) {
+      document.documentElement.style.setProperty("--tata-accent", hex);
+      document.documentElement.style.setProperty("--tata-accent-rgb", hexTri(hex)); /* 光晕用：rgba(var(--tata-accent-rgb),α) 精确控透明度 */
+    } else {
+      document.documentElement.style.removeProperty("--tata-accent");
+      document.documentElement.style.removeProperty("--tata-accent-rgb");
+    }
   } catch (e) { /* 无痕存储下静默走金色默认 */ }
 }
 /* P2·可复现洗牌与限定牌池抽取：buildDraws 与「这局怎么发出来的」事实面板共用同一实现（单一真源，防两处漂移） */
@@ -4992,9 +5009,9 @@ async function buildDailyShareCard(kind) {
 
   const cx = CX - cw / 2;
   ctx.save();
-  ctx.shadowColor = `rgba(${AC},.45)`; ctx.shadowBlur = 46;
+  ctx.shadowColor = `rgba(${AC},.38)`; ctx.shadowBlur = 46;
   ctx.fillStyle = "#141122"; rr(cx - 12, y, cw + 24, chh + 24, 18); ctx.fill();
-  ctx.shadowBlur = 0; ctx.strokeStyle = `rgba(${AC},.8)`; ctx.lineWidth = 2; rr(cx - 12, y, cw + 24, chh + 24, 18); ctx.stroke();
+  ctx.shadowBlur = 0; ctx.strokeStyle = `rgba(${AC},.7)`; ctx.lineWidth = 2; rr(cx - 12, y, cw + 24, chh + 24, 18); ctx.stroke();
   ctx.strokeStyle = "rgba(238,224,178,.28)"; ctx.lineWidth = 1; rr(cx - 4, y + 8, cw + 8, chh + 8, 14); ctx.stroke();
   ctx.restore();
   ctx.save();
