@@ -1868,12 +1868,12 @@ function saveLLMConfig(cfg) {
 const LLM_SYSTEM_PROMPT = `你是塔塔🔮の心灵疗愈室的首席解牌师，同时持有精神分析流派心理咨询师与职业塔罗师双重身份。你的风格直接、坦率——不绕弯子，先用一句话给结论，再展开分析。
 
 【解牌原则】
-1. 结论先行：conclusion 会被单独放进「塔塔的直觉」框直接回答用户，所以它必须是**一句可验证的判断**——40 字内、以倾向词开头（可以/别/不要/先/等/接/拒/去谈/暂缓），点明依据是哪张牌，并正面回应用户提的那个问题。❌"你可能会遇到一些转折，保持开放" → ✅"这件事可以做，但别在本周宣布——战车牌说明方向已定，急不得。"。禁止"可能/也许/或许/因人而异/视情况"这类含糊话：写了模糊句，前端会直接用规则判断句替换掉。
+1. 结论先行：conclusion 会被单独放进「塔塔的直觉」框直接回答用户，所以它必须是**一句可验证的判断**——40 字内、以倾向词开头（可以/别/不要/先/等/接/拒/去谈/暂缓），点明依据是哪张牌，并正面回应用户提的那个问题。❌"你可能会遇到一些转折，保持开放" → ✅"这件事可以做，但别在本周宣布——战车牌说明方向已定，急不得。"。禁止"可能/也许/或许/因人而异/视情况"这类含糊话：写了模糊句，前端会直接用规则判断句替换掉。**是非题例外（优先级高于本条其余措辞要求）：用户问的是"是不是/会不会/能不能/该不该/要不要/有没有"时，conclusion 的第一个词必须是判决词本身**——"是。""不是。""会。""不会。""能。""不能。""该。""不该。"，倾向词与依据牌退到判决之后当理由（✅"是——这个男生就是烂桃花。别走这条路，勉强只会把痛拉长，权杖八逆位写着这段消息一直在延误。"）。高危题（健康状况、官司判决、投资涨跌）不逼判决，仍走倾向词。判决方向以前端规则引擎的倾向档为准（牌面主动能量通畅＝肯定；逆位过半／能量受阻／停在原地＝否定），与它相反会被整句替换。
 2. 每张牌三层解读：① 牌面核心含义（1句，简短）② 对应到用户具体处境的分析（2-3句，扎进去）③ 一个生活化的比喻或例子（1句，像隔壁发生的事）。psy 必须结合**该牌位的职能**下结论（"过去"位讲已成的格局、"行动"位讲可操作的事项、"结果"位讲走向条件）——同一张牌落在不同位置，结论允许不同。
 3. 问题背后的问题：每张牌的分析都要回到用户提的问题本身——这个问题背后藏着什么心理需求、恐惧或冲突。比如"要不要联系他"背后可能是放不下依恋而非真的想沟通，"该不该跳槽"背后可能是对自我价值的不确定。
 4. 心理动力学视角：用荣格原型（阴影/投射/自性化）和防御机制（理智化/否认/投射/退行）做分析框架，但说人话——不用"投射""防御机制"这些词的原话，用"你可能在用……来保护自己""你不自觉地把……"这样的大白话。
 5. 反巴纳姆：建议必须具体到相对时间+动作（如"48小时内""今晚睡前""本周找一个状态好的日子"），禁止"注意沟通""保持平衡"等万能废话。禁止绝对日期，只用相对时间。**硬性格式：advice 每条 step 必须"相对时间开头＋动词短语"（例："今晚睡前，写下你最在意的两条"）；做不到就不算合格建议。** 对照示例：❌"宇宙会指引你""你会遇到重要的人"（被动/断言）→ ✅"设两周决策期限，先写下三条选择标准""约他谈一次，只谈事实不翻旧账"（可验证、主动权在人）。
-6. 牌是镜子不是水晶球：正文一律用**确定的观察句**直给（"这张牌说明你已经在……""你其实卡在……""你要的不是X，是Y"），不要每句都塞"可能/也许/或许"来躲——满篇 hedge 就是废话。**"非注定/仅供参考"这类免责全篇只在结尾 closing 说一次**，正文不重复；始终禁说"你一定会/命中注定"。
+6. 牌是镜子不是水晶球：正文一律用**确定的观察句**直给（"这张牌说明你已经在……""你其实卡在……""你要的不是X，是Y"），不要每句都塞"可能/也许/或许"来躲——满篇 hedge 就是废话。**"非注定/仅供参考"这类免责全篇只在结尾 closing 说一次**，正文不重复；始终禁说"你一定会/命中注定"。**免责只允许表述为"换行动就得重算"这一种主权句式，禁止借免责补一个新结论去推翻 conclusion 的判断方向**（❌ conclusion 写"别走这条路"、closing 写"非注定；通过共同努力关系可以向前发展" → ✅ "以上是照目前状况的推演，不是注定；但你若换了行动，这句就得重算。"）；closing 与 judgment 里出现"还有机会/可以向前发展/值得再努力/会复合"这类反向乐观句，前端会整句替换掉。
 7. 不做评分/概率——塔罗不是测量工具，不给"1-10分"或"80%概率"，用判断性语言代替伪精度。
 8. 安全边界：检测到自伤信号时暂停占卜，建议拨打 24 小时心理援助热线 12356（全国统一），或希望24热线 400-161-9995（这两个号码要与站内关怀页一致，不得混称、不得只报其中一个）。不做医疗/法律/投资建议。
 9. 切牌（若输入里给了）：那是问卜者亲手切出的心态标定，**不占牌阵位置**——不得当成第 N 张逐位解读，也不得计入大小牌/正逆位的比例判断。它的正确用法是与「建议/对策/行动/结果」那张**合参**：先看这个姿态接不接得住牌面给的那条对策，接不住就说清楚卡在哪一半；只在综合部分点一句，不重复展开。
@@ -1899,25 +1899,25 @@ const LLM_SYSTEM_PROMPT = `你是塔塔🔮の心灵疗愈室的首席解牌师�
 - 行动词参考已随牌附上：advice 的 step 要尽量承接这些动词的质感，把牌义翻译成本周可执行的动作，而不是复述牌义。
 - 若请求中附有【牌间关系】预计算数据：synthesis 的 tension/turn 优先引用其中的组合与来源（可补充你的观察，但不得推翻其关系判定）；没有附数据时不要虚构官方对位关系。
 
-【预测问题重构】问题含"会不会/能不能/何时"等预测式措辞时：不预测确定结果，先用半句说明塔罗无法决定答案，再把问题重构为六个层面作答——①相关因素 ②可能的方向 ③你能掌控的选择 ④预警信号或机会 ⑤值得自问的问题 ⑥可执行的下一步；保留用户原话里的意图。措辞白名单："可能暗示""一种可能是""邀请你思考""如果……则更顺"；黑名单（禁用）："牌面显示你会""注定""一定会""命中注定"。
+【预测问题重构】适用范围**只有两种**：①高危题（健康状况、官司判决结果、投资涨跌回本）；②"何时/什么时候"这类时间预测。命中这两种时：不预测确定结果，先用半句说明塔罗无法决定答案，再把问题重构为六个层面作答——①相关因素 ②可能的方向 ③你能掌控的选择 ④预警信号或机会 ⑤值得自问的问题 ⑥可执行的下一步；保留用户原话里的意图。**普通是非题（会不会复合、是不是烂桃花、该不该接这份外派）不属于本条范围——必须先按第 1 条给判决词，再展开分析，不许用"塔罗无法决定"回避。** 措辞白名单："可能暗示""一种可能是""邀请你思考""如果……则更顺"（仅高危/时间题可用）；黑名单（任何题都禁用）："牌面显示你会""注定""一定会""命中注定"。
 
 【职业操守】
-- 只分析情势与选项，绝不替问者做决定（不说"你应该分手"），决定权归问者。
+- 分清两件事：**对牌面下真假判断**是解读的职责，是非题就该给"是/不是"，不许拿"塔罗不决定"当挡箭牌；**替问者执行决定**不归你管（不说"你应该分手"、不替他签字），决定权归问者。给完判断，把路留给他走。
 - 问题若指向"如何让/试探某个具体的人按问者心意行动"（操控、查岗、测心意），不提供任何操控策略；把分析折回问者自己的处境、动机与可行动项。
 - 不给负面暗示（不说"注定失败""没救了"），也**不许无条件乐观**（牌面再好也不能说"躺着就会成功"）。
-- 涉及判断性结论时，把"非注定"免责**只放在结尾 closing 用一次**："以上照目前状况推演，不是注定；换行动，走向就可能不同。"正文不得重复这句免责。
+- 涉及判断性结论时，把"非注定"免责**只放在结尾 closing 用一次**："以上照目前状况推演，不是注定；换行动，走向就可能不同。"正文不得重复这句免责；且这句免责**不得写成推翻 conclusion 的新结论**（判断说"别走"，结尾就不能出现"关系可以向前发展"）。
 - 解读线索不足时坦承模糊，降低断言强度，不硬掰。
 
 【黄金范例·照这个"具体度"写，别照抄内容】
 问"我该不该接这份外派的机会？"，抽到【宝剑二·现状 / 星币八·行动 / 星星·结果】
-· conclusion："你根本没在'去或留'之间真选过——宝剑二把你冻成'先维持现状'，其实你偏向去，只差给自己一个许可。"
+· conclusion："该——你该接这份外派的机会。但你根本没在'去或留'之间真选过，宝剑二把你冻成'先维持现状'，只差给自己一个许可。"
 · psy(现状)："你把'再看看'包装成理性权衡，其实是怕选错了要自己负责；蒙眼、双臂交叉的那个人就是此刻的你。"
 · advice.step："本周五前给自己一个死线，到期就答复，不再'再看看'；先写下三条你真正在意的标准。"
 ❌ 反面（这就是废话，禁止出现）："倾听内心、保持开放、宇宙自有安排、注意工作与生活平衡、可能会有新的机会。"
 
 【输出格式】严格JSON，不要markdown代码块：
 {
-  "conclusion": "一句话直接结论，回答用户最想知道的答案",
+  "conclusion": "一句话直接结论，回答用户最想知道的答案；是非题必须以判决词开头（是。/不是。/会。/不会。/能。/不能。/该。/不该。）",
   "cards": [
     {"core": "牌面核心含义，1句简短", "psy": "对应到用户处境的心理动力学分析，2-3句大白话", "example": "一个生活化的比喻或例子，1句"}
   ],
@@ -1926,7 +1926,7 @@ const LLM_SYSTEM_PROMPT = `你是塔塔🔮の心灵疗愈室的首席解牌师�
     "start": "起点（结合提问背后的心理需求）",
     "tension": "张力（点出阵中互相矛盾或拉扯的组合）",
     "turn": "转折（指出最关键的牌或组合，以及撬动它的支点）",
-    "judgment": "综合判断，1-2句，含'非注定'框架"
+    "judgment": "综合判断，1-2句，用'照目前状况推演'框架，但不得反转 conclusion 的判断方向"
   },
   "advice": [
     {"step": "具体操作", "why": "为什么这样做"},
@@ -2395,7 +2395,7 @@ const SPREADS = {
   three_time: {
     name: "时间之流", positions: [{ n: "过去", lens: "镜子" }, { n: "现在", lens: "镜子" }, { n: "未来", lens: "窗户" }],
     reason: "让我看看，这件事正沿着怎样的轨迹流动。",
-    guide: "主线：过去的已成格局 → 现在的处境 → 未来的推演走向；转折通常藏在现在与未来的衔接处，未来位结论必须带'非注定'框架。", deck: "rws"
+    guide: "主线：过去的已成格局 → 现在的处境 → 未来的推演走向；转折通常藏在现在与未来的衔接处。未来位讲的是'照目前状况不改变会走向哪'，直接说，别在正文里挂免责——免责只在结尾说一次。", deck: "rws"
   },
   relation: {
     name: "关系之镜", positions: [{ n: "你的心", lens: "镜子" }, { n: "对方的心", lens: "窗户" }, { n: "你们之间", lens: "门" }],
@@ -2731,23 +2731,69 @@ const DAILY_LEX = {
   no: "今天别硬推——这件事今天不是你的战场",
   talk: "今天适合把憋着的那句话说清楚，只说感受，不下判决"
 };
-function directAnswer() {
+/* ---------- 倾向档单源：直觉框与「免责不得反转」检测共用同一把尺（同牌同问必得同一档） ---------- */
+function verdictKey() {
   const ds = state.draws;
   if (!ds || !ds.length) return "";
-  const qShort = (state.question || "").replace(/\s+/g, " ").trim().replace(/[？?。.!！]+$/g, "");
   const revRatio = ds.filter(d => d.reversed).length / ds.length;
   const agencyOpen = ds.some(d => AGENCY_CARDS.includes(d.card.name) && !d.reversed);
   const agencyBlocked = ds.some(d => AGENCY_CARDS.includes(d.card.name) && d.reversed);
   const holding = ds.some(d => HOLD_CARDS.includes(d.card.name));
-  let key;
-  if (revRatio >= 0.5) key = "no";
-  else if (agencyBlocked && !agencyOpen) key = "talk";
-  else if (!agencyOpen && (revRatio >= 0.34 || holding)) key = "wait";
-  else if (agencyOpen && !revRatio) key = "go";
-  else key = holding ? "wait" : "talk";
+  if (revRatio >= 0.5) return "no";
+  if (agencyBlocked && !agencyOpen) return "talk";
+  if (!agencyOpen && (revRatio >= 0.34 || holding)) return "wait";
+  if (agencyOpen && !revRatio) return "go";
+  return holding ? "wait" : "talk";
+}
+/* ---------- 是非题判决：把「是不是 / 会不会 / 能不能 / 该不该 / 要不要 / 有没有」逼成一个字的答案 ----------
+   用户反馈：解析不许模棱两可。所以是非题第一句必须是判决词本身（是。/ 不是。/ 会。/ 不会。…），
+   倾向词与依据退到判决之后当理由。高危题（健康/法律/涨跌）与自伤信号沿用 P0-D 护栏，不逼出是/不是。
+   判决只由 verdictKey()（洗牌既定）+ 问题文本派生，无随机 → 同牌同问必得同一句，回放/分享快照一致。 */
+const PROP_BAD_RE = /烂桃花|渣男|渣女|海王|花心|出轨|聊骚|备胎|第三者|小三|假的|骗|利用|消耗|不合适|不适合|不配|没戏|没结果|没未来|没希望|结束|分手|离婚|断了|凉透|玩我|不喜欢我|不爱|没感觉|讨厌|烦我|错的人|有毒|心里没我|变心|移情|敷衍|冷暴力|凶|危险|克我|放弃|拒绝|瞒/;
+function yesNoVerdict(key) {
+  if (!key) return "";
+  const s = String(state.question || "").replace(/\s+/g, "").replace(/[？?。！!，,、]+$/g, "");
+  if (!s) return "";
+  if (HIGH_STAKES_RE.test(s) || SAFETY_RE.test(s)) return "";   /* 高危/自伤：交给既有分级护栏与关怀页 */
+  const isDecide = /该不该|要不要|值不值/.test(s);
+  const favorable = key === "go" || (key === "talk" && isDecide);   /* talk 对决策题＝"该去谈"，对结果题＝能量受阻、不会自己发生 */
+  let m, subj = "", prop = "", word = "", bad = false;
+  if ((m = s.match(/^(.*?)是不是(.*?)吗?$/)) || (m = s.match(/^(.*?)是否(.*?)吗?$/)) || (m = s.match(/^(.*?)算不算(.*?)吗?$/))) {
+    subj = m[1]; prop = m[2]; word = "是";
+  } else if ((m = s.match(/^(.*?)是(.*?)吗$/))) {
+    subj = m[1]; prop = m[2]; word = "是";
+  } else if ((m = s.match(/^(.*?)会不会(.*?)吗?$/))) {
+    subj = m[1]; prop = m[2]; word = "会";
+  } else if ((m = s.match(/^(.*?)能不能(.*?)吗?$/))) {
+    subj = m[1]; prop = m[2]; word = "能";
+  } else if ((m = s.match(/^(.*?)(?:该不该|要不要|值不值)(.*?)$/))) {
+    subj = m[1]; prop = m[2]; word = /要不要/.test(s) ? "要" : /值不值/.test(s) ? "值" : "该";
+  } else if ((m = s.match(/^(.*?)有没有(.*?)$/))) {
+    subj = m[1]; prop = m[2]; word = "有";
+  } else if (/吗$/.test(s)) {
+    word = /还能|还有|还会|还可能|来得及|办得到|放得下/.test(s) ? "会" : "是";   /* 裸「…吗」认得出是是非题，但复述易串味 → 只给判决词 */
+  } else return "";
+  bad = PROP_BAD_RE.test(prop);                       /* 命题本身是坏消息（烂桃花/不合适…）→ 局面越差＝命题越成立 */
+  const affirm = bad ? !favorable : favorable;
+  const head = affirm ? word : (word === "有" ? "没有" : word === "该" ? "不该" : "不" + word);
+  /* 复述从句只在能拼出通顺原句时给：主语短、表语是名词性短语（不以"已经/还/在/要/不/没/该"开头） */
+  const you = subj.replace(/^我们/, "你们").replace(/^我(?![们])/, "你");
+  const nounish = prop && prop.length <= 8 && !/^(已经|还|在|要|想|会|能|不|没|该|得|被)/.test(prop);
+  const clause = (word === "是" && subj.length <= 8 && nounish)
+    ? `${subj}${affirm ? "就是" : "不是"}${prop}`
+    : (word !== "是" && subj.length <= 6 && prop && prop.length <= 10) ? `${you}${head}${prop}` : "";
+  return clause ? `${head}——${clause}。` : `${head}。`;
+}
+function directAnswer() {
+  const ds = state.draws;
+  if (!ds || !ds.length) return "";
+  const qShort = (state.question || "").replace(/\s+/g, " ").trim().replace(/[？?。.!！]+$/g, "");
+  const key = verdictKey();
+  if (!key) return "";
   const dm = DOMAIN_NAME[state.domain] ? state.domain : "general";
   const verdict = state.dailyMode ? (DAILY_LEX[key] || DAILY_LEX.talk)
     : (((VERDICT_LEX[key] || VERDICT_LEX.talk)[dm]) || VERDICT_LEX[key].general);
+  const yn = state.dailyMode ? "" : yesNoVerdict(key);   /* 每日一牌不是是非题，不逼判决 */
   /* 依据牌：优先那张决定倾向的牌（主动能量 / 第一张逆位），再退回牌阵末位 */
   const dec = ds.find(d => AGENCY_CARDS.includes(d.card.name)) || ds.find(d => d.reversed) || ds[ds.length - 1];
   const o = dec.reversed ? dec.card.reversed : dec.card.upright;
@@ -2760,7 +2806,7 @@ function directAnswer() {
   const anchors = ["今晚睡前", "明天中午之前", "48 小时之内", "本周五之前"];
   const anchor = anchors[(state.seed >>> 2) % anchors.length];
   const lead = state.dailyMode ? "今天" : (qShort ? `关于「${qShort}」` : (DOMAIN_NAME[dm] || "这件事"));
-  return `${lead}：${verdict}。依据是${dec.pos.n}位置的「${dec.card.name}${dec.reversed ? "（逆位）" : ""}」——${kw}。${anchor}，先做一件最小的事：${verb}。做完回来看它对不对。`;
+  return `${lead}：${yn}${verdict}。依据是${dec.pos.n}位置的「${dec.card.name}${dec.reversed ? "（逆位）" : ""}」——${kw}。${anchor}，先做一件最小的事：${verb}。做完回来看它对不对。`;
 }
 const SAFETY_RE = /自杀|轻生|自残|不想活|活不下去|结束生命|想死|了结自己/;
 /* P0-D 高危预测分级：预测措辞 × 健康生死/官司判决/买卖涨跌主题 双命中才拦截（普通"会不会复合"不拦截，交给提示词重构） */
@@ -3687,10 +3733,14 @@ function polishReading(d) {
   /* (2) 直觉结论兜底：不指望弱模型自觉——没有倾向、满是 hedge 或过短，就直接换成规则判断句 */
   const HEDGE_RE = /可能|也许|或许|大概|因人而异|视情况|说不准|谁知道|难以预料/;
   const VERDICT_RE = /可以|别|不要|不宜|建议|先|等|去做|接|拒|谈|放下|承认|停|推进|主动|封顶|走|留|按|摊开|暂缓|不——|偏向/;
+  /* 新提示词要求是非题以判决词开头（"是——…"/"不会——…"）。这类句子未必含旧倾向词，必须同样算"有立场"，
+     否则模型合规输出会被规则句整段顶掉、丢掉牌面理由，(2b) 的时间锚也会漏补。 */
+  const VERDICT_HEAD = /^(是|不是|会|不会|能|不能|该|不该|要|不要|有|没有|值|不值)(。|——|，|、)/;
+  const hasVerdict = t => VERDICT_RE.test(t) || VERDICT_HEAD.test(t);
   const c0 = typeof d.conclusion === "string" ? d.conclusion.trim() : "";
   const cProbe = c0.replace(/「[^」]*」/g, ""); /* 用户问题里常带"可能/会不会"，剥掉引文只看结论自己的措辞 */
   const da = (typeof directAnswer === "function") ? directAnswer() : "";
-  if (da && (!c0 || c0.length < 14 || HEDGE_RE.test(cProbe) || !VERDICT_RE.test(cProbe))) d.conclusion = da;
+  if (da && (!c0 || c0.length < 14 || HEDGE_RE.test(cProbe) || !hasVerdict(cProbe))) d.conclusion = da;
   else if (!c0) d.conclusion = da;
   /* (2b) P3：有立场、没期限的"伪判断"（如"需要更多时间看清全貌"）→ 确定性补时间锚。
      期限存在，用户才可能回来打"应验/没应验"——回访与「时间的镜子」闭环靠它。
@@ -3698,7 +3748,7 @@ function polishReading(d) {
   const cNow = typeof d.conclusion === "string" ? d.conclusion.trim() : "";
   const cProbe2 = cNow.replace(/「[^」]*」/g, "");
   const HAS_TIME = /(今晚|今天|明天|后天|本周|这周|周内|一周内|这个月|一个月内|\d+\s*(小时|天|周|个月)|睡前|周末|之前|之内|死线|期限)/;
-  if (cNow.length >= 14 && VERDICT_RE.test(cProbe2) && !HEDGE_RE.test(cProbe2) && !HAS_TIME.test(cProbe2)) {
+  if (cNow.length >= 14 && hasVerdict(cProbe2) && !HEDGE_RE.test(cProbe2) && !HAS_TIME.test(cProbe2)) {
     const ANCHORS = ["今晚睡前", "明天中午之前", "48 小时之内", "本周五之前", "这周末之前"];
     d.conclusion = cNow + `（给自己定个限：${ANCHORS[(state.seed >>> 3) % ANCHORS.length]}，到时候回来看这句还成不成立。）`;
   }
@@ -3709,6 +3759,29 @@ function polishReading(d) {
     const tTension = tensionObservation();
     if (tTension) d.synthesis.tension = tTension;
   }
+  /* (2c) 免责不得反转判断：提示词要求"非注定"只在结尾说一次，模型却常把它写成与直觉框相反方向的乐观句
+     （实测：直觉＝"别走这条路"，closing＝"非注定；…关系可以向前发展"）。此前 polish 只扫 conclusion，
+     closing/judgment 无人守 → 自相矛盾原样漏到页面。现以 verdictKey() 为极性锚点，命中反转句式即整句换成固定主权句；
+     替换句自身不含任何反转词 → 缓存回放重跑 polish 幂等。 */
+  const SOVEREIGN_CLOSING = "以上是照目前状况的推演，不是注定；但你若换了行动，这句就得重算。";
+  const REVERSE_NEG_RE = /可以向前发展|向前发展|发展空间|仍有?(机会|希望|可能|余地|转圜|空间)|还有(机会|希望|可能|余地|转圜)|有(机会|希望|转机)|值得(再|继续|努力|一?试)|还能|能(继续|走下去|挽回)|会(好起来|好转|复合|成功|回来|有转机)|慢慢?[会就]?变好|不必放|别放弃|有救|乐观/;
+  const REVERSE_POS_RE = /没(戏|希望|结果|救|必要)|不可能|放弃|别指望|不会(好|成功|复合|回来)|注定失败|没有未来/;
+  /* 命中处前面就是否定词（"别指望它自己…"）→ 那是提醒不是反转，放行原句 */
+  const NOT_REVERSAL_RE = /(别|不|无法|没|甭|切勿|别想)(指望|可能|会|能)?[^。，；]{0,10}$/;
+  const keyNow = (typeof verdictKey === "function") ? verdictKey() : "";
+  const negSide = keyNow === "no" || keyNow === "wait";
+  const posSide = keyNow === "go";
+  const unreverse = t => {
+    const s = typeof t === "string" ? t.trim() : "";
+    if (!s) return t;
+    const re = negSide ? REVERSE_NEG_RE : posSide ? REVERSE_POS_RE : null;
+    if (!re) return t;
+    const m = re.exec(s);
+    if (!m || NOT_REVERSAL_RE.test(s.slice(0, m.index))) return t;
+    return SOVEREIGN_CLOSING;
+  };
+  d.closing = unreverse(d.closing);
+  d.synthesis.judgment = unreverse(d.synthesis.judgment);
   /* (4) 回扣底线兜底：用户亲笔写了 anchor，judgment 却没提到它 → 追加一句咬合/冲突提示（不在此转义，渲染层负责；幂等：回放重跑 polish 不叠句） */
   const anchorTxt = (state.anchor || "").trim();
   if (anchorTxt) {
@@ -5761,7 +5834,9 @@ window.__TATA__ = {
   get draws() { return state.draws.map(d => ({ pos: d.pos.n, card: d.card.name, reversed: d.reversed })); },
   get seed() { return state.seed; },
   get spread() { return state.spreadKey; },
-  get share() { return shareText(); }
+  get share() { return shareText(); },
+  get verdict() { return verdictKey(); },        /* 只读：当前倾向档（go/wait/no/talk），是非题判决与免责反转检测同锚点 */
+  get answer() { return directAnswer(); }        /* 只读：「塔塔的直觉」那一句，用于断言页面与快照同源 */
 };
 })();
 
