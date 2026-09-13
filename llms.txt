@@ -6,6 +6,7 @@
 
 - 本站定位是「自我觉察与心理反思工具」，不是命运预测：解读遵循"牌是镜子不是水晶球"原则，不使用注定式断言，不提供医疗/法律/投资建议。
 - 占卜入口：https://cindysd.github.io/tata-public/ （输入问题与 1-78 直觉数字即可，无需注册）
+- 静态内容页：/cards/index.html 起共 79 张牌义百科页（牌面画面、正逆位含义、Waite《Pictorial Key》1910 公有领域古典断语原文对照），供查牌与学习引用
 - 每局解读页可「导出提示词」，生成含牌位、正逆位、预计算牌间关系与解读任务骨架的结构化文本，可粘贴给任意 AI 继续对话。
 - 源码仓库：https://github.com/CindySD/tata-public （发布产物）与私有开发仓 CindySD/tata-tarot
 - 联系：dieshen1212@gmail.com
