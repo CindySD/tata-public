@@ -3721,7 +3721,7 @@ async function renderReading() {
   /* C1：从朋友分享链接进来——一次性讲清牌由谁抽的、深度解读取决于谁付额度（文案诚实红线） */
   if (shareLinkView) {
     shareLinkView = false;
-    $("#reading-q").insertAdjacentHTML("beforebegin", `<div class="share-link-note">🔗 这是朋友分享的牌局——牌由<b>分享者亲手抽定</b>（印记 ${seedHex()}），你打开看到的是站内内置解读视角。<br>本站不联网、读不到对方的记录；AI 深度版要配置你自己的 API key 才会生成（用你的额度）。</div>`);
+    $("#reading-q").insertAdjacentHTML("beforebegin", `<div class="share-link-note">🔗 这是朋友分享的牌局——牌由<b>分享者亲手抽定</b>（印记 ${seedHex()}），你打开看到的是站内内置解读视角。<br>本站没有后端，读不到对方的记录；AI 深度版要配置你自己的 API key 才会生成（用你的额度）。</div>`);
   }
   const h = new Date(state.readingDate || Date.now()).getHours();
   const daypart = h >= 6 && h < 12 ? "晨光初启的时分" : h < 18 ? "日光渐沉的时分" : "夜色渐深的时分";
