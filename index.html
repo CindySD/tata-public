@@ -2743,23 +2743,37 @@ function synthesize() {
 }
 /* ---------- 直接回答：一句话给出可验证的倾向（页面直觉框 / 规则快照 / AI 兜底 共用；同牌同问必得同一句） ---------- */
 const AGENCY_CARDS = ["力量", "战车", "太阳", "星星", "魔术师", "皇帝", "节制", "审判", "命运之轮", "权杖八", "权杖三", "星币八"];
-const HOLD_CARDS = ["宝剑四", "倒吊人", "隐士", "圣杯四", "月亮"];
+const HOLD_CARDS = ["宝剑四", "倒吊人", "隐士", "圣杯四", "月亮", "女祭司"];
 const VERDICT_LEX = {
   go:   { love: "主动一次，但只谈事实不翻旧账", career: "接——条件对你有利", finance: "可以投，先把金额封顶在你亏得起的数", general: "去做，别再拖到「下次一定」" },
   wait: { love: "先别推进，这周把话收住", career: "暂缓，等关键条件补齐再谈", finance: "这笔钱先按住，别加杠杆", general: "先等一等，本周不做不可逆的决定" },
   no:   { love: "别走这条路，勉强只会把痛拉长", career: "不要接，牌面写着你兜不住的那部分", finance: "不要投，风险大于你看到的收益", general: "答案偏向不——现在不是时候" },
-  talk: { love: "去谈一次，把需求说成请求而不是控诉", career: "先把边界谈清楚再动手", finance: "把账摊开算一遍，再决定要不要开始", general: "把话问出口，别自己替对方猜" }
+  talk: { love: "去谈一次，把需求说成请求而不是控诉", career: "先把边界谈清楚再动手", finance: "把账摊开算一遍再决定要不要开始", general: "把话当面问清楚，别自己替对方脑补" }
 };
 const DAILY_LEX = {
-  go: "今天适合主动出手，把拖着的那一步推出去",
-  wait: "今天适合收着做，不宜摊牌，也不宜做大决定",
+  go: "今天适合主动出手，把拖着的那一步现在就推出去",
+  wait: "今天适合先收着，别摊牌，也别拍不可逆的决定",
   no: "今天别硬推——这件事今天不是你的战场",
-  talk: "今天适合把憋着的那句话说清楚，只说感受，不下判决"
+  talk: "今天适合开口把话说明白，你纠结的那件事直接去问，别拿猜测当答案"
 };
 /* ---------- 倾向档单源：直觉框与「免责不得反转」检测共用同一把尺（同牌同问必得同一档） ---------- */
 function verdictKey() {
   const ds = state.draws;
   if (!ds || !ds.length) return "";
+  /* 单张牌（每日一牌 / 单牌阵）：revRatio 无意义，旧版把一切正位普通牌扫进 talk，
+     导致权杖骑士·女祭司·塔这类与「沟通」无关的牌共用同一句鸡汤。改按这张牌本身的能量定档，
+     talk 只留给真正指向厘清/表达的风、水牌。 */
+  if (ds.length === 1) {
+    const d0 = ds[0], c = d0.card, rev = d0.reversed;
+    if (rev) return "wait";                                   /* 单牌逆位＝能量受阻，先向内、别硬推（旧版误判 no 或 talk） */
+    if (AGENCY_CARDS.includes(c.name)) return "go";           /* 少数能自推的牌，正位＝可主动做 */
+    if (HOLD_CARDS.includes(c.name)) return "wait";           /* 隐士·月亮·女祭司等向内牌＝先沉淀 */
+    switch (c.suit) {
+      case "wands": case "pentacles": return "go";            /* 火/土正位＝行动·落地 */
+      case "swords": case "cups": return "talk";              /* 风/水正位＝厘清·表达 */
+      default: return "go";                                  /* 其余正位大牌＝该主动面对的篇章 */
+    }
+  }
   const revRatio = ds.filter(d => d.reversed).length / ds.length;
   const agencyOpen = ds.some(d => AGENCY_CARDS.includes(d.card.name) && !d.reversed);
   const agencyBlocked = ds.some(d => AGENCY_CARDS.includes(d.card.name) && d.reversed);
@@ -2768,7 +2782,13 @@ function verdictKey() {
   if (agencyBlocked && !agencyOpen) return "talk";
   if (!agencyOpen && (revRatio >= 0.34 || holding)) return "wait";
   if (agencyOpen && !revRatio) return "go";
-  return holding ? "wait" : "talk";
+  /* 多张中性盘（既非受阻、也无强自推）：旧版一律兜 talk，改按主导花色定档，火土→去做、风水→去厘清，
+     不再"任何牌阵都劝你去沟通"。 */
+  if (holding) return "wait";
+  const tally = {}; for (const d of ds) { const s = d.card.suit; if (s && s !== "major") tally[s] = (tally[s] || 0) + 1; }
+  const dom = Object.keys(tally).sort((x, y) => tally[y] - tally[x])[0];
+  if (dom === "wands" || dom === "pentacles") return "go";
+  return "talk";
 }
 /* ---------- 是非题判决：把「是不是 / 会不会 / 能不能 / 该不该 / 要不要 / 有没有」逼成一个字的答案 ----------
    用户反馈：解析不许模棱两可。所以是非题第一句必须是判决词本身（是。/ 不是。/ 会。/ 不会。…），
@@ -2816,8 +2836,18 @@ function directAnswer() {
   const key = verdictKey();
   if (!key) return "";
   const dm = DOMAIN_NAME[state.domain] ? state.domain : "general";
-  const verdict = state.dailyMode ? (DAILY_LEX[key] || DAILY_LEX.talk)
-    : (((VERDICT_LEX[key] || VERDICT_LEX.talk)[dm]) || VERDICT_LEX[key].general);
+  let verdict = state.dailyMode ? (DAILY_LEX[key] || DAILY_LEX.go)
+    : (((VERDICT_LEX[key] || VERDICT_LEX.go)[dm]) || VERDICT_LEX.go.general);
+  /* 直觉框自身 hedge 自检：本框契约＝「敢给倾向、直给」，若某档措辞哪天混进退让话
+     （旧版 talk 那句劝人「别下判决、只谈感受」正是这类，出现在最该给倾向的框里＝自我否定），
+     就用同档直给兜底替换。此前免责反转词表只扫 AI 正文，漏了规则框自己产出的串。 */
+  const HEDGE_BOX_RE = /不下判决|只说感受|也许|或许|可能|有.{0,3}(空间|余地)|慢慢来|随缘|看情况|说不准|不好说|说不好|不好讲/;
+  if (HEDGE_BOX_RE.test(verdict)) {
+    const STRAIGHT = state.dailyMode
+      ? { go: "今天适合主动出手", wait: "今天先按住，别急着推", no: "今天先别推进这件事", talk: "今天适合把话当面说清楚" }
+      : { go: "去做，方向对你有利", wait: "先等条件补齐再动", no: "别接，牌面写着你兜不住的那部分", talk: "去谈清楚，把话问明白别脑补" };
+    verdict = STRAIGHT[key] || verdict;
+  }
   const yn = state.dailyMode ? "" : yesNoVerdict(key);   /* 每日一牌不是是非题，不逼判决 */
   /* 依据牌：优先那张决定倾向的牌（主动能量 / 第一张逆位），再退回牌阵末位 */
   const dec = ds.find(d => AGENCY_CARDS.includes(d.card.name)) || ds.find(d => d.reversed) || ds[ds.length - 1];
