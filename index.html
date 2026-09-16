@@ -3806,15 +3806,18 @@ function polishReading(d) {
   const da = (typeof directAnswer === "function") ? directAnswer() : "";
   if (da && (!c0 || c0.length < 14 || HEDGE_RE.test(cProbe) || !hasVerdict(cProbe))) d.conclusion = da;
   else if (!c0) d.conclusion = da;
-  /* (2b) P3：有立场、没期限的"伪判断"（如"需要更多时间看清全貌"）→ 确定性补时间锚。
-     期限存在，用户才可能回来打"应验/没应验"——回访与「时间的镜子」闭环靠它。
-     锚由印记派生（同局同句，回放/分享快照一致）；补入句自带时间词 → 缓存回放重跑 polish 幂等不叠句。 */
+  /* (2b) P3：有立场、没期限、且是「可被现实应验」的判断 → 补时间锚，驱动回访与「时间的镜子」闭环。
+     内省/情绪型结论（留意·觉察·允许·别压抑…）没有"应验"可言，硬贴回看钩子＝空头承诺（实测投诉），用 INTRO_RE 排除；
+     每日一牌＝当日尺度，锚点收窄到今晚/今天，不再甩"本周五/这周末"。锚由印记派生（同局同句），补句自带时间词→回放幂等不叠句。 */
   const cNow = typeof d.conclusion === "string" ? d.conclusion.trim() : "";
   const cProbe2 = cNow.replace(/「[^」]*」/g, "");
   const HAS_TIME = /(今晚|今天|明天|后天|本周|这周|周内|一周内|这个月|一个月内|\d+\s*(小时|天|周|个月)|睡前|周末|之前|之内|死线|期限)/;
-  if (cNow.length >= 14 && hasVerdict(cProbe2) && !HEDGE_RE.test(cProbe2) && !HAS_TIME.test(cProbe2)) {
-    const ANCHORS = ["今晚睡前", "明天中午之前", "48 小时之内", "本周五之前", "这周末之前"];
-    d.conclusion = cNow + `（给自己定个限：${ANCHORS[(state.seed >>> 3) % ANCHORS.length]}，到时候回来看这句还成不成立。）`;
+  const INTRO_RE = /留意|觉察|允许|感受|情绪|内心|正视|接纳|听见|看见自己|别压抑|掩盖|安放|照顾好?自己|慢下来|静一静/;
+  if (cNow.length >= 14 && hasVerdict(cProbe2) && !HEDGE_RE.test(cProbe2) && !HAS_TIME.test(cProbe2) && !INTRO_RE.test(cProbe2)) {
+    const ANCHORS = state.dailyMode
+      ? ["今晚睡前", "今天之内", "今晚之前"]
+      : ["今晚睡前", "明天中午之前", "48 小时之内", "本周五之前", "这周末之前"];
+    d.conclusion = cNow + (/[。！？]$/.test(cNow) ? "" : "。") + `到${ANCHORS[(state.seed >>> 3) % ANCHORS.length]}，回头看它应不应验。`;
   }
   /* (3) 反谄媚张力兜底：AI 若顺着用户期待说好话、tension 缺失或过短，规则引擎强制补一个"不顺着期待"的观察点（锚定牌，不写预言/读心） */
   if (!d.synthesis || typeof d.synthesis !== "object") d.synthesis = {};
