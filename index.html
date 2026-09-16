@@ -177,9 +177,12 @@ textarea{min-height:96px}
 .tcard .front{transform:rotateY(180deg);background:
   repeating-linear-gradient(45deg, rgba(201,168,106,.04) 0 6px, transparent 6px 12px), #0c0a14;
   border:1px solid rgba(201,168,106,.55);display:flex;align-items:center;justify-content:center}
-.tcard .front img{width:100%;height:100%;object-fit:cover;display:block;opacity:0;transition:opacity .35s ease}
+.tcard .front img{width:100%;height:100%;object-fit:cover;display:block;opacity:0;transition:opacity .35s ease;position:relative;z-index:1}
 .tcard .front img.ld{opacity:1}
-.tcard .front .ph{font-family:var(--serif);color:var(--gold);font-size:14px;letter-spacing:.2em;text-align:center;padding:8px}
+.tcard .front .ph{position:absolute;inset:0;z-index:0;display:flex;align-items:center;justify-content:center;font-family:var(--serif);color:var(--gold);font-size:14px;letter-spacing:.2em;text-align:center;padding:8px;transition:opacity .35s ease}
+.tcard .front .ph.loading{animation:phBreath 1.6s ease-in-out infinite}
+.tcard .front .ph.gone{opacity:0}
+@keyframes phBreath{0%,100%{opacity:.5}50%{opacity:1;text-shadow:0 0 12px rgba(201,168,106,.45)}}
 .tcard.rev .front img{transform:rotate(180deg)}
 .tcard.rev .front::after{content:"";position:absolute;inset:0;background:rgba(8,7,14,.16)}
 
@@ -244,6 +247,7 @@ textarea{min-height:96px}
 .mini-revealed .tcard{width:72px}
 .mini-revealed .tcard .back::before{inset:4px}
 .mini-revealed .tcard .back .sigil{font-size:14px}
+.mini-revealed .tcard .front .ph{font-size:9px;letter-spacing:.06em;padding:4px}
 .mini-revealed .pos-name{font-size:11px;color:var(--ink-dim);letter-spacing:.1em;margin-top:8px;text-align:center}
 .mini-revealed .pos-name .mini-cn{display:block;color:var(--gold);font-size:11px;letter-spacing:.08em;margin-top:2px}
 .reveal-cap{position:absolute;left:50%;bottom:-6px;transform:translateX(-50%);z-index:14;pointer-events:none;
@@ -344,6 +348,7 @@ textarea{min-height:96px}
 .spread-strip .mini .tcard{width:76px;margin:0 auto}
 .spread-strip .mini .tcard .back::before{inset:4px}
 .spread-strip .mini .tcard .back .sigil{font-size:14px}
+.spread-strip .mini .tcard .front .ph{font-size:9px;letter-spacing:.06em;padding:4px}
 .spread-strip .mini .pos{font-size:11px;color:var(--ink-dim);letter-spacing:.14em;margin-top:7px}
 .reading-card{
   background:var(--panel);border:1px solid var(--panel-line);border-radius:16px;
@@ -2578,6 +2583,40 @@ const state = {
 };
 
 let preheatGen = 0; /* 牌图预加载链代 token：新一轮 buildDraws 作废旧的 idle 分块链，防并发抢带宽 */
+const PREHEAT_CHUNK = 8;
+const preheatCtl = { gen: 0, list: [], cursor: 0, paused: false };
+const preheatIdle = (typeof requestIdleCallback === "function")
+  ? (fn => requestIdleCallback(fn, { timeout: 2000 })) : (fn => setTimeout(fn, 120));
+function preheatOne(card, hi) {
+  return new Promise((res) => {
+    const im = new Image();
+    im.referrerPolicy = "no-referrer";
+    if (hi) { try { im.fetchPriority = "high"; } catch (e) {} }
+    im.onload = im.onerror = () => res();
+    im.src = IMG_BASE + card.image;
+  });
+}
+/* P0=数字标记牌（马上要翻的）先落定，才开 P2=其余全量（喂 SW cache-first，回访零流量）。
+   preheatNow 给切牌这类"现在就要"的单张插队，并让 P2 先停一停。 */
+function preheatStart(p0, p2) {
+  const gen = ++preheatGen;
+  preheatCtl.gen = gen; preheatCtl.list = p2; preheatCtl.cursor = 0; preheatCtl.paused = false;
+  Promise.all(p0.map(c => preheatOne(c, true))).then(() => { if (preheatCtl.gen === gen) preheatStep(); });
+}
+function preheatStep() {
+  if (preheatCtl.gen !== preheatGen || preheatCtl.paused) return;
+  if (preheatCtl.cursor >= preheatCtl.list.length) return;
+  const slice = preheatCtl.list.slice(preheatCtl.cursor, preheatCtl.cursor + PREHEAT_CHUNK);
+  preheatCtl.cursor += PREHEAT_CHUNK;
+  Promise.all(slice.map(c => preheatOne(c, false))).then(() => preheatIdle(preheatStep));
+}
+function preheatNow(card) {
+  preheatCtl.paused = true;
+  preheatOne(card, true).then(() => {
+    if (preheatCtl.gen !== preheatGen) return;
+    preheatCtl.paused = false; preheatStep();
+  });
+}
 function buildDraws() {
   const spread = SPREADS[state.spreadKey];
   /* P1-2 可复现抽牌：seed = crypto 随机源 ⊕ 问题  数字；洗牌与逆位全由 seed 的确定性 PRNG 流驱动。
@@ -2602,21 +2641,10 @@ function buildDraws() {
     state.markedCards = [{ card: deck[dIdx], idx: dIdx, order: 0 }];
   }
   state.draws = [];
-  // 预热牌图：标记牌优先，其余按每批 8 张在空闲时段加载（避免 78 张并发挤占移动端带宽）
   const markedSet = new Set(state.markedCards.map(m => m.card));
-  const preheatList = [...markedSet, ...CARDS.filter(c => !markedSet.has(c))];
-  const PREHEAT_CHUNK = 8;
-  const preheatToken = ++preheatGen; /* 本轮预加载 token：下一次 buildDraws 会 ++，令本链自动作废 */
-  const idle = (typeof requestIdleCallback === "function") ? requestIdleCallback : (fn => setTimeout(fn, 120));
-  const loadChunk = (k) => {
-    if (preheatToken !== preheatGen) return; /* 已被更新的抽牌取代，停掉旧链避免并发抢带宽 */
-    if (k >= preheatList.length) return;
-    for (let j = k; j < Math.min(k + PREHEAT_CHUNK, preheatList.length); j++) {
-      const im = new Image(); im.src = IMG_BASE + preheatList[j].image;
-    }
-    idle(() => loadChunk(k + PREHEAT_CHUNK));
-  };
-  loadChunk(0);
+  /* 两段式预热：P0=标记牌（含每日一牌那张）先落定，P2=其余 69 张分块喂缓存（每块 8 张 + idle 让路，
+     避免 78 张并发挤占移动端带宽）；切牌由 preheatNow 插队 */
+  preheatStart(state.markedCards.map(m => m.card), CARDS.filter(c => !markedSet.has(c)));
 }
 
 /* ---------- 解读合成 ---------- */
@@ -2892,7 +2920,9 @@ $("#float-home").addEventListener("click", () => go("cover"));
 })();
 
 /* ---------- 牌元素工厂 ---------- */
-function makeCardEl(card, reversed) {
+/* hi=true：这张"马上就要被看到"（切牌、刚翻开的牌）→ eager + fetchpriority=high，
+   不许排在后台预热之后（首访弱网时它会被 70 张没人看的图挤到切牌停留窗口之外） */
+function makeCardEl(card, reversed, hi) {
   const el = document.createElement("div");
   el.className = "tcard" + (reversed ? " rev" : "");
   const back = document.createElement("div");
@@ -2900,24 +2930,30 @@ function makeCardEl(card, reversed) {
   back.innerHTML = '<span class="sigil">✶</span>';
   const front = document.createElement("div");
   front.className = "face front";
+  /* 加载态：图片 .ld 之前牌面原本只剩一个空金框（.ph 过去只在双源都失败时才建）。
+     现在先挂 .ph（牌名 + 呼吸微光），解码后淡出；真失败就常驻当兜底。 */
+  const ph = document.createElement("div");
+  ph.className = "ph loading"; ph.textContent = card.name;
   const img = document.createElement("img");
   img.alt = card.name;
   img.referrerPolicy = "no-referrer";
-  img.loading = "lazy";
-  img.src = IMG_BASE + card.image;
+  img.loading = hi ? "eager" : "lazy";
+  if (hi) { try { img.setAttribute("fetchpriority", "high"); } catch (e) {} }
+  const settled = () => { img.classList.add("ld"); ph.classList.remove("loading"); ph.classList.add("gone"); };
   img.onload = () => {
     const w = img.naturalWidth, h = img.naturalHeight, ar = h ? w / h : 0;
     if (!w || !h || h < 500 || ar < 0.5 || ar > 0.75) {
       console.warn("[牌面守卫] 图片尺寸异常，疑似错位/来源不符:", card.name, card.image, w + "x" + h);
     }
-    img.classList.add("ld");
+    settled();
   };
-  if (img.complete && img.naturalWidth > 0) img.classList.add("ld");
   img.onerror = () => {
     if (!img.dataset.fb) { img.dataset.fb = "1"; img.src = CDN_BASE + card.image; return; }
-    img.remove(); const ph = document.createElement("div"); ph.className = "ph"; ph.textContent = card.name; front.appendChild(ph);
+    img.remove(); ph.classList.remove("loading"); /* 牌名常驻，不再是空框 */
   };
-  front.appendChild(img);
+  front.appendChild(ph); front.appendChild(img);
+  img.src = IMG_BASE + card.image; /* 回调挂好再发请求：缓存命中时 onload 可能同帧就到 */
+  if (img.complete && img.naturalWidth > 0) settled();
   el.appendChild(back); el.appendChild(front);
   return el;
 }
@@ -3351,7 +3387,8 @@ function showCutStep() {
     if (!card) { finish(0); return; }
     state.cutCard = card;
     btn.disabled = true; inp.disabled = true;
-    const el = makeCardEl(card, false);
+    preheatNow(card); /* 插队取这一张，并让后台 P2 全量预热先停一停 */
+    const el = makeCardEl(card, false, true);
     el.classList.add("cut-flip");
     layer.querySelector(".cut-deck").replaceWith(el);
     playSfx("flip");
@@ -3601,7 +3638,7 @@ function revealChosen(card, reversed) {
     ? (state.markedCards.find(mc => mc.card === card) ? `你翻开了数字标记的牌——` : `第一张牌现身——`)
     : "牌阵继续为你展开……";
   subEl.textContent = "屏住呼吸，它要翻面了。";
-  const el = makeCardEl(card, reversed);
+  const el = makeCardEl(card, reversed, true); /* 正在揭示的这一张：高优先级，别排在预热之后 */
   el.style.position = "absolute";
   el.style.left = "50%"; el.style.top = "47%";
   el.style.transform = "translate(-50%,-50%) scale(.7)";
@@ -3625,7 +3662,7 @@ function revealChosen(card, reversed) {
         /* 落入已翻开行 */
         const mini = document.createElement("div");
         mini.className = "mini-revealed";
-        const mcard = makeCardEl(card, reversed);
+        const mcard = makeCardEl(card, reversed, true);
         mcard.classList.add("flipped");
         const pn = document.createElement("div");
         pn.className = "pos-name";
@@ -3842,7 +3879,7 @@ async function renderReading() {
   state.draws.forEach((d, i) => {
     const m = document.createElement("div");
     m.className = "mini"; m.setAttribute("role", "button"); m.setAttribute("tabindex", "0");
-    const mc = makeCardEl(d.card, d.reversed);
+    const mc = makeCardEl(d.card, d.reversed, true); /* 概览条渲染即见（回看时是冷启动），走高优先级 */
     mc.classList.add("flipped");
     const p = document.createElement("div");
     p.className = "pos"; p.textContent = d.pos.n;
