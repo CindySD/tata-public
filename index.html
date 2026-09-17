@@ -2733,7 +2733,7 @@ function synthesize() {
   const exitCard = ds.find(d => d.pos.lens === "门") || ds[ds.length - 1];
   const exitBase = exitCard.reversed ? exitCard.card.reversed : exitCard.card.upright;
   const anchors = ["48 小时内", "今晚睡前", "本周找一个你状态好的日子", "明天中午之前"];
-  const anchor = anchors[state.seed % anchors.length];
+  const anchor = timeAnchor(state.seed, anchors); /* 每日一牌不收"本周"级锚点 */
   const echoPool = [
     "如果一年后的你回头看今天，ta 会对你说什么？",
     "这周之内，你能为自己做的一件最小的事是什么？",
@@ -2764,6 +2764,14 @@ function basisDraw() {
   const ds = state.draws;
   if (!ds || !ds.length) return null;
   return ds.find(d => AGENCY_CARDS.includes(d.card.name)) || ds.find(d => d.reversed) || ds[ds.length - 1];
+}
+/* 相对期限锚点（单一真源）：每日一牌只有"今天"这个尺度，锚点必须收窄到今晚/今天级；多张阵可到本周。
+   站内曾有 4 张各写各的锚点表，上一版只收窄了 polish 那一张 → 每日一牌仍从直觉框那张表里吐「本周五之前」。
+   现四处一律走 timeAnchor：daily 走这份，牌阵沿用调用方原表（不改动现有牌阵文案）。 */
+const ANCHORS_DAILY = ["今晚睡前", "今天之内", "今晚之前"];
+function timeAnchor(shift, spreadList) {
+  const list = state.dailyMode ? ANCHORS_DAILY : spreadList;
+  return list[Math.abs(shift | 0) % list.length];
 }
 const HOLD_CARDS = ["宝剑四", "倒吊人", "隐士", "圣杯四", "月亮", "女祭司"];
 const VERDICT_LEX = {
@@ -2884,7 +2892,7 @@ function directAnswer() {
   const pick = acts.map(a => String(a || "").trim()).filter(v => /^[一-龥]{2,4}$/.test(v) && ACT_HEAD.test(v));
   const verb = pick[0] || "写下你现在要做的第一步";
   const anchors = ["今晚睡前", "明天中午之前", "48 小时之内", "本周五之前"];
-  const anchor = anchors[(state.seed >>> 2) % anchors.length];
+  const anchor = timeAnchor(state.seed >>> 2, anchors); /* 每日一牌自动收窄到今晚/今天级 */
   const lead = state.dailyMode ? "今天" : (qShort ? `关于「${qShort}」` : (DOMAIN_NAME[dm] || "这件事"));
   return `${lead}：${yn}${verdict}。依据是${dec.pos.n}位置的「${dec.card.name}${dec.reversed ? "（逆位）" : ""}」——${kw}。${anchor}，先做一件最小的事：${verb}。做完回来看它对不对。`;
 }
@@ -3856,7 +3864,7 @@ function polishReading(d) {
     /* 必须过 ACT_HEAD：词库里"只顾自己/被执念奴役/剧变骤临"是牌义标签，不是动作，
        直接拼成"安排时间只顾自己"＝把贬义标签当指令发给问者（实测踩坑，且会进分享图） */
     for (const v of acts) { const t = typeof v === "string" ? v.trim() : ""; if (/^[\u4e00-\u9fa5]{2,8}$/.test(t) && ACT_HEAD.test(t)) { verb = t; break; } }
-    const anchor = ["今晚睡前", "明天中午之前", "本周之内", "48 小时之内"][((state.seed >>> 5) % 4 + 4) % 4];
+    const anchor = timeAnchor(state.seed >>> 5, ["今晚睡前", "明天中午之前", "本周之内", "48 小时之内"]);
     const qText = state.question || "";
     const KW = /(外派|跳槽|工作|事业|项目|升职|加薪|辞职|创业|复合|分手|冷战|暧昧|出轨|婚姻|感情|投资|理财|考试|学业|考研|offer|方向|决定|决心|机会|选择|抉择|迷茫|去留|搬家|房子|健康|身体)/;
     const km = qText.match(KW);
@@ -3900,10 +3908,7 @@ function polishReading(d) {
   const HAS_TIME = /(今晚|今天|明天|后天|本周|这周|周内|一周内|这个月|一个月内|\d+\s*(小时|天|周|个月)|睡前|周末|之前|之内|死线|期限)/;
   const INTRO_RE = /留意|觉察|允许|感受|情绪|内心|正视|接纳|听见|看见自己|别压抑|掩盖|安放|照顾好?自己|慢下来|静一静/;
   if (cNow.length >= 14 && hasVerdict(cProbe2) && !HEDGE_RE.test(cProbe2) && !HAS_TIME.test(cProbe2) && !INTRO_RE.test(cProbe2)) {
-    const ANCHORS = state.dailyMode
-      ? ["今晚睡前", "今天之内", "今晚之前"]
-      : ["今晚睡前", "明天中午之前", "48 小时之内", "本周五之前", "这周末之前"];
-    d.conclusion = cNow + (/[。！？]$/.test(cNow) ? "" : "。") + `到${ANCHORS[(state.seed >>> 3) % ANCHORS.length]}，回头看它应不应验。`;
+    d.conclusion = cNow + (/[。！？]$/.test(cNow) ? "" : "。") + `到${timeAnchor(state.seed >>> 3, ["今晚睡前", "明天中午之前", "48 小时之内", "本周五之前", "这周末之前"])}，回头看它应不应验。`;
   }
   /* (3) 反谄媚张力兜底：AI 若顺着用户期待说好话、tension 缺失或过短，规则引擎强制补一个"不顺着期待"的观察点（锚定牌，不写预言/读心） */
   if (!d.synthesis || typeof d.synthesis !== "object") d.synthesis = {};
