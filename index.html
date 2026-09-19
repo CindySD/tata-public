@@ -233,7 +233,8 @@ textarea{min-height:96px}
 .fan .fcard.next{outline:2px solid var(--gold-hi);outline-offset:2px;z-index:9;transform:rotate(var(--tilt,0deg)) translateY(-12px);box-shadow:0 0 16px rgba(201,168,106,.5);cursor:pointer}
 .fan .fcard.next-pulse{animation:nextPulse .5s ease}
 .card-hint{position:fixed;transform:translate(-50%,-100%);background:rgba(11,9,18,.94);border:1px solid var(--gold-dim);color:var(--gold-hi);font-size:12px;letter-spacing:.06em;padding:6px 12px;border-radius:999px;pointer-events:none;z-index:9998;white-space:nowrap;box-shadow:0 6px 22px rgba(0,0,0,.45);animation:cardHintIn .22s ease}
-@keyframes cardHintIn{from{opacity:0;transform:translate(-50%,-92%)}to{opacity:1;transform:translate(-50%,-100%)}}
+.card-hint.below{transform:translate(-50%,0)}
+@keyframes cardHintIn{from{opacity:0}to{opacity:1}}
 @keyframes nextPulse{0%{box-shadow:0 0 5px rgba(201,168,106,.3)}50%{box-shadow:0 0 24px rgba(201,168,106,.66)}100%{box-shadow:0 0 16px rgba(201,168,106,.5)}}
 /* 今日一牌·引导式揭示（daily）：其余牌淡出、标记牌"命运之光"浮起辉光并轻微起伏；动效由全局 prefers-reduced-motion 块自动降为静态 */
 .fan .fcard.dimming{opacity:.3;transition:opacity 1.1s ease}
@@ -640,7 +641,9 @@ footer .gold{color:var(--gold)}
 .serene-phase .sp-dots i{width:6px;height:6px;border-radius:50%;background:var(--gold-dim);opacity:.35;transition:opacity .6s ease,transform .6s ease}
 .serene-phase .sp-dots i.on{opacity:1;transform:scale(1.35);background:var(--gold-hi)}
 @keyframes sereneIn{to{opacity:1;transform:none;visibility:visible}}
-.serene-cta{margin-top:46px;display:flex;flex-direction:column;gap:14px;align-items:center;opacity:0;visibility:hidden;animation:sereneIn 1.4s ease 8.6s forwards}
+.serene-cta{margin-top:46px;display:flex;flex-direction:column;gap:14px;align-items:center;opacity:.45;filter:saturate(.4);transition:opacity .9s ease,filter .9s ease}
+.serene-cta.ready{opacity:1;filter:none}
+.serene-note{margin-top:16px;font-size:11.5px;color:var(--ink-faint);letter-spacing:.14em}
 .serene-cta .btn{min-width:230px}
 
 /* ---------- P1-1 复盘闭环 ---------- */
@@ -993,10 +996,11 @@ footer::before{
       <p class="serene-line l1">欢迎来到塔塔🔮の心灵疗愈室。</p>
       <p class="serene-line l2">跟着下面这个圆呼吸：鼓起来时吸气，停一停，落回去时呼出。三次更好，一次也算静下来。</p>
       <p class="serene-line l3">然后，凭直觉告诉我你想的 1 到 78 之间的数字。</p>
-      <div class="serene-cta">
-        <button class="btn" id="btn-serene-next" type="button">我准备好了 · 输入问题 →</button>
+      <div class="serene-cta" id="serene-cta">
+        <button class="btn" id="btn-serene-next" type="button" disabled>我准备好了 · 输入问题 →</button>
         <button class="btn ghost" id="btn-serene-back" type="button">← 返回</button>
       </div>
+      <div class="serene-note" id="serene-note">跟圆呼吸三次更好，亮起来也可直接继续</div>
     </div>
   </section>
 
@@ -2755,8 +2759,16 @@ function synthesize() {
 }
 /* ---------- 直接回答：一句话给出可验证的倾向（页面直觉框 / 规则快照 / AI 兜底 共用；同牌同问必得同一句） ---------- */
 /* 动作动词闸（单一真源）：CARD_ACTIONS 里混着"只顾自己/被执念奴役/剧变骤临"这类**牌义状态标签**，
-   不能当动作指令用。直觉框与「AI 行动建议兜底句」两处都必须过这把同一尺，谁也不许另写一份。 */
-const ACT_HEAD = /^[写谈说列做约查算定给发问记整复开答核排试去停放看准]/;
+   不能当动作指令用。词长 2–6 + 首字动词表：旧版 2–4 字 + 21 个动词实测只覆盖 15/78 张牌，
+   其余 63 张全落到通用句（对所有牌一样的话＝巴纳姆，正是产品要反的）。
+   刻意不用"排除状态形态"的黑名单（覆盖可达 99%）——它会重新放行"只顾自己"这类标签，是上一批刚修的坑。 */
+const ACT_HEAD = /^[写谈说列做约查算定给发问记整复开答核排试去停放看准守等预表态划找删补清标敞落喊讲聊述立纠疏承]/;
+const ACT_LEN = /^[一-龥]{2,6}$/;
+function actionVerb(list) {
+  const arr = Array.isArray(list) ? list : [];
+  const hit = arr.map(a => String(a || "").trim()).filter(v => ACT_LEN.test(v) && ACT_HEAD.test(v));
+  return hit[0] || "";
+}
 const AGENCY_CARDS = ["力量", "战车", "太阳", "星星", "魔术师", "皇帝", "节制", "审判", "命运之轮", "权杖八", "权杖三", "星币八"];
 /* 依据牌选取（单一真源）：主动能量牌 → 第一张逆位 → 牌阵末位。
    直觉框的"依据是X位置的「Y」"与 AI 结论补标依据共用此函数，不得另写第二份。 */
@@ -2824,10 +2836,12 @@ function verdictKey() {
    用户反馈：解析不许模棱两可。所以是非题第一句必须是判决词本身（是。/ 不是。/ 会。/ 不会。…），
    倾向词与依据退到判决之后当理由。高危题（健康/法律/涨跌）与自伤信号沿用 P0-D 护栏，不逼出是/不是。
    判决只由 verdictKey()（洗牌既定）+ 问题文本派生，无随机 → 同牌同问必得同一句，回放/分享快照一致。 */
-/* 是非题识别（单一真源）：分支与 yesNoVerdict() 保持一致——判决引擎认的这些句式，问题教练也必须认，
-   否则会出现"引擎已经逼出一个字答案、教练却劝你别这么问"的口径分裂（实测"我该不该分手？"教练不出声）。
-   旧正则里的裸「嫁|娶」已去掉：会误伤"我想嫁给谁"这类陈述句，且这类问法本就靠"吗"结尾规则覆盖。 */
-const YN_Q_RE = /是不是|是否|算不算|会不会|能不能|可不可以|该不该|要不要|值不值|有没有|行不行|成不成|来得及|放得下|吗[？?。！]?\s*$/;
+/* 是非题识别（单一真源）：字面取 yesNoVerdict() 真实识别的形态，两边必须同步改。
+   旧版这里多写了几个判决引擎根本没有对应分支的形态——引擎对它们返回空串，
+   于是教练承诺"会先给一个字的答案"而引擎给不出判决词（实测"他行不行？"）；
+   而且其中有词是子串匹配，连陈述句"这房子放得下两家人的东西"都会误弹提示。
+   现在只保留引擎真认的形态；裸"吗"结尾对应引擎的 /吗$/ 分支，陈述句不会命中。 */
+const YN_Q_RE = /是不是|是否|算不算|会不会|能不能|该不该|要不要|值不值|有没有|是.*吗|吗[？?。！]?\s*$/;
 const PROP_BAD_RE = /烂桃花|渣男|渣女|海王|花心|出轨|聊骚|备胎|第三者|小三|假的|骗|利用|消耗|不合适|不适合|不配|没戏|没结果|没未来|没希望|结束|分手|离婚|断了|凉透|玩我|不喜欢我|不爱|没感觉|讨厌|烦我|错的人|有毒|心里没我|变心|移情|敷衍|冷暴力|凶|危险|克我|放弃|拒绝|瞒/;
 function yesNoVerdict(key) {
   if (!key) return "";
@@ -2887,10 +2901,9 @@ function directAnswer() {
   const dec = basisDraw();
   const o = dec.reversed ? dec.card.reversed : dec.card.upright;
   const kw = (o.keywords || []).slice(0, 2).join("、");
-  /* 动作：只取 2–4 字、以动作动词开头的候选（闸在模块级 ACT_HEAD） */
+  /* 动作：闸与词长在 actionVerb() 单一真源（词库混着牌义状态标签，不能当指令用） */
   const acts = (typeof CARD_ACTIONS !== "undefined" && CARD_ACTIONS[dec.card.name]) || [];
-  const pick = acts.map(a => String(a || "").trim()).filter(v => /^[一-龥]{2,4}$/.test(v) && ACT_HEAD.test(v));
-  const verb = pick[0] || "写下你现在要做的第一步";
+  const verb = actionVerb(acts) || "写下你现在要做的第一步";
   const anchors = ["今晚睡前", "明天中午之前", "48 小时之内", "本周五之前"];
   const anchor = timeAnchor(state.seed >>> 2, anchors); /* 每日一牌自动收窄到今晚/今天级 */
   const lead = state.dailyMode ? "今天" : (qShort ? `关于「${qShort}」` : (DOMAIN_NAME[dm] || "这件事"));
@@ -3128,15 +3141,29 @@ $("#btn-start").addEventListener("click", () => { /* 与「再来一次」「新
 });
 $("#btn-serene-next").addEventListener("click", () => { go("ask"); qEl.focus(); });
 $("#btn-serene-back").addEventListener("click", () => go("cover"));
-/* 静心呼吸节拍器：与 .serene-breath 的 8s 圆环动画同拍（吸 4s / 屏 1s / 呼 3s），
-   每完成一轮点亮一个计次点。刻意不 gate 按钮——CTA 8.6s 后浮现随时可点，节拍只是让"呼吸三次"看得见进度。 */
+/* 静心呼吸节拍器：与 .serene-breath 的 8s 圆环动画同拍（吸 4s / 屏 1s / 呼 3s），每完成一轮点亮一个计次点。
+   CTA 从一开始就可见但置灰禁用，SERENE_READY_MS 后亮起可用（旧版是隐藏 8.6s 再淡入，用户看不见出口只能干等）。 */
 const BREATH_PHASES = [["吸", 4000], ["屏", 1000], ["呼", 3000]];
 var breathTimer = null; /* var：go() 会无条件调 stopBreath，函数声明提升可能早于 let 绑定，用 var 避开 TDZ */
-function stopBreath() { if (breathTimer) { clearTimeout(breathTimer); breathTimer = null; } }
+var sereneReadyTimer = null;
+const SERENE_READY_MS = 8600; /* 与 .serene-cta 原 8.6s 浮现节奏一致：呼吸约一轮后亮起 */
+function setSereneReady(on) {
+  const cta = document.getElementById("serene-cta"), btn = document.getElementById("btn-serene-next"), note = document.getElementById("serene-note");
+  if (cta) cta.classList.toggle("ready", !!on);
+  if (btn) btn.disabled = !on;
+  if (note) note.textContent = on ? "可以了——按直觉给个数字，我们开始" : "跟圆呼吸三次更好，亮起来也可直接继续";
+}
+function stopBreath() {
+  if (breathTimer) { clearTimeout(breathTimer); breathTimer = null; }
+  if (sereneReadyTimer) { clearTimeout(sereneReadyTimer); sereneReadyTimer = null; }
+}
 function startBreath() {
   stopBreath();
   const word = document.querySelector("#serene-phase .sp-word");
   const dots = [].slice.call(document.querySelectorAll("#serene-phase .sp-dots i"));
+  /* 需要安静动效的人不该被迫等满呼吸节拍：直接点亮出口 */
+  const calm = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+  if (calm) { setSereneReady(true); } else { setSereneReady(false); sereneReadyTimer = setTimeout(() => { sereneReadyTimer = null; setSereneReady(true); }, SERENE_READY_MS); }
   if (!word || !dots.length) return;
   let idx = 0, cycle = 0;
   const tick = () => {
@@ -3429,14 +3456,15 @@ let cutGen = 0;
 function showCutStep() {
   const gen = ++cutGen;
   clearInterval(ritualSpin); /* A7：进入切牌步，洗牌期轮播作废（否则迟到帧会盖掉切牌提示） */
-  /* 洗牌已结束、切牌输入框已聚焦：标题必须同步改成"轮到你了"，
-     否则页面一直挂着洗牌期的那句"正在……"，用户会干等不敢下手（实测停留 25 秒） */
-  statusEl.textContent = "洗好了。现在，请你切一刀。";
-  subEl.textContent = "凭手感报一个 1 到 78 的厚度——你切多厚，就拿起多厚一叠。";
   skipBtn.style.display = "none"; /* 洗牌已跳过/结束：不再提供跳过洗牌 */
   state.cutCard = null; state.cutNumber = 0;
   /* 每日一牌是单张练习（书《塔罗日记》亦无此步）：那张牌本身就是今天的全部，不再叠一张心态牌 */
   if (state.dailyMode) { setTimeout(() => { if (gen === cutGen) showSpread(); }, 80); return; }
+  /* 洗牌已结束、切牌输入框已聚焦：标题必须同步改成"轮到你了"，
+     否则页面一直挂着洗牌期的那句"正在……"，用户会干等不敢下手（实测停留 25 秒）。
+     ⚠ 必须放在上面的 dailyMode 早退之后——每日一牌没有切牌步，写在这里会先闪现"请你切一刀"。 */
+  statusEl.textContent = "洗好了。现在，请你切一刀。";
+  subEl.textContent = "凭手感报一个 1 到 78 的厚度——你切多厚，就拿起多厚一叠。";
   const optional = SPREADS[state.spreadKey].positions.length < 2; /* 只有一个位置时切牌是锦上添花 → 可不切；多张阵保留亲手环节 */
   const layer = document.createElement("div");
   layer.className = "cut-layer";
@@ -3569,9 +3597,15 @@ function cardHint(el, text) {
   if (!r.width) return;
   const b = document.createElement("div");
   b.className = "card-hint"; b.setAttribute("role", "status"); b.textContent = text;
-  b.style.left = Math.round(r.left + r.width / 2) + "px";
-  b.style.top = Math.round(r.top - 8) + "px";
+  /* 先入 DOM 才能量到自身宽度，再做视口钳制：牌滚到屏顶时气泡会整块跑出视口，
+     牌桌最左/最右的 nowrap 长句也会横向越界（fixed 不随牌桌横滚，1.9s 内看着像悬浮错位） */
   document.body.appendChild(b);
+  const vw = window.innerWidth || document.documentElement.clientWidth;
+  const bw = b.offsetWidth, half = bw / 2;
+  b.style.left = Math.round(Math.max(8 + half, Math.min(r.left + r.width / 2, vw - 8 - half))) + "px";
+  const below = r.top < 44;                       /* 上方放不下就翻到牌下方 */
+  b.classList.toggle("below", below);
+  b.style.top = Math.round(below ? r.bottom + 8 : r.top - 8) + "px";
   clearTimeout(cardHint._t);
   cardHint._t = setTimeout(() => b.remove(), 1900);
 }
@@ -3859,11 +3893,8 @@ function polishReading(d) {
   d.advice = d.advice.filter(a => !(BAN_RE.test(a.step) && !hasConcrete(a.step)));
   if (!d.advice.some(a => hasConcrete(a.step))) {
     const last = state.draws[state.draws.length - 1];
-    let verb = "";
     const acts = (last && typeof CARD_ACTIONS !== "undefined" && CARD_ACTIONS[last.card.name]) || [];
-    /* 必须过 ACT_HEAD：词库里"只顾自己/被执念奴役/剧变骤临"是牌义标签，不是动作，
-       直接拼成"安排时间只顾自己"＝把贬义标签当指令发给问者（实测踩坑，且会进分享图） */
-    for (const v of acts) { const t = typeof v === "string" ? v.trim() : ""; if (/^[\u4e00-\u9fa5]{2,8}$/.test(t) && ACT_HEAD.test(t)) { verb = t; break; } }
+    const verb = actionVerb(acts); /* 与直觉框同一把闸：词库里的贬义状态标签不得当动作指令发给问者 */
     const anchor = timeAnchor(state.seed >>> 5, ["今晚睡前", "明天中午之前", "本周之内", "48 小时之内"]);
     const qText = state.question || "";
     const KW = /(外派|跳槽|工作|事业|项目|升职|加薪|辞职|创业|复合|分手|冷战|暧昧|出轨|婚姻|感情|投资|理财|考试|学业|考研|offer|方向|决定|决心|机会|选择|抉择|迷茫|去留|搬家|房子|健康|身体)/;
@@ -3888,16 +3919,27 @@ function polishReading(d) {
   const da = (typeof directAnswer === "function") ? directAnswer() : "";
   if (da && (!c0 || c0.length < 14 || HEDGE_RE.test(cProbe) || !hasVerdict(cProbe))) d.conclusion = da;
   else if (!c0) d.conclusion = da;
+  /* (1a) 是非题句首强制判决词：红线要求"是不是/会不会/该不该"第一句必须是一个字的判决词。
+     旧版只在"整句没有立场"时顶掉 AI 结论，而 VERDICT_RE 含裸"先/别/留/走"，实测
+     "先别急，你们之间还有机会，但需要调整。"被判成有立场直接放行——句首没有判决词。
+     这里只**前置判决词**、不重写整句，保住 AI 那段结合了牌位与处境的推理。
+     高危题（健康生死/官司/涨跌）与自伤题沿用 yesNoVerdict 的既有豁免（返回空串 → 不强判）。 */
+  const cB = typeof d.conclusion === "string" ? d.conclusion.trim() : "";
+  const ynAvail = (typeof yesNoVerdict === "function") && (typeof verdictKey === "function");
+  const ynHead = ynAvail ? String(yesNoVerdict(verdictKey()) || "").match(/^(不是|不会|不能|不该|不要|没有|不值|是|会|能|该|要|有|值)/) : null;
+  if (cB && ynHead && !VERDICT_HEAD.test(cB)) d.conclusion = ynHead[0] + "。" + cB;
   /* (2a) P6 依据补标：直觉框有两个作者——规则版自带"依据是X位置的「Y」"，AI 版常只给一句态度。
      同一款金框、同一个标签，用户看不出来源，却没依据可核。AI 版既没写"依据"也没点到本局任何牌名时，
      用与规则版同一个 basisDraw() 补一句短依据。幂等：已含"依据"或已点名牌面则不叠，回放重跑不加长。 */
   const cA = typeof d.conclusion === "string" ? d.conclusion.trim() : "";
-  if (cA && cA !== da && !/依据/.test(cA)) {
+  let basisAdded = false;
+  if (cA && cA !== da && !/依据[：是]/.test(cA)) {
     const named = (state.draws || []).some(x => x && x.card && cA.indexOf(x.card.name) >= 0);
     const bd = named ? null : basisDraw();
     if (bd && bd.card) {
       const where = bd.pos && bd.pos.n ? `${bd.pos.n}位置的` : "本局的"; /* 牌位缺失也不能抛：polish 抛错会让整次解读走失败分支 */
       d.conclusion = cA.replace(/[。！!？?]+$/, "") + `。依据：${where}「${bd.card.name}${bd.reversed ? "（逆位）" : ""}」。`;
+      basisAdded = true;
     }
   }
   /* (2b) P3：有立场、没期限、且是「可被现实应验」的判断 → 补时间锚，驱动回访与「时间的镜子」闭环。
@@ -3907,8 +3949,9 @@ function polishReading(d) {
   const cProbe2 = cNow.replace(/「[^」]*」/g, "");
   const HAS_TIME = /(今晚|今天|明天|后天|本周|这周|周内|一周内|这个月|一个月内|\d+\s*(小时|天|周|个月)|睡前|周末|之前|之内|死线|期限)/;
   const INTRO_RE = /留意|觉察|允许|感受|情绪|内心|正视|接纳|听见|看见自己|别压抑|掩盖|安放|照顾好?自己|慢下来|静一静/;
-  if (cNow.length >= 14 && hasVerdict(cProbe2) && !HEDGE_RE.test(cProbe2) && !HAS_TIME.test(cProbe2) && !INTRO_RE.test(cProbe2)) {
-    d.conclusion = cNow + (/[。！？]$/.test(cNow) ? "" : "。") + `到${timeAnchor(state.seed >>> 3, ["今晚睡前", "明天中午之前", "48 小时之内", "本周五之前", "这周末之前"])}，回头看它应不应验。`;
+  if (!basisAdded && cNow.length >= 14 && hasVerdict(cProbe2) && !HEDGE_RE.test(cProbe2) && !HAS_TIME.test(cProbe2) && !INTRO_RE.test(cProbe2)) {
+    const anch = timeAnchor(state.seed >>> 3, ["今晚睡前", "明天中午之前", "48 小时之内", "本周五之前", "这周末之前"]);
+    d.conclusion = cNow + (/[。！？]$/.test(cNow) ? "" : "。") + `${/内$/.test(anch) ? "" : "到"}${anch}，回头看它应不应验。`;
   }
   /* (3) 反谄媚张力兜底：AI 若顺着用户期待说好话、tension 缺失或过短，规则引擎强制补一个"不顺着期待"的观察点（锚定牌，不写预言/读心） */
   if (!d.synthesis || typeof d.synthesis !== "object") d.synthesis = {};
@@ -4681,8 +4724,9 @@ const EXAMPLE_QS = ["我和他之间还有可能吗？", "我该不该接受这�
 function coachTips(q) {
   const tips = [];
   if (!q || q.length < 4) return tips;
-  if (YN_Q_RE.test(q) && !/如何|怎么|怎样/.test(q))
-    tips.push("是非题塔塔也照答，会先给一个字的答案；把「那我该怎么办」一起问，牌能搭的手更多。");
+  /* 高危/自伤题不劝改写：这两类由 P0-D 分级护栏与关怀页处理，教练若还说"照答"就与提交时的硬拦自相矛盾 */
+  if (YN_Q_RE.test(q) && !/如何|怎么|怎样/.test(q) && !HIGH_STAKES_RE.test(q) && !SAFETY_RE.test(q))
+    tips.push("是非题塔塔也照答——第一句会先给你一个字的判决，不拿「塔罗不决定」打太极。");
   if (/(一辈子|这辈子|永远|命中注定|最终)/.test(q))
     tips.push("塔罗擅长看约一年内的事——太远的问题建议聚焦近期。");
   if (/(他|她|它)(会不会|是不是|心里|爱不爱|在想)/.test(q) && !/我和(他|她)/.test(q))
