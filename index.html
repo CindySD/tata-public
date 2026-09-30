@@ -2096,7 +2096,7 @@ async function callLLM(question, spreadName, draws, userContentOverride) {
     method: "POST",
     headers: { "Content-Type": "application/json", "Authorization": "Bearer " + cfg.apiKey },
     body: JSON.stringify({
-      model: cfg.model || "qwen-turbo",
+      model: cfg.model || "deepseek-chat" /* 兜底默认档：qwen-turbo/glm-4-flash 这类 flash 档撑不住 6k token 的密集指令（实测只按字面遵守、内容塌陷），而设置页推荐的正是支持 CORS 的 DeepSeek */,
       messages: [{ role: "system", content: LLM_SYSTEM_PROMPT }, { role: "user", content: userContent }],
       temperature: 0.7, max_tokens: maxTokensFor(draws.length)
     })
@@ -2239,7 +2239,7 @@ async function callLLMStream(question, spreadName, draws, onPart) {
       method: "POST",
       headers: { "Content-Type": "application/json", "Authorization": "Bearer " + cfg.apiKey },
       body: JSON.stringify({
-        model: cfg.model || "qwen-turbo",
+        model: cfg.model || "deepseek-chat" /* 兜底默认档：qwen-turbo/glm-4-flash 这类 flash 档撑不住 6k token 的密集指令（实测只按字面遵守、内容塌陷），而设置页推荐的正是支持 CORS 的 DeepSeek */,
         messages: [{ role: "system", content: LLM_SYSTEM_PROMPT }, { role: "user", content: userContent }],
         temperature: 0.7, max_tokens: maxTokensFor(draws.length),
         stream: true
@@ -3962,8 +3962,7 @@ function polishReading(d) {
   if (!Array.isArray(d.advice)) d.advice = [];
   d.advice = d.advice.filter(a => a && typeof a === "object" && (a.step || "").trim());
   d.advice = d.advice.filter(a => !(BAN_RE.test(a.step) && !hasConcrete(a.step)));
-  if (!d.advice.some(a => hasConcrete(a.step))) {
-    const last = state.draws[state.draws.length - 1];
+  if (!d.advice.some(a => hasConcrete(a.step))) {    const last = state.draws[state.draws.length - 1];
     const acts = (last && typeof CARD_ACTIONS !== "undefined" && CARD_ACTIONS[last.card.name]) || [];
     const verb = actionVerb(acts); /* 与直觉框同一把闸：词库里的贬义状态标签不得当动作指令发给问者 */
     const anchor = timeAnchor(state.seed >>> 5, ["今晚睡前", "明天中午之前", "本周之内", "48 小时之内"]);
@@ -3978,6 +3977,19 @@ function polishReading(d) {
       why: "牌给的是方向；落到一个带期限的小动作，才算真的接住它，而不是读完就忘。"
     });
   }
+  /* (1b) 兜底句补上之后，把仍不达标的建议剔掉。旧版只 unshift 不删：弱模型（实测 glm-4-flash）会交来
+     "花时间了解合伙人／制定详细计划／寻求专业意见"这类不含时间的万能话，BAN_RE 又没收录它们，
+     结果页面变成「1 条能做的 + 3 条正确的废话」并排——比全是废话更让用户察觉不对劲。
+     提示词第 5 条本来就写着"做不到就不算合格建议"，这里只是把这句话真的执行一遍。 */
+  /* (1b) 先救后删。弱模型常写成"列出开店三件事优先级"这类**有动作、只差期限**的句子
+     （实测 glm-4-flash-250414 三条里两条属此类），上一版直接 filter 掉会把有效内容一起丢掉。
+     现在：有动作没期限的，补一个与直觉框同源的时间锚救回来；连动作都没有的纯万能话才删。 */
+  d.advice.forEach((a, i) => {
+    if (hasConcrete(a.step) || !ACT_RE.test(a.step)) return;
+    const anch = timeAnchor((state.seed >>> 4) + i, ["今晚睡前", "明天中午之前", "本周之内", "48 小时之内", "这周末之前"]);
+    a.step = `${anch}，${String(a.step).replace(/^[，,、。\s]+/, "")}`;
+  });
+  d.advice = d.advice.filter(a => hasConcrete(a.step));
   /* (2) 直觉结论兜底：不指望弱模型自觉——没有倾向、满是 hedge 或过短，就直接换成规则判断句 */
   const HEDGE_RE = /可能|也许|或许|大概(?!率)|因人而异|视情况|说不准|谁知道|难以预料/; /* 大概率+定性＝对第三方状态的诚实校准（作者口径），裸“大概”仍是含糊 */
   const VERDICT_RE = /可以|别|不要|不宜|建议|先|等|去做|接|拒|谈|放下|承认|停|推进|主动|封顶|走|留|按|摊开|暂缓|不——|偏向/;
