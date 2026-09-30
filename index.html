@@ -1199,7 +1199,7 @@ footer::before{
     </div>
     <div class="m-row">
       <div class="m-label">模型名（可选）</div>
-      <input class="num-input" id="llm-model" type="text" placeholder="如 deepseek-chat / qwen-turbo / gpt-4o-mini" style="font-size:13px;font-family:var(--sans);height:42px;text-align:left">
+      <input class="num-input" id="llm-model" type="text" placeholder="如 deepseek-chat / glm-4-plus" style="font-size:13px;font-family:var(--sans);height:42px;text-align:left">
     </div>
     <div class="m-row sfx-row">
       <label class="sfx-label" for="sfx-toggle">音效与震动</label>
@@ -1215,6 +1215,7 @@ footer::before{
       配置后解读页将调用 AI 生成个性化深度解读（约 20-90 秒，期间可先看逐牌解读）。<br>
       不填则使用内置规则引擎解读（即时）。<br>
       <span style="color:var(--gold)">推荐</span>：DeepSeek（便宜+支持CORS）、本地 Ollama（免费+零延迟）<br>
+      <span style="color:var(--gold)">选档</span>：塔塔的提示词约 6,400 tokens、要求每张牌写五层——<b>flash / turbo / mini 这类闪速档会只按字面遵守、内容塌陷</b>（实测同一副牌：闪速档把"逆耳"写成了牌义复读），请选 plus / chat / pro 级。<br>
       <span style="color:var(--gold)">注意</span>：通义/OpenAI 默认不允许浏览器跨域，需配 CORS 代理<br>
       配置与 API Key 只存本机浏览器，本站不收集、不上传任何数据；但<b>启用 AI 后，你的问题原文与所抽牌面会发送给你所配置的那家 AI 服务商 API</b>（由其处理），请选用可信服务商。<br>
       希望数据完全不出本机：用「本地 Ollama」预设，或留空配置直接走内置规则引擎解读。<br>
