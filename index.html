@@ -2076,6 +2076,18 @@ async function llmFetch(url, options, timeoutMs) {
     return await fetch(url, { ...options, signal: ctrl.signal });
   } finally { clearTimeout(timer); if (activeCtrl === ctrl) activeCtrl = heldBy; }
 }
+/* 输出预算／超时／等待文案三件事必须跟着牌阵张数一起动。
+   写死 max_tokens 4000 时，凯尔特十字（10 张 × 五层字段）必然被截断 → JSON 不完整 → parse 抛错 →
+   回落规则引擎，用户看到的正是"模棱两可的话"（临界测算：每张牌只剩 179 字可写，而提示词要求 200–260 字）。
+   反过来，预算给够了超时不改，长局会被自家计时掐断——所以三者同源于这一个函数。 */
+function maxTokensFor(nCards) { return Math.min(6000, 1200 + 420 * Math.max(1, nCards | 0)); }
+function streamTimeoutFor(nCards) { return Math.min(180000, 40000 + 14000 * Math.max(1, nCards | 0)); }
+function oneshotTimeoutFor(nCards) { return Math.min(150000, 45000 + 12000 * Math.max(1, nCards | 0)); }
+/* 3 张阵仍落在 20-90 秒（与设置页那句静态文案一致）；牌多了才把承诺拉长，不无脑吓用户 */
+function aiWaitRange(nCards) {
+  const hi = Math.max(90, Math.round(maxTokensFor(nCards) / 4000 * 90 / 10) * 10);
+  return "20-" + hi + " 秒";
+}
 async function callLLM(question, spreadName, draws, userContentOverride) {
   const cfg = loadLLMConfig();
   if (!cfg.apiKey || !cfg.baseURL) return null;
@@ -2086,13 +2098,13 @@ async function callLLM(question, spreadName, draws, userContentOverride) {
     body: JSON.stringify({
       model: cfg.model || "qwen-turbo",
       messages: [{ role: "system", content: LLM_SYSTEM_PROMPT }, { role: "user", content: userContent }],
-      temperature: 0.7, max_tokens: 4000
+      temperature: 0.7, max_tokens: maxTokensFor(draws.length)
     })
   };
   const url = cfg.baseURL.replace(/\/$/, "") + "/chat/completions";
   /* 网络层失败（含超时）自动重试一次；HTTP 状态错误不重试。
      超时须随 max_tokens 一起放宽：一次性路径没有中间帧可看，2600→4000 后旧 30 秒会把长解读掐成规则引擎回落。 */
-  const LLM_TIMEOUT = 60000;
+  const LLM_TIMEOUT = oneshotTimeoutFor(draws.length);
   let resp = null, netErr = null;
   for (let attempt = 0; attempt < 2; attempt++) {
     try {
@@ -2213,7 +2225,7 @@ async function callLLMStream(question, spreadName, draws, onPart) {
   if (!cfg.apiKey || !cfg.baseURL) return null;
   const userContent = readingDataBlocks(question, spreadName, draws) + "\n\n请按指定JSON格式输出解读。";
   const url = cfg.baseURL.replace(/\/$/, "") + "/chat/completions";
-  const STREAM_TIMEOUT = 100000; /* 全程上限（含逐字生成与流式读取）——max_tokens 提到 4000 后旧 60 秒会在长局中途掐断 */
+  const STREAM_TIMEOUT = streamTimeoutFor(draws.length); /* 全程上限（含逐字生成与流式读取）——与 maxTokensFor 同源，牌多了预算涨、计时也必须跟着涨 */
   /* 自有 controller：超时覆盖到流式 body 读取全程（llmFetch 的计时只到响应头） */
   let ctrl = null;
   if (typeof AbortController !== "undefined") {
@@ -2229,7 +2241,7 @@ async function callLLMStream(question, spreadName, draws, onPart) {
       body: JSON.stringify({
         model: cfg.model || "qwen-turbo",
         messages: [{ role: "system", content: LLM_SYSTEM_PROMPT }, { role: "user", content: userContent }],
-        temperature: 0.7, max_tokens: 4000,
+        temperature: 0.7, max_tokens: maxTokensFor(draws.length),
         stream: true
       }),
       signal: ctrl ? ctrl.signal : undefined
@@ -4209,7 +4221,7 @@ async function renderReading() {
     /* 显示 AI 加载态（缓存回放跳过） */
     const synEl = $("#synthesis");
     if (!replayAi) {
-    synEl.innerHTML = `<h3>综 合 解 读</h3><div style="text-align:center;padding:30px;color:var(--gold);font-size:14px;letter-spacing:.2em">塔塔正在凝神解读中……<br><span style="font-size:11px;color:var(--ink-faint);margin-top:8px;display:block">AI 深度解读 · 字句会逐段浮现 · 约需 20-90 秒<br><span id="ai-load-hint">上面的逐牌解读可以先看，这里生成好了会自动替换</span></span></div>`;
+    synEl.innerHTML = `<h3>综 合 解 读</h3><div style="text-align:center;padding:30px;color:var(--gold);font-size:14px;letter-spacing:.2em">塔塔正在凝神解读中……<br><span style="font-size:11px;color:var(--ink-faint);margin-top:8px;display:block">AI 深度解读 · 字句会逐段浮现 · 约需 ${aiWaitRange(state.draws.length)}<br><span id="ai-load-hint">上面的逐牌解读可以先看，这里生成好了会自动替换</span></span></div>`;
     /* A7：AI 等待期彩蛋——灰字行 6 秒换一句；首个流式帧一渲染，原节点被替换、isConnected 即 false，自停无泄漏 */
     const aiHintEl = document.getElementById("ai-load-hint");
     if (aiHintEl) {
