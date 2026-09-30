@@ -504,16 +504,19 @@ footer .gold{color:var(--gold)}
 /* P1-6: 解读折叠 */
 .rc-collapse{font-size:13px;color:var(--gold);letter-spacing:.14em;cursor:pointer;background:none;border:none;font-family:var(--sans);margin-top:14px;padding:4px 0;border-bottom:1px solid transparent;transition:border-color .3s}
 .rc-collapse:hover{border-bottom-color:var(--gold-dim)}
-/* 作者口径：逐牌解读「点牌才出现」，不全部陈列（占空间）。
-   折叠态只留牌名行＋身份标签，其余整块收起；一次只展开一张（accordion 在 app.js 里控）。 */
-.reading-card.collapsed .rc-block,.reading-card.collapsed .rc-tags,.reading-card.collapsed .rc-actions,.reading-card.collapsed .rc-deep{display:none}
-.reading-card.collapsed{padding:20px 24px}
-.reading-card.collapsed .rc-head{border-bottom:none;padding-bottom:0}
+/* 作者口径：逐牌解读只在弹窗里出现，页面下方不陈列（旧版整段铺开非常占空间）。
+   详情整块平时 display:none，被搬进 #modal-body 后才显示——所以折叠类名不再承担隐藏职责。 */
+.reading-card .rc-detail{display:none}
+#modal-body .rc-detail{display:block}
+.reading-card{padding:20px 24px}
 .reading-card .rc-head{cursor:pointer;-webkit-tap-highlight-color:transparent}
-.reading-card .rc-head::after{content:"点开解读 ↓";font-size:10.5px;letter-spacing:.16em;color:var(--ink-faint);white-space:nowrap}
-.reading-card:not(.collapsed) .rc-head::after{content:"收起 ↑"}
+.reading-card .rc-head::after{content:"点开看这张牌的解读 ↓";font-size:10.5px;letter-spacing:.16em;color:var(--ink-faint);white-space:nowrap}
 .reading-card .rc-head:hover::after{color:var(--gold)}
 .mini-revealed{cursor:pointer}
+.cm-title{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;border-bottom:1px solid var(--panel-line);padding-bottom:14px;margin-bottom:6px}
+.cm-title span{font-size:12px;letter-spacing:.3em;color:var(--gold)}
+.cm-title b{font-family:var(--serif);font-size:21px;letter-spacing:.1em;color:var(--ink)}
+.cm-title i{margin-left:auto;font-style:normal;font-size:11px;letter-spacing:.2em;color:var(--ink-faint)}
 
 @media (max-width:600px){
   :root{--card-w:112px}
@@ -4008,7 +4011,10 @@ function polishReading(d) {
   const cProbe2 = cNow.replace(/「[^」]*」/g, "");
   const HAS_TIME = /(今晚|今天|明天|后天|本周|这周|周内|一周内|这个月|一个月内|\d+\s*(小时|天|周|个月)|睡前|周末|之前|之内|死线|期限)/;
   const INTRO_RE = /留意|觉察|允许|感受|情绪|内心|正视|接纳|听见|看见自己|别压抑|掩盖|安放|照顾好?自己|慢下来|静一静/;
-  if (!basisAdded && cNow.length >= 14 && hasVerdict(cProbe2) && !HEDGE_RE.test(cProbe2) && !HAS_TIME.test(cProbe2) && !INTRO_RE.test(cProbe2)) {
+  /* 模型已给「检视日」时不再往直觉框硬塞时间从句——回访锚点已有专门区块承载，
+     再拼一句"到明天中午之前，回头看它应不应验"会把判决句拖成模板腔（作者线上实测反馈）。 */
+  const hasCp = !!(d.checkpoint && typeof d.checkpoint === "object" && (d.checkpoint.when || d.checkpoint.if_yes || d.checkpoint.if_no));
+  if (!basisAdded && !hasCp && cNow.length >= 14 && hasVerdict(cProbe2) && !HEDGE_RE.test(cProbe2) && !HAS_TIME.test(cProbe2) && !INTRO_RE.test(cProbe2)) {
     const anch = timeAnchor(state.seed >>> 3, ["今晚睡前", "明天中午之前", "48 小时之内", "本周五之前", "这周末之前"]);
     d.conclusion = cNow + (/[。！？]$/.test(cNow) ? "" : "。") + `${/内$/.test(anch) ? "" : "到"}${anch}，回头看它应不应验。`;
   }
@@ -4154,8 +4160,9 @@ async function renderReading() {
         <span class="rc-ori ${d.reversed ? "rev" : ""}">${d.reversed ? "逆位" : "正位"}</span>
         <span class="rc-lens">${d.pos.lens} · ${d.card.englishName}</span>
       </div>
-      <div class="rc-tags">${d.card.tags.map(t => `<span>${t}</span>`).join("")}</div>
       <div class="rc-alias" id="alias-${i}"></div>
+      <div class="rc-detail" id="rcd-${i}">
+      <div class="rc-tags">${d.card.tags.map(t => `<span>${t}</span>`).join("")}</div>
       <div class="rc-block"><div class="bk-label">牌 面 之 言</div><p>${r.face}</p></div>
       <div class="rc-block"><div class="bk-label">落 在 ${DOMAIN_NAME[state.domain]} 里</div><p>${r.lifeLine}</p></div>
       <div class="rc-block psy" id="psy-${i}"><div class="bk-label">心 灵 回 声 · 精神分析视角</div><p>${r.psy}</p></div>
@@ -4171,34 +4178,28 @@ async function renderReading() {
       const uniq2 = a1 === a2 ? [a1] : [a1, a2];
       html += `<div class="rc-actions">🎯 行动指引：${uniq2.join("　·　")}</div>`;
     }
+    /* 作者口径：逐牌解读走弹窗，不在下方陈列（占空间）。详情整块搬进 #modal-body，关闭搬回，
+       所以这里不再需要"展开深层解读"按钮。 */
     html += `
       <button class="rc-deep" type="button" data-i="${i}">✦ 深读这张牌</button>
-      <button class="rc-collapse" type="button">展开深层解读 ↓</button>`;
+      </div>`;
     art.innerHTML = html;
     list.appendChild(art);
   });
-  list.querySelectorAll(".rc-deep").forEach(b => b.addEventListener("click", () => openDeep(+b.dataset.i)));
-  /* 点牌才出解读（作者口径：不要全部陈列，占空间）。默认三张都折叠，只留牌名行＋身份标签；
-     牌名行与上方「已翻开的小牌」都是入口，一次只展开一张。 */
-  const rcards = [...list.querySelectorAll(".reading-card")];
-  const setOpen = i => rcards.forEach((a, j) => {
-    const open = j === i;
-    a.classList.toggle("collapsed", !open);
-    const btn = a.querySelector(".rc-collapse");
-    if (btn) btn.textContent = open ? "收起深层解读 ↑" : "展开深层解读 ↓";
-  });
-  const toggleCard = i => {
-    const willOpen = rcards[i].classList.contains("collapsed");
-    setOpen(willOpen ? i : -1);
-    if (willOpen) setTimeout(() => rcards[i].scrollIntoView({ block: "nearest" }), 40);
+  list.querySelectorAll(".rc-deep").forEach(b => b.addEventListener("click", ev => { ev.stopPropagation(); openDeep(+b.dataset.i); }));
+  /* 作者口径：逐牌解读「点牌出弹窗」，不在页面下方陈列。
+     详情整块节点搬进弹窗、关闭时原样搬回——AI 流式写的是同一批 #psy-i/#pain-i 节点，
+     搬动不复制 innerHTML，所以不会出现"弹窗里是旧内容"。 */
+  const openCardModal = i => {
+    const node = document.getElementById("rcd-" + i), d0 = state.draws[i];
+    if (!node || !d0 || !d0.card) return;
+    openInfoModalMove(node, `<div class="cm-title"><span>${d0.pos.n}</span><b>${d0.card.name}</b>` +
+      `<i>${d0.reversed ? "逆位" : "正位"} · ${d0.pos.lens}</i></div>`);
   };
-  rcards.forEach((a, i) => {
-    a.querySelector(".rc-head").addEventListener("click", () => toggleCard(i));
-    const btn = a.querySelector(".rc-collapse");
-    if (btn) btn.addEventListener("click", ev => { ev.stopPropagation(); toggleCard(i); });
-  });
+  [...list.querySelectorAll(".reading-card")].forEach((a, i) =>
+    a.querySelector(".rc-head").addEventListener("click", () => openCardModal(i)));
   document.querySelectorAll("#revealed-row .mini-revealed").forEach((m, i) =>
-    m.addEventListener("click", () => { if (rcards[i]) { setOpen(i); rcards[i].scrollIntoView({ block: "start" }); } }));
+    m.addEventListener("click", () => openCardModal(i)));
   /* 尝试 AI 解读：有配置时调 LLM 覆盖 psy 段 + synthesis；P1-1 回看优先用历史记录里的缓存解读，免重复付费 */
   const cfg = loadLLMConfig();
   const replayAi = (wasRestore && state.restoreRec && state.restoreRec.a && typeof state.restoreRec.a === "object") ? state.restoreRec.a : null;
@@ -4801,6 +4802,7 @@ const mask = $("#modal-mask"), modalBody = $("#modal-body");
 function openDeep(i) {
   const d = state.draws[i];
   const c = d.card;
+  restoreMovedNode();   /* 深读会重写 modalBody，先把搬进来的逐牌详情放回原处，否则节点被清掉 */
   const cur = d.reversed ? c.reversed : c.upright;
   const alt = d.reversed ? c.upright : c.reversed;
   modalBody.innerHTML = `
@@ -4828,12 +4830,30 @@ function openDeep(i) {
   document.body.style.top = `-${savedScrollY}px`;
   trapFocus(mask);
 }
-function closeDeep() { if (!mask.classList.contains("show")) return; mask.classList.remove("show"); document.body.style.cssText = bodyOverflowSaved || ""; window.scrollTo(0, savedScrollY); }
+function closeDeep() { if (!mask.classList.contains("show")) return; restoreMovedNode(); mask.classList.remove("show"); document.body.style.cssText = bodyOverflowSaved || ""; window.scrollTo(0, savedScrollY); }
+/* 弹窗搬入/搬回：逐牌详情平时藏在 .reading-card 里（CSS 不显示），点开时整块搬进弹窗，
+   关闭或换开别的弹窗时搬回原位。任何会重写 modalBody.innerHTML 的入口都必须先 restore，否则节点会被丢掉。 */
+let movedNode = null, movedHost = null;
+function restoreMovedNode() { if (movedNode && movedHost) movedHost.appendChild(movedNode); movedNode = null; movedHost = null; }
+function openInfoModalMove(node, titleHtml) {
+  restoreMovedNode();
+  movedNode = node; movedHost = node.parentNode;
+  modalBody.innerHTML = `<button class="modal-close" type="button" aria-label="关闭">✕</button>` + (titleHtml || "");
+  modalBody.appendChild(node);
+  modalBody.querySelector(".modal-close").addEventListener("click", closeDeep);
+  mask.classList.add("show");
+  savedScrollY = window.scrollY;
+  bodyOverflowSaved = document.body.style.cssText;
+  document.body.style.cssText = "position:fixed;top:0;left:0;right:0;bottom:0;overflow:hidden;width:100%";
+  document.body.style.top = `-${savedScrollY}px`;
+  trapFocus(mask);
+}
 mask.addEventListener("click", e => { if (e.target === mask) closeDeep(); });
 addEventListener("keydown", e => { if (e.key === "Escape") { closeDeep(); closeSettings(); } });
 
 /* F-002: 通用信息弹窗（复用深读弹窗遮罩） */
 function openInfoModal(html) {
+  restoreMovedNode();
   modalBody.innerHTML = `<button class="modal-close" type="button" aria-label="关闭">✕</button>${html}`;
   modalBody.querySelector(".modal-close").addEventListener("click", closeDeep);
   mask.classList.add("show");
