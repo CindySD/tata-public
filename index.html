@@ -373,6 +373,13 @@ textarea{min-height:96px}
 .rc-block.psy{border-left:2px solid rgba(186,159,198,.28);padding-left:14px;margin-left:2px}
 .rc-block.psy p{color:var(--ink)}
 .rc-block.example p{color:var(--ink-dim)}
+/* 牌位身份标签：AI 给这张牌在这个位置上起的名字，空则整行缺席（规则引擎版没有） */
+.rc-alias{margin:12px 0 0;font-family:var(--serif);font-size:15.5px;letter-spacing:.06em;color:var(--ink-dim);line-height:1.75}
+.rc-alias:empty{display:none}
+/* 逆耳那半句：标题按牌位视角取名，用降一档的字色区分，不给它上色 */
+.rc-block.pain{border-left:2px solid var(--gold-faint);padding-left:14px;margin-left:2px}
+.rc-block.pain .bk-label{color:var(--ink-faint)}
+.rc-block.pain p{color:var(--ink-dim)}
 .rc-deep{margin-top:20px;display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--gold);letter-spacing:.18em;cursor:pointer;background:none;border:none;font-family:var(--serif);padding:6px 0;border-bottom:1px solid transparent;transition:border .3s}
 .rc-deep:hover{border-bottom-color:var(--gold-dim)}
 
@@ -399,6 +406,17 @@ textarea{min-height:96px}
 .advice-step .as-num{flex:0 0 28px;width:28px;height:28px;border-radius:50%;border:1px solid var(--gold-dim);display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--gold);font-family:var(--serif)}
 .advice-step .as-step{font-size:14px;color:var(--ink);line-height:1.8;letter-spacing:.03em}
 .advice-step .as-why{font-size:13px;color:var(--ink-dim);line-height:1.8;margin-top:4px;letter-spacing:.03em}
+/* 可照抄的话术：把"做什么"翻译成"这句话怎么说"，虚线框区别于正文，提示这是可以拿走的东西 */
+.as-script{margin-top:10px;padding:11px 15px;border:1px dashed var(--gold-dim);border-radius:var(--card-r);background:rgba(201,168,106,.04)}
+.as-script .asq-label{display:block;font-size:10.5px;letter-spacing:.28em;color:var(--ink-faint);margin-bottom:6px}
+.as-script p{font-family:var(--serif);font-size:14.5px;line-height:1.95;color:var(--ink);letter-spacing:.03em}
+/* 检视日：把散在各条建议里的相对时间收成一个回访点，两条分支各给下一步 */
+.checkpoint{margin-top:24px;padding:16px 18px;border:1px solid var(--panel-line);border-radius:var(--card-r);background:var(--panel)}
+.checkpoint .cp-when{font-family:var(--serif);font-size:15.5px;color:var(--gold-hi);letter-spacing:.06em;margin-bottom:8px;line-height:1.7}
+.checkpoint .cp-row{font-size:13.5px;line-height:1.95;color:var(--ink-dim);margin-top:7px}
+.checkpoint .cp-k{display:inline-block;font-size:10.5px;letter-spacing:.16em;color:var(--ink-faint);border:1px solid var(--gold-faint);border-radius:999px;padding:1px 9px;margin-right:8px;vertical-align:1px}
+/* 一句可被截图带走的话：两牌拼成的身份选择，夹在综合判断与能量词之间 */
+.syn-line{margin:26px 0;padding:18px 20px;text-align:center;font-family:var(--serif);font-size:19px;line-height:1.9;letter-spacing:.06em;color:var(--gold-hi);border-top:1px solid var(--gold-faint);border-bottom:1px solid var(--gold-faint);background:linear-gradient(180deg,rgba(201,168,106,.05),transparent)}
 
 /* 情绪收束 */
 .closing-block{margin-top:28px;padding:20px 24px;background:rgba(201,168,106,.05);border:1px solid var(--gold-faint);border-radius:12px;text-align:center}
@@ -486,7 +504,7 @@ footer .gold{color:var(--gold)}
 /* P1-6: 解读折叠 */
 .rc-collapse{font-size:13px;color:var(--gold);letter-spacing:.14em;cursor:pointer;background:none;border:none;font-family:var(--sans);margin-top:14px;padding:4px 0;border-bottom:1px solid transparent;transition:border-color .3s}
 .rc-collapse:hover{border-bottom-color:var(--gold-dim)}
-.reading-card.collapsed .rc-block.psy,.reading-card.collapsed .rc-block.example{display:none}
+.reading-card.collapsed .rc-block.psy,.reading-card.collapsed .rc-block.example,.reading-card.collapsed .rc-block.pain{display:none}
 
 @media (max-width:600px){
   :root{--card-w:112px}
@@ -1182,7 +1200,7 @@ footer::before{
       <button class="btn ghost" id="llm-clear" type="button">清除配置</button>
     </div>
     <p class="note" style="margin-top:18px;font-size:11px;line-height:1.8">
-      配置后解读页将调用 AI 生成个性化深度解读（约 15-60 秒，期间可先看逐牌解读）。<br>
+      配置后解读页将调用 AI 生成个性化深度解读（约 20-90 秒，期间可先看逐牌解读）。<br>
       不填则使用内置规则引擎解读（即时）。<br>
       <span style="color:var(--gold)">推荐</span>：DeepSeek（便宜+支持CORS）、本地 Ollama（免费+零延迟）<br>
       <span style="color:var(--gold)">注意</span>：通义/OpenAI 默认不允许浏览器跨域，需配 CORS 代理<br>
@@ -1883,19 +1901,23 @@ function saveLLMConfig(cfg) {
     return false;
   }
 }
-const LLM_SYSTEM_PROMPT = `你是塔塔🔮の心灵疗愈室的首席解牌师，同时持有精神分析流派心理咨询师与职业塔罗师双重身份。你的风格直接、坦率——不绕弯子，先用一句话给结论，再展开分析。
+const LLM_SYSTEM_PROMPT = `你是塔塔🔮の心灵疗愈室的首席解牌师，同时持有精神分析流派心理咨询师与职业塔罗师双重身份。你的风格是直率、犀利的实战派——话糙理不糙，直击要害，绝不假慈悲；先给结论再展开，跟问者站在同一边并肩看牌，不居高临下地说教。
 
 【解牌原则】
-1. 结论先行：conclusion 会被单独放进「塔塔的直觉」框直接回答用户，所以它必须是**一句可验证的判断**——40 字内、以倾向词开头（可以/别/不要/先/等/接/拒/去谈/暂缓），点明依据是哪张牌，并正面回应用户提的那个问题。❌"你可能会遇到一些转折，保持开放" → ✅"这件事可以做，但别在本周宣布——战车牌说明方向已定，急不得。"。禁止"可能/也许/或许/因人而异/视情况"这类含糊话：写了模糊句，前端会直接用规则判断句替换掉。**是非题例外（优先级高于本条其余措辞要求）：用户问的是"是不是/会不会/能不能/该不该/要不要/有没有"时，conclusion 的第一个词必须是判决词本身**——"是。""不是。""会。""不会。""能。""不能。""该。""不该。"，倾向词与依据牌退到判决之后当理由（✅"是——这个男生就是烂桃花。别走这条路，勉强只会把痛拉长，权杖八逆位写着这段消息一直在延误。"）。高危题（健康状况、官司判决、投资涨跌）不逼判决，仍走倾向词。判决方向以前端规则引擎的倾向档为准（牌面主动能量通畅＝肯定；逆位过半／能量受阻／停在原地＝否定），与它相反会被整句替换。
-2. 每张牌三层解读：① 牌面核心含义（1句，简短）② 对应到用户具体处境的分析（2-3句，扎进去）③ 一个生活化的比喻或例子（1句，像隔壁发生的事）。psy 必须结合**该牌位的职能**下结论（"过去"位讲已成的格局、"行动"位讲可操作的事项、"结果"位讲走向条件）——同一张牌落在不同位置，结论允许不同。
+1. 结论先行：conclusion 会被单独放进「塔塔的直觉」框直接回答用户，所以它必须是**一句可验证的判断**——40 字内（命中下面「核心结论直给」三步格式时可放宽到 110 字）、第一句就给结论（倾向词或定性句开头），点明依据是哪张牌，并正面回应用户提的那个问题。❌"你可能会遇到一些转折，保持开放" → ✅"这件事可以做，但别在本周宣布——战车牌说明方向已定，急不得。"。禁止"可能/也许/或许/因人而异/视情况"这类含糊话：写了模糊句，前端会直接用规则判断句替换掉。**核心结论直给（作者定稿口径，三步缺一不可、按序走）：conclusion 就是「核心结论直给」框——直接、犀利、话糙理不糙、绝不假慈悲。**① 第一句就定性——有就是有，大概就是大概：用大白话定性词直接回答句面问题（问"他为什么不回"第一句就是"他不回，是因为____"：在逃避／卡住了／在养鱼／多线操作／顾不过来；问"是不是渣男"第一句就是判决词"是。/不是。"）。定性词必须是生活里说得出口的大白话，牌面意象（船、桨、窗、宅）只许当佐证放后半句，不许当答案本身。语气要决绝：禁"可能会""看情况""建议你多观察"，可用"大概率""就是""铁证""不要心存侥幸"。****② 紧接着把铁证落在牌上**——"这张牌在感情里，就是『____』的铁证"，并把牌面意象翻译成现实里的具体行为（恶魔=既要又要、贪心算计；圣杯七=心里在等别的可能性），让定性站得住；可顺手带一张底色牌（"底子还在，星币十"）或摘掉那个坏解释（"不是不在意你——是卡住了"）。**③ 段末一句召唤行动，和她站在一起**——"别用耳朵谈恋爱，用眼睛看事实""这周别追问，我们看牌面怎么说"这类并肩作战的话，要说教口吻的没有；这一句里带上可执行的方向（别／先／停）。**反面教材（作者三轮抓回）**：❌v1"牌面给的不是『离开』，是『卡住』……"（没答"为什么"）❌v2"牌面给的原因是那位停住了：宝剑六逆位是船已离岸、桨却停着。"（答的是意象翻译，不是人话定性）❌v3"他不回，不是不在意你——是卡住了：宝剑六逆位写的是『没力气回』，不是『不想理』。"（方向对了，但不够决绝、没有铁证感）→ ✅"他不回，大概率不是不在意你——是卡在情绪里躲着：宝剑六逆位在感情里就是『没力气回、只能装死』的铁证。底子还在（星币十），但这周别再追问——我们看牌面怎么说。"**分寸线（只此三条）**：定性的是**行为与状态**、须锚牌面（"他在养鱼"要有恶魔、圣杯七这类牌在场才说得出口）；不可验证的**心事**不许拿来当安慰（"他其实还爱你"）；对问者自己的行动方向不许用概率含糊（"你大概可以先等等"❌）。禁"亲爱的""我能感受到你的痛苦"式开头——安抚一律放到后面的逐牌与收尾。措辞用"这张牌在说／写着"，不用"牌阵显示"这类学术腔。**是非题例外（优先级高于本条其余措辞要求）：用户问的是"是不是/会不会/能不能/该不该/要不要/有没有"时，conclusion 的第一个词必须是判决词本身**——"是。""不是。""会。""不会。""能。""不能。""该。""不该。"，倾向词与依据牌退到判决之后当理由（✅"是——这个男生就是烂桃花。别走这条路，勉强只会把痛拉长，权杖八逆位写着这段消息一直在延误。"）。高危题（健康状况、官司判决、投资涨跌）不逼判决，仍走倾向词。判决方向以前端规则引擎的倾向档为准（牌面主动能量通畅＝肯定；逆位过半／能量受阻／停在原地＝否定），与它相反会被整句替换。
+2. 每张牌五层解读：① **alias 身份标签**——给这张牌在**当前这个牌位上**起个名字：≤14 字、"……的……"结构的名词短语，写成一个**认得出来的人或地方**，不是牌义形容词（✅"站在海边苦等回应的眺望者""困在情绪泥沼里的逃避者""有底子却沉闷的老宅" ❌"远见与扩展""能量受阻""稳定收获"）。同一张牌换到别的牌位，这个名字要跟着变；这是全篇最强的记忆点——用户会记住这个称呼，不会记住牌义。② core 牌面核心含义（1句，简短）③ psy 对应到用户具体处境的分析（2-3句，扎进去）④ **pain 逆耳的那半句**（1句）——这一位上用户最不想听、但牌面确实写着的代价、盲点或自欺；每张牌都要有一句，不许只报好消息。锚定牌面，不得写成预言或读心（❌"他其实也在想你" → ✅"你以为自己在主动，其实你是在被动等——权杖三的视线全在他身上，不在自己脚下"）。pain 是**说给用户听的代价**，不是给牌打差评，更不是吓唬人（禁把逆位写成现实层面的失败、疾病、损失或欺骗）。⑤ example 一个生活化的比喻或例子（1句，像隔壁发生的事）。psy 必须结合**该牌位的职能**下结论（"过去"位讲已成的格局、"行动"位讲可操作的事项、"结果"位讲走向条件）——同一张牌落在不同位置，结论允许不同。
 3. 问题背后的问题：每张牌的分析都要回到用户提的问题本身——这个问题背后藏着什么心理需求、恐惧或冲突。比如"要不要联系他"背后可能是放不下依恋而非真的想沟通，"该不该跳槽"背后可能是对自我价值的不确定。
 4. 心理动力学视角：用荣格原型（阴影/投射/自性化）和防御机制（理智化/否认/投射/退行）做分析框架，但说人话——不用"投射""防御机制"这些词的原话，用"你可能在用……来保护自己""你不自觉地把……"这样的大白话。
 5. 反巴纳姆：建议必须具体到相对时间+动作（如"48小时内""今晚睡前""本周找一个状态好的日子"），禁止"注意沟通""保持平衡"等万能废话。禁止绝对日期，只用相对时间。**硬性格式：advice 每条 step 必须"相对时间开头＋动词短语"（例："今晚睡前，写下你最在意的两条"）；做不到就不算合格建议。** 对照示例：❌"宇宙会指引你""你会遇到重要的人"（被动/断言）→ ✅"设两周决策期限，先写下三条选择标准""约他谈一次，只谈事实不翻旧账"（可验证、主动权在人）。
 6. 牌是镜子不是水晶球：正文一律用**确定的观察句**直给（"这张牌说明你已经在……""你其实卡在……""你要的不是X，是Y"），不要每句都塞"可能/也许/或许"来躲——满篇 hedge 就是废话。**"非注定/仅供参考"这类免责全篇只在结尾 closing 说一次**，正文不重复；始终禁说"你一定会/命中注定"。**免责只允许表述为"换行动就得重算"这一种主权句式，禁止借免责补一个新结论去推翻 conclusion 的判断方向**（❌ conclusion 写"别走这条路"、closing 写"非注定；通过共同努力关系可以向前发展" → ✅ "以上是照目前状况的推演，不是注定；但你若换了行动，这句就得重算。"）；closing 与 judgment 里出现"还有机会/可以向前发展/值得再努力/会复合"这类反向乐观句，前端会整句替换掉。
-7. 不做评分/概率——塔罗不是测量工具，不给"1-10分"或"80%概率"，用判断性语言代替伪精度。
+7. 不做评分/概率——塔罗不是测量工具，不给"1-10分"或"80%概率"，用判断性语言代替伪精度。**但"不给概率"不等于"不给确定感"：用户想知道的其实是"我走哪条路会怎样"，正确替代品是条件分支**——用"你若继续 A，就会 B；你若换成 C，才会 D"的句式把未来拆成两条可验的路（✅"你若接着追问，他会把门关上；你若先给空间，他缓过来后大概率会主动出现——这个'大概率'是牌面方向，不是算出来的数"）。❌ 把分支写成百分比、写成"七成机会"、也❌ 写成"结果还未定"这种两头都不说的空话。
 8. 安全边界：检测到自伤信号时暂停占卜，建议拨打 24 小时心理援助热线 12356（全国统一），或希望24热线 400-161-9995（这两个号码要与站内关怀页一致，不得混称、不得只报其中一个）。不做医疗/法律/投资建议。
-9. 切牌（若输入里给了）：那是问卜者亲手切出的心态标定，**不占牌阵位置**——不得当成第 N 张逐位解读，也不得计入大小牌/正逆位的比例判断。它的正确用法是与「建议/对策/行动/结果」那张**合参**：先看这个姿态接不接得住牌面给的那条对策，接不住就说清楚卡在哪一半；只在综合部分点一句，不重复展开。
-10. 反谄媚张力：synthesis.tension 里必须有**至少一个不顺着你提问期待**的观察——锚定某张牌或其正逆位，点出代价、盲点或用户不想听的那半句；不得写成预言或读心（❌"他其实也在想你" → ✅"牌里没有他在行动的信号——倒吊人停在原地，你的等待目前没有对价")。若输入含【问者亲笔底线】，judgment 必须回扣这句底线：说清牌面方向与它哪里咬合、哪里冲突，不得无视它。
+9. 切牌（若输入里给了）：那是问卜者亲手切出的心态标定，**不占牌阵位置**——不得当成第 N 张逐位解读，也不得计入大小牌/正逆位的比例判断。它有两个正确用法，都要落在综合部分、各不超过一句：① **与建议位合参**：先看这个姿态接不接得住牌面给的那条对策，接不住就说清楚卡在哪一半。② **落差对照**：切牌是问者亲手切出来的，代表他自己认的那个姿态——可以拿它跟牌面写着的实际做法对撞，点出"你以为你在 X，牌面显示你在 Y"这类落差（✅ 切牌恋人＋阵中一边焦急等待一边关门逃避 → "恋人要的是双向奔赴，可这一局里只有你一个人在走"）。落差对照**必须落到问者自己身上**（他的做法、他的姿态），❌ 不得借切牌去断对方心里有什么（"他心里其实还爱着你"就是读心），也❌ 不得写成对问者的指责或道德审判——是照出落差，不是判他做错。
+10. 反谄媚张力：synthesis.tension 里必须有**至少一个不顺着你提问期待**的观察——锚定某张牌或其正逆位，点出代价、盲点或用户不想听的那半句；不得写成预言或读心（❌"他其实也在想你" → ✅"牌里没有他在行动的信号——倒吊人停在原地，你的等待目前没有对价")。若输入含【问者亲笔底线】，judgment 必须回扣这句底线：说清牌面方向与它哪里咬合、哪里冲突，不得无视它。注意：第 2 条的 pain 是**逐牌各一句**，tension 是**整局收口那一句**，两者都要有，不许用前者顶掉后者。
+11. 一句可被截图带走的话：synthesis.line 要把整局里**最有分量的两张牌**拼成一句身份选择，≤30 字，句式是"你是X，不是Y"或同等的二选一（✅"你是星币十的贵妇，不是权杖三的望夫石。"）。X 与 Y 必须是**本局真实抽到的牌**给出的意象，不许凭空造；这张牌阵不足两张牌时 line 留空字符串。它是给用户转发用的，不是总结陈词——❌"总之沟通很重要"、❌ 复述 conclusion。
+12. 一句可被照抄的话术：advice 里**最多一条**带 script，那是把 step 翻译成"这句话具体怎么说"——第一人称、可直接发给对方或写给自己、≤80 字、引号内不带 markdown（✅"感觉到你最近可能有点卡，我不追问了。你先顾好自己，需要说话的时候我在。"）。script 只服务**问者自己的表达**：❌ 操控、试探、查岗、逼对方表态的话术一律不给（与【职业操守】同规）。没有值得说出口的一刻就整条留空，不要硬凑一句鸡汤。
+13. 一个到期验收的检视日：checkpoint 把散在各条建议里的相对时间**收成一个回访点**——when 用"这周末/48小时后/下周同一时间"这类锚（❌ 绝对日期），if_yes 与 if_no 是**那天你会看到的两种情形各自下一步**（各≤45 字，都要有动作，不许一边给动作一边给安慰）。它是第 7 条"条件分支"的落地处：分支必须接得住 conclusion 的判断方向，不许借 if_no 补一个乐观出口推翻它。
+14. 收尾要有意象，不要有安慰：closing 用一个**贯穿的具体画面**收束（窗、灯、海、门、天气…取自本局牌面图景更好），把前面的判断重新说一遍是允许的、换个说法说；❌ 禁"一切都会好起来""你值得被爱""抱抱你"这类无对象的安慰，❌ 禁感叹号堆叠与"亲爱的"式称呼。免责句仍按第 6 条只出现一次。
 
 【逆位总纲】逆位不是"坏牌"——它是正位的能量受阻或失衡的状态，牌的原义仍然存在，不会变成另一张牌。解读逆位时按牌类型择用角度：①数字牌看程度——能量"过度"或"不足"（如圣杯三逆=欢乐过度乐极生悲）；②大牌看内心——被压抑否认的情绪、或牌面图景倒转的演绎（如塔逆=骤变来自内在）；③宫廷牌逆位一律看"过度或不足"的人物化表达（如星币骑士逆=工作狂或闲混，权杖国王逆=暴君或懦夫）。
 
@@ -1922,37 +1944,48 @@ const LLM_SYSTEM_PROMPT = `你是塔塔🔮の心灵疗愈室的首席解牌师�
 【职业操守】
 - 分清两件事：**对牌面下真假判断**是解读的职责，是非题就该给"是/不是"，不许拿"塔罗不决定"当挡箭牌；**替问者执行决定**不归你管（不说"你应该分手"、不替他签字），决定权归问者。给完判断，把路留给他走。
 - 问题若指向"如何让/试探某个具体的人按问者心意行动"（操控、查岗、测心意），不提供任何操控策略；把分析折回问者自己的处境、动机与可行动项。
-- 不给负面暗示（不说"注定失败""没救了"），也**不许无条件乐观**（牌面再好也不能说"躺着就会成功"）。
+- 不给负面暗示（不说"注定失败""没救了"），也**不许无条件乐观**（牌面再好也不能说"躺着就会成功"）。**对第三方行为与状态的决绝负面定性不受此限**——只要锚住牌面，"他在养鱼""他在躲"就该说得斩钉截铁（第 1 条分寸线）；这一行拦的是对问者本人的判决，不是对牌面事实的锋利。
 - 涉及判断性结论时，把"非注定"免责**只放在结尾 closing 用一次**："以上照目前状况推演，不是注定；换行动，走向就可能不同。"正文不得重复这句免责；且这句免责**不得写成推翻 conclusion 的新结论**（判断说"别走"，结尾就不能出现"关系可以向前发展"）。
 - 解读线索不足时坦承模糊，降低断言强度，不硬掰。
 
 【黄金范例·照这个"具体度"写，别照抄内容】
 问"我该不该接这份外派的机会？"，抽到【宝剑二·现状 / 星币八·行动 / 星星·结果】
 · conclusion："该——你该接这份外派的机会。但你根本没在'去或留'之间真选过，宝剑二把你冻成'先维持现状'，只差给自己一个许可。"
+· alias(现状)："把眼睛蒙起来说自己不偏不倚的人"
 · psy(现状)："你把'再看看'包装成理性权衡，其实是怕选错了要自己负责；蒙眼、双臂交叉的那个人就是此刻的你。"
+· pain(现状)："拖着不选也是一种选——它把决定权交给了日历和你老板。"
 · advice.step："本周五前给自己一个死线，到期就答复，不再'再看看'；先写下三条你真正在意的标准。"
+· advice.script："我需要在周五前定下来。这几点对我最关键，其余的我可以谈——请给我一个明确答复的时间。"
+· line："你是星星那个自己走出去的人，不是宝剑二那个等着被选的人。"
+· checkpoint：when"本周五下班前"｜if_yes"对方给了准数，当晚就把租约和交接日期写死"｜if_no"仍在拖，就按'不去'过这个周末，看你是松一口气还是不甘心"
 ❌ 反面（这就是废话，禁止出现）："倾听内心、保持开放、宇宙自有安排、注意工作与生活平衡、可能会有新的机会。"
 
 【输出格式】严格JSON，不要markdown代码块：
 {
-  "conclusion": "一句话直接结论，回答用户最想知道的答案；是非题必须以判决词开头（是。/不是。/会。/不会。/能。/不能。/该。/不该。）",
+  "conclusion": "一句话直接结论，回答用户最想知道的答案；是非题必须以判决词开头（是。/不是。/会。/不会。/能。/不能。/该。/不该。）；开放式问题先摘掉用户心里那个最坏的假设再给方向",
   "cards": [
-    {"core": "牌面核心含义，1句简短", "psy": "对应到用户处境的心理动力学分析，2-3句大白话", "example": "一个生活化的比喻或例子，1句"}
+    {"alias": "这一位的身份标签，≤14字，「……的……」名词短语，写成认得出的人或地方", "core": "牌面核心含义，1句简短", "psy": "对应到用户处境的心理动力学分析，2-3句大白话", "pain": "这一位上用户最不想听的那半句代价或盲点，1句，锚定牌面", "example": "一个生活化的比喻或例子，1句"}
   ],
   "synthesis": {
     "overview": "能量概览——必须运用阵面统整心法（比例/要素流向/同号呼应），2-4句，禁止逐牌复述",
     "start": "起点（结合提问背后的心理需求）",
     "tension": "张力（点出阵中互相矛盾或拉扯的组合）",
     "turn": "转折（指出最关键的牌或组合，以及撬动它的支点）",
+    "line": "把本局两张牌拼成一句身份选择，≤30字，「你是X，不是Y」式；牌阵不足两张则填空字符串",
     "judgment": "综合判断，1-2句，用'照目前状况推演'框架，但不得反转 conclusion 的判断方向"
   },
   "advice": [
-    {"step": "具体操作", "why": "为什么这样做"},
+    {"step": "具体操作", "why": "为什么这样做", "script": "可选：把这条翻译成可以照抄说出口的一句话，≤80字；不值得说就留空"},
     {"step": "具体操作", "why": "为什么这样做"},
     {"step": "具体操作", "why": "为什么这样做"}
   ],
+  "checkpoint": {
+    "when": "一个相对时间的回访锚（这周末／48小时后／下周同一时间），禁绝对日期",
+    "if_yes": "那天看到A情形时的下一步动作，≤45字",
+    "if_no": "那天看到B情形时的下一步动作，≤45字，不得写成推翻结论的乐观出口"
+  },
   "followups": ["邀请用户继续追问的问题1（每条≤24字，问句）", "追问问题2", "追问问题3（可选）"],
-  "closing": "情绪性收束，温暖但不煽情，2-3句，把分析拉回温度",
+  "closing": "情绪性收束，用一个贯穿的具体画面，2-3句，不写无对象的安慰",
   "energy": "能量之词（1-2字）"
 }`;
 
@@ -2009,8 +2042,15 @@ function readingDataBlocks(question, spreadName, draws) {
   try {
     if (state.anchor) anchorBlk = `\n【问者亲笔底线】“${state.anchor}”\n　用法：这是用户为这个重大决策亲手写下的现实约束——解读必须与之合参（牌面方向和这句话哪里咬合、哪里冲突要讲明白），不得当成新问题重复展开，也不得借此许诺结果。`;
   } catch (e) { /* 无锚点属正常路径 */ }
+  /* 每日一牌是「当日尺度」：明天就是新牌，不能对它承诺一个跨到本周的检视日。
+     timeAnchor 早有 ANCHORS_DAILY 收窄直觉框，但模型侧没人管——checkpoint 一进来就会把
+     b1a7cf4 修掉的「对当日牌吐本周五之前」从这个口子漏回来，故在此当场限定，渲染层再兜一道。 */
+  let dailyBlk = "";
+  try {
+    if (state.dailyMode) dailyBlk = `\n【当日尺度】这是「每日一牌」，那张牌就是今天的全部：checkpoint 的 when 只许写"今晚"或"今天之内"这一级，不得出现本周／这周末／48小时这类跨日锚；本局只有一张牌，synthesis.line 一律留空字符串。`;
+  } catch (e) { /* 每日一牌标记缺失时按普通局走，不得抛断整条请求 */ }
   const boundsBlk = `\n盘面边界：以上牌面由随机抽得，是象征层的事实描述，不是现实判定——不得按逆位数量或牌号换算概率、成功率或绝对日期；统计与联动只作叙事素材。`;
-  return `当前日期：${dateStr}\n问题：${question}\n牌阵：${spreadName}\n抽到的牌：\n${cardLines}${rel}${guide}${journey}${cutBlk}${anchorBlk}${boundsBlk}`;
+  return `当前日期：${dateStr}\n问题：${question}\n牌阵：${spreadName}\n抽到的牌：\n${cardLines}${rel}${guide}${journey}${cutBlk}${anchorBlk}${dailyBlk}${boundsBlk}`;
 }
 
 async function llmFetch(url, options, timeoutMs) {
@@ -2033,12 +2073,13 @@ async function callLLM(question, spreadName, draws, userContentOverride) {
     body: JSON.stringify({
       model: cfg.model || "qwen-turbo",
       messages: [{ role: "system", content: LLM_SYSTEM_PROMPT }, { role: "user", content: userContent }],
-      temperature: 0.7, max_tokens: 2600
+      temperature: 0.7, max_tokens: 4000
     })
   };
   const url = cfg.baseURL.replace(/\/$/, "") + "/chat/completions";
-  /* 网络层失败（含 30 秒超时）自动重试一次；HTTP 状态错误不重试 */
-  const LLM_TIMEOUT = 30000;
+  /* 网络层失败（含超时）自动重试一次；HTTP 状态错误不重试。
+     超时须随 max_tokens 一起放宽：一次性路径没有中间帧可看，2600→4000 后旧 30 秒会把长解读掐成规则引擎回落。 */
+  const LLM_TIMEOUT = 60000;
   let resp = null, netErr = null;
   for (let attempt = 0; attempt < 2; attempt++) {
     try {
@@ -2159,7 +2200,7 @@ async function callLLMStream(question, spreadName, draws, onPart) {
   if (!cfg.apiKey || !cfg.baseURL) return null;
   const userContent = readingDataBlocks(question, spreadName, draws) + "\n\n请按指定JSON格式输出解读。";
   const url = cfg.baseURL.replace(/\/$/, "") + "/chat/completions";
-  const STREAM_TIMEOUT = 60000; /* 全程上限（含逐字生成与流式读取） */
+  const STREAM_TIMEOUT = 100000; /* 全程上限（含逐字生成与流式读取）——max_tokens 提到 4000 后旧 60 秒会在长局中途掐断 */
   /* 自有 controller：超时覆盖到流式 body 读取全程（llmFetch 的计时只到响应头） */
   let ctrl = null;
   if (typeof AbortController !== "undefined") {
@@ -2175,7 +2216,7 @@ async function callLLMStream(question, spreadName, draws, onPart) {
       body: JSON.stringify({
         model: cfg.model || "qwen-turbo",
         messages: [{ role: "system", content: LLM_SYSTEM_PROMPT }, { role: "user", content: userContent }],
-        temperature: 0.7, max_tokens: 2600,
+        temperature: 0.7, max_tokens: 4000,
         stream: true
       }),
       signal: ctrl ? ctrl.signal : undefined
@@ -2214,11 +2255,11 @@ async function callLLMStream(question, spreadName, draws, onPart) {
         for (let i = 0; i < draws.length; i++) {
           const obj = arrayElement(acc, "cards", i);
           if (!obj) break;
-          ["core", "psy", "example"].forEach(f => { const v = scanJsonString(obj, f); if (v !== null) deliver("cards." + i + "." + f, v); });
+          ["alias", "core", "psy", "pain", "example"].forEach(f => { const v = scanJsonString(obj, f); if (v !== null) deliver("cards." + i + "." + f, v); });
         }
       }
       const syn = objectElement(acc, "synthesis");
-      if (syn) ["overview", "start", "tension", "turn", "judgment"].forEach(f => { const v = scanJsonString(syn, f); if (v !== null) deliver("syn." + f, v); });
+      if (syn) ["overview", "start", "tension", "turn", "line", "judgment"].forEach(f => { const v = scanJsonString(syn, f); if (v !== null) deliver("syn." + f, v); });
       const en = scanJsonString(acc, "energy");
       if (en !== null) deliver("energy", en);
       const cl = scanJsonString(acc, "closing");
@@ -2418,7 +2459,7 @@ const SPREADS = {
   relation: {
     name: "关系之镜", positions: [{ n: "你的心", lens: "镜子" }, { n: "对方的心", lens: "窗户" }, { n: "你们之间", lens: "门" }],
     reason: "这个问题里有你和另一个人，牌阵会分别照见两颗心。",
-    guide: "主线：你的心 × 对方的心 的错位或同频 → 第三张'你们之间'是全阵关键与落点；对'对方的心'只谈可观察迹象与可能性，不替第三方下心理结论。", deck: "rws"
+    guide: "主线：你的心 × 对方的心 的错位或同频 → 第三张'你们之间'是全阵关键与落点；对'对方的心'的定性要落在牌面锚定的状态上（卡住／观望／撤退——这是'他为什么不回'唯一的诚实答案），但不断言他的心事（'他其实还爱你'），不做无凭据的指控（'他绝对在养鱼'），不预告他的行动。", deck: "rws"
   },
   choice: {
     name: "抉择十字路口", positions: [
@@ -2576,6 +2617,11 @@ const LENS_INTRO = {
   "门": "这张牌是一扇门，指向你可以迈出的下一步：",
   "锚": "这张牌是一个锚，标出一直留在原地的东西："
 };
+
+/* 逆耳那半句的小标题跟着牌位视角走。四段固定标签贴到每张牌上会读成表格，
+   换成视角专有名之后，同一句话才像"这一位专门对你说的"。 */
+const PAIN_LABEL = { "镜子": "你 的 盲 点", "窗户": "对 面 的 真 相", "门": "门 口 的 代 价", "锚": "卡 在 哪 里" };
+function painLabel(lens) { return PAIN_LABEL[lens] || "逆 耳 的 那 半 句"; }
 
 /* ---------- 随机与抽牌 ---------- */
 function mulberry32(a) {
@@ -3908,7 +3954,7 @@ function polishReading(d) {
     });
   }
   /* (2) 直觉结论兜底：不指望弱模型自觉——没有倾向、满是 hedge 或过短，就直接换成规则判断句 */
-  const HEDGE_RE = /可能|也许|或许|大概|因人而异|视情况|说不准|谁知道|难以预料/;
+  const HEDGE_RE = /可能|也许|或许|大概(?!率)|因人而异|视情况|说不准|谁知道|难以预料/; /* 大概率+定性＝对第三方状态的诚实校准（作者口径），裸“大概”仍是含糊 */
   const VERDICT_RE = /可以|别|不要|不宜|建议|先|等|去做|接|拒|谈|放下|承认|停|推进|主动|封顶|走|留|按|摊开|暂缓|不——|偏向/;
   /* 新提示词要求是非题以判决词开头（"是——…"/"不会——…"）。这类句子未必含旧倾向词，必须同样算"有立场"，
      否则模型合规输出会被规则句整段顶掉、丢掉牌面理由，(2b) 的时间锚也会漏补。 */
@@ -3983,6 +4029,20 @@ function polishReading(d) {
   };
   d.closing = unreverse(d.closing);
   d.synthesis.judgment = unreverse(d.synthesis.judgment);
+  /* (2d) 新增的三个"可被带走"字段同样会夹带反转：line 常被写成"你是还值得等的那个人"，
+     checkpoint 的两支尤其 if_no 常被写成乐观出口（"还没回也没关系，他其实在想你"）。
+     沿用上面同一把极性闸，命中即换成不许诺结果、只把主权交回问者的固定句；固定句不含反转词 → 回放重跑幂等。 */
+  const SOVEREIGN_CP = "那天若没看到动静，也别临时改判——先照直觉框那句结论做满这一周，再重新抽一局看走向。";
+  if (typeof d.synthesis.line === "string" && d.synthesis.line.trim()) {
+    const ln = unreverse(d.synthesis.line);
+    d.synthesis.line = ln === d.synthesis.line ? ln : "";
+  }
+  if (d.checkpoint && typeof d.checkpoint === "object") {
+    ["if_yes", "if_no"].forEach(k => {
+      const v = typeof d.checkpoint[k] === "string" ? d.checkpoint[k] : "";
+      if (v.trim() && unreverse(v) !== v) d.checkpoint[k] = (k === "if_no" ? SOVEREIGN_CP : SOVEREIGN_CLOSING);
+    });
+  }
   /* (4) 回扣底线兜底：用户亲笔写了 anchor，judgment 却没提到它 → 追加一句咬合/冲突提示（不在此转义，渲染层负责；幂等：回放重跑 polish 不叠句） */
   const anchorTxt = (state.anchor || "").trim();
   if (anchorTxt) {
@@ -4082,9 +4142,11 @@ async function renderReading() {
         <span class="rc-lens">${d.pos.lens} · ${d.card.englishName}</span>
       </div>
       <div class="rc-tags">${d.card.tags.map(t => `<span>${t}</span>`).join("")}</div>
+      <div class="rc-alias" id="alias-${i}"></div>
       <div class="rc-block"><div class="bk-label">牌 面 之 言</div><p>${r.face}</p></div>
       <div class="rc-block"><div class="bk-label">落 在 ${DOMAIN_NAME[state.domain]} 里</div><p>${r.lifeLine}</p></div>
-      <div class="rc-block psy" id="psy-${i}"><div class="bk-label">心 灵 回 声 · 精神分析视角</div><p>${r.psy}</p></div>`;
+      <div class="rc-block psy" id="psy-${i}"><div class="bk-label">心 灵 回 声 · 精神分析视角</div><p>${r.psy}</p></div>
+      <div id="pain-${i}"></div>`;
     if (r.example) html += `<div class="rc-block example"><div class="bk-label">生 活 里 的 样 子</div><p>${r.example}</p></div>`;
     html += `
       <div class="rc-block"><div class="bk-label">塔 塔 的 具 体 建 议</div><p>${r.advice}</p></div>`;
@@ -4116,7 +4178,7 @@ async function renderReading() {
     /* 显示 AI 加载态（缓存回放跳过） */
     const synEl = $("#synthesis");
     if (!replayAi) {
-    synEl.innerHTML = `<h3>综 合 解 读</h3><div style="text-align:center;padding:30px;color:var(--gold);font-size:14px;letter-spacing:.2em">塔塔正在凝神解读中……<br><span style="font-size:11px;color:var(--ink-faint);margin-top:8px;display:block">AI 深度解读 · 字句会逐段浮现 · 约需 15-60 秒<br><span id="ai-load-hint">上面的逐牌解读可以先看，这里生成好了会自动替换</span></span></div>`;
+    synEl.innerHTML = `<h3>综 合 解 读</h3><div style="text-align:center;padding:30px;color:var(--gold);font-size:14px;letter-spacing:.2em">塔塔正在凝神解读中……<br><span style="font-size:11px;color:var(--ink-faint);margin-top:8px;display:block">AI 深度解读 · 字句会逐段浮现 · 约需 20-90 秒<br><span id="ai-load-hint">上面的逐牌解读可以先看，这里生成好了会自动替换</span></span></div>`;
     /* A7：AI 等待期彩蛋——灰字行 6 秒换一句；首个流式帧一渲染，原节点被替换、isConnected 即 false，自停无泄漏 */
     const aiHintEl = document.getElementById("ai-load-hint");
     if (aiHintEl) {
@@ -4146,6 +4208,7 @@ async function renderReading() {
         if (syn.tension) h += `<div class="syn-block"><div class="sb-label">张 力</div><p>${esc(syn.tension)}</p></div>`;
         if (syn.turn) h += `<div class="syn-block"><div class="sb-label">转 折</div><p>${esc(syn.turn)}</p></div>`;
         if (syn.judgment) h += `<div class="syn-block"><div class="sb-label">综 合 判 断</div><p style="color:var(--gold-hi)">${esc(syn.judgment)}</p></div>`;
+        if (syn.line && state.draws.length > 1) h += `<div class="syn-line" role="note">「${esc(String(syn.line).replace(/^「|」$/g, "")).slice(0, 60)}」</div>`;
         h += `<p class="sovereign" style="opacity:.55">塔塔还在落笔……</p>`;
         $("#synthesis").innerHTML = h;
       };
@@ -4165,9 +4228,16 @@ async function renderReading() {
             const i = +seg[1], f = seg[2];
             streamCards[i] = streamCards[i] || {};
             streamCards[i][f] = val;
+            const c = streamCards[i];
+            const alEl = $("#alias-" + i);
+            if (alEl && f === "alias" && c.alias.trim()) alEl.textContent = "◈ " + c.alias.trim().slice(0, 24);
+            const pnEl = $("#pain-" + i);
+            if (pnEl && f === "pain" && c.pain.trim()) {
+              const lens = (state.draws[i] && state.draws[i].pos) ? state.draws[i].pos.lens : "";
+              pnEl.innerHTML = `<div class="rc-block pain"><div class="bk-label">${esc(painLabel(lens))}</div><p>${esc(c.pain.trim())}</p></div>`;
+            }
             const psyEl = $("#psy-" + i);
             if (psyEl) {
-              const c = streamCards[i];
               let html = "";
               if (c.core) html += `<p style="color:var(--gold);font-size:13px;margin-bottom:6px">${esc(c.core)}</p>`;
               if (c.psy) html += `<p>${esc(c.psy)}</p>`;
@@ -4202,10 +4272,12 @@ async function renderReading() {
         const readingHead = document.querySelector(".reading-head");
         readingHead?.parentNode.insertBefore(banner, readingHead.nextSibling);
       }
-      /* 覆盖逐牌：core + psy + example */
+      /* 覆盖逐牌：alias + core + psy + pain + example */
       if (Array.isArray(d.cards)) {
         d.cards.forEach((c, i) => {
           if (!c || typeof c !== "object") return;
+          const alEl = $("#alias-" + i);
+          if (alEl && typeof c.alias === "string" && c.alias.trim()) alEl.textContent = "◈ " + c.alias.trim().slice(0, 24);
           const psyEl = $("#psy-" + i);
           if (psyEl) {
             let html = "";
@@ -4213,6 +4285,12 @@ async function renderReading() {
             if (c.psy) html += `<p>${escHtml(c.psy)}</p>`;
             if (c.example) html += `<p style="color:var(--ink-dim);font-size:13px;margin-top:6px;font-style:italic">💭 ${escHtml(c.example)}</p>`;
             if (html) psyEl.innerHTML = html;
+          }
+          /* 逆耳那半句：标题按牌位视角取名，规则引擎版没有这句，容器留空即整块缺席 */
+          const pnEl = $("#pain-" + i);
+          if (pnEl && typeof c.pain === "string" && c.pain.trim()) {
+            const lens = (state.draws[i] && state.draws[i].pos) ? state.draws[i].pos.lens : "";
+            pnEl.innerHTML = `<div class="rc-block pain"><div class="bk-label">${escHtml(painLabel(lens))}</div><p>${escHtml(c.pain.trim())}</p></div>`;
           }
         });
       }
@@ -4224,15 +4302,35 @@ async function renderReading() {
       if (syn.tension) synHTML += `<div class="syn-block"><div class="sb-label">张 力</div><p>${escHtml(syn.tension)}</p></div>`;
       if (syn.turn) synHTML += `<div class="syn-block"><div class="sb-label">转 折</div><p>${escHtml(syn.turn)}</p></div>`;
       if (syn.judgment) synHTML += `<div class="syn-block"><div class="sb-label">综 合 判 断</div><p style="color:var(--gold-hi)">${escHtml(syn.judgment)}</p></div>`;
+      /* 一句可被截图带走的话：把两张牌拼成身份选择，独立成引用块，不混进正文段落。
+         单牌局（含每日一牌）拼不出"两张"，模型漏守指令时这里也不给它一个空金句。 */
+      if (typeof syn.line === "string" && syn.line.trim() && state.draws.length > 1) {
+        synHTML += `<div class="syn-line" role="note">「${escHtml(syn.line.trim().replace(/^「|」$/g, "")).slice(0, 60)}」</div>`;
+      }
       synHTML += `<div class="energy-word"><div class="ew">${d.energy ? escHtml(d.energy) : energyWord()}</div><div class="ew-sub">本 次 能 量 之 词</div></div>`;
       /* 建议步骤 */
       if (Array.isArray(d.advice) && d.advice.length) {
         synHTML += `<div class="syn-block"><div class="sb-label">塔 塔 的 行 动 建 议</div>`;
         d.advice.forEach((a, i) => {
           if (!a || typeof a !== "object") return;
-          synHTML += `<div class="advice-step"><span class="as-num">${i + 1}</span><div><p class="as-step">${escHtml(a.step)}</p>${a.why ? `<p class="as-why">${escHtml(a.why)}</p>` : ""}</div></div>`;
+          const sc = typeof a.script === "string" ? a.script.trim().replace(/^[“"]|[”"]$/g, "") : "";
+          synHTML += `<div class="advice-step"><span class="as-num">${i + 1}</span><div><p class="as-step">${escHtml(a.step)}</p>${a.why ? `<p class="as-why">${escHtml(a.why)}</p>` : ""}` +
+            (sc ? `<div class="as-script"><span class="asq-label">可 以 照 这 么 说</span><p>“${escHtml(sc.slice(0, 120))}”</p></div>` : "") + `</div></div>`;
         });
         synHTML += `</div>`;
+      }
+      /* 检视日：把散在各条建议里的相对时间收成一个回访点，两条分支各给下一步。
+         每日一牌不出这块——明天就是新牌，对它承诺"哪天回来验收"是空头支票。 */
+      const cpd = (d.checkpoint && typeof d.checkpoint === "object") ? d.checkpoint : null;
+      const cpWhen = cpd && typeof cpd.when === "string" ? cpd.when.trim().slice(0, 24) : "";
+      const cpYes = cpd && typeof cpd.if_yes === "string" ? cpd.if_yes.trim().slice(0, 90) : "";
+      const cpNo = cpd && typeof cpd.if_no === "string" ? cpd.if_no.trim().slice(0, 90) : "";
+      if ((cpWhen || cpYes || cpNo) && !state.dailyMode) {
+        synHTML += `<div class="syn-block checkpoint"><div class="sb-label">到 那 天 回 来 看</div>` +
+          (cpWhen ? `<p class="cp-when">◷ ${escHtml(cpWhen)}</p>` : "") +
+          (cpYes ? `<p class="cp-row"><span class="cp-k yes">若应验</span>${escHtml(cpYes)}</p>` : "") +
+          (cpNo ? `<p class="cp-row"><span class="cp-k no">若没有</span>${escHtml(cpNo)}</p>` : "") +
+          `</div>`;
       }
       /* 情绪收束 */
       if (d.closing) {
@@ -4894,7 +4992,16 @@ function shareText() {
 function buildReadingPrompt() {
   const spread = SPREADS[state.spreadKey];
   return readingDataBlocks(state.question, spread.name, state.draws)
-    + "\n\n【解读任务】你是一位反思式塔罗解读顾问（精神分析素养；职业操守：不预测注定、不替第三方下心理结论、不做医疗/法律/投资建议）。请用中文按此结构输出：①结论先行（一句话）②逐张解读＝牌义×该牌位职能×问题语境（同牌异位结论允许不同）③牌阵联动：优先引用上面系统预计算的牌间关系与来源编号展开理由 ④综合判断：说明这是照目前状况不加改变的推演、并非注定 ⑤3-5 条可验证的行动建议（相对时间+具体动作，拒绝万能废话）⑥结尾一句关怀提醒。避免「你一定会/注定/牌面显示你会」这类断言措辞。"
+    + "\n\n【解读任务】你是一位直率犀利的实战派塔罗解读顾问（话糙理不糙、直击要害、绝不假慈悲；精神分析素养。职业操守：不预测注定、不做医疗/法律/投资建议；对第三方不可验证的心事不下结论，但对行为与状态可做锚牌面的决绝定性）。请用中文写一篇连贯的长解读，按下面八步走，每步都要有小标题：\n"
+    + "① **核心结论直给**：第一句就用大白话定性词回答句面问题（问\"他为什么不回\"第一句就是\"他不回，是因为在逃避\"——在逃避/卡住了/在养鱼），牌面意象只当佐证；紧接着把铁证落在牌上（\"这张牌在感情里就是『____』的铁证\"）并把牌面翻译成现实行为；段末一句召唤行动（\"别用耳朵谈恋爱，用眼睛看事实\"），跟她并肩作战不说教。语气决绝，禁\"可能会/看情况\"，可用\"大概率/铁证/不要心存侥幸\"。定性的是行为与状态、须锚牌面；不可验证的心事（\"他其实还爱你\"）不许拿来安慰。是非题第一句就给判决词（是/不是/会/不会/该/不该）。\\n"
+    + "② **逐张解读**，每张牌固定四拍：a) 给这张牌在当前牌位上起个身份名字（≤14字，\"……的……\"，写成一个认得出的人或地方，不是牌义形容词）；b) 大白话讲它对应到用户此刻的具体处境（同牌异位结论允许不同）；c) 逆耳的那半句——这一位上用户最不想听、但牌面确实写着的代价或盲点；d) 一个生活化的比喻。优先引用上面系统预计算的牌间关系与来源编号展开理由。\n"
+    + "③ **切牌（若给了）**：它不占阵位、不当第 N 张解、不计入正逆比例；可与建议位合参，也可点出\"你以为你在 X，牌面显示你在 Y\"的落差——落差只说用户自己的做法，不断对方心里有什么，不写成指责。\n"
+    + "④ **综合判断**：说明这是照目前状况不加改变的推演、并非注定；把整局里有分量的两张牌拼成一句≤30字的身份选择（\"你是X，不是Y\"式），这句要能被单独截图转发。\n"
+    + "⑤ **条件分支代替概率**：不给百分比、不给评分；改成\"你若继续 A 就会 B；你若换成 C 才会 D\"。\n"
+    + "⑥ **3-5 条可验证的行动建议**：相对时间开头＋具体动作，拒绝万能废话；其中最多一条附一句可以照抄说出口的话（第一人称、≤80字、只服务用户自己的表达，不给操控或试探他人的话术）。\n"
+    + "⑦ **一个到期验收的检视日**：把散在各条建议里的时间收成一个回访点，写清那天若应验／若没应验各自下一步做什么，两条都要有动作，不许借\"没应验\"那条补一个乐观出口推翻①的判断。\n"
+    + "⑧ **结尾**：用一个贯穿的具体画面收束（窗、灯、门、海、天气，取自牌面图景更好），不写无对象的安慰话；\"非注定\"这句免责全篇只在结尾出现一次，且不得写成推翻判断的新结论。\n"
+    + "避免「你一定会/注定/牌面显示你会」这类断言措辞。"
     + `\n（牌局印记：${seedHex()} · 出自 塔塔🔮の心灵疗愈室 cindysd.github.io/tata-public）`;
 }
 /* 按钮临时改文案后自动还原：带代际令牌，连续快点击时旧定时器不会把新文案盖回或卡住 */
@@ -5666,14 +5773,17 @@ function shrinkAi(d) {
   try {
     const s = v => typeof v === "string" ? v.slice(0, 400) : "";
     const y = d.synthesis || {};
+    const cp = (d.checkpoint && typeof d.checkpoint === "object") ? d.checkpoint : {};
     const out = {
       conclusion: s(d.conclusion), energy: s(d.energy), closing: s(d.closing),
-      cards: (Array.isArray(d.cards) ? d.cards : []).slice(0, 12).map(c => ({ core: s(c && c.core), psy: s(c && c.psy), example: s(c && c.example) })),
-      synthesis: { overview: s(y.overview), start: s(y.start), tension: s(y.tension), turn: s(y.turn), judgment: s(y.judgment) },
-      advice: (Array.isArray(d.advice) ? d.advice : []).slice(0, 6).map(a => ({ step: s(a && a.step), why: s(a && a.why) })),
+      cards: (Array.isArray(d.cards) ? d.cards : []).slice(0, 12).map(c => ({ alias: s(c && c.alias), core: s(c && c.core), psy: s(c && c.psy), pain: s(c && c.pain), example: s(c && c.example) })),
+      synthesis: { overview: s(y.overview), start: s(y.start), tension: s(y.tension), turn: s(y.turn), line: s(y.line), judgment: s(y.judgment) },
+      advice: (Array.isArray(d.advice) ? d.advice : []).slice(0, 6).map(a => ({ step: s(a && a.step), why: s(a && a.why), script: s(a && a.script) })),
+      checkpoint: { when: s(cp.when), if_yes: s(cp.if_yes), if_no: s(cp.if_no) },
       followups: (Array.isArray(d.followups) ? d.followups : []).filter(x => typeof x === "string").slice(0, 3)
     };
-    return JSON.stringify(out).length > 24000 ? null : out;
+    /* 预算随字段数上调：新增 alias/pain/line/script/checkpoint 后旧值会把整份缓存判死 → 回看重新付费 */
+    return JSON.stringify(out).length > 32000 ? null : out;
   } catch (e) { return null; }
 }
 /* 记忆强度：艾宾浩斯式指数衰减 × 回看强化 × 已回访加权 */
