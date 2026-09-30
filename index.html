@@ -504,7 +504,16 @@ footer .gold{color:var(--gold)}
 /* P1-6: 解读折叠 */
 .rc-collapse{font-size:13px;color:var(--gold);letter-spacing:.14em;cursor:pointer;background:none;border:none;font-family:var(--sans);margin-top:14px;padding:4px 0;border-bottom:1px solid transparent;transition:border-color .3s}
 .rc-collapse:hover{border-bottom-color:var(--gold-dim)}
-.reading-card.collapsed .rc-block.psy,.reading-card.collapsed .rc-block.example,.reading-card.collapsed .rc-block.pain{display:none}
+/* 作者口径：逐牌解读「点牌才出现」，不全部陈列（占空间）。
+   折叠态只留牌名行＋身份标签，其余整块收起；一次只展开一张（accordion 在 app.js 里控）。 */
+.reading-card.collapsed .rc-block,.reading-card.collapsed .rc-tags,.reading-card.collapsed .rc-actions,.reading-card.collapsed .rc-deep{display:none}
+.reading-card.collapsed{padding:20px 24px}
+.reading-card.collapsed .rc-head{border-bottom:none;padding-bottom:0}
+.reading-card .rc-head{cursor:pointer;-webkit-tap-highlight-color:transparent}
+.reading-card .rc-head::after{content:"点开解读 ↓";font-size:10.5px;letter-spacing:.16em;color:var(--ink-faint);white-space:nowrap}
+.reading-card:not(.collapsed) .rc-head::after{content:"收起 ↑"}
+.reading-card .rc-head:hover::after{color:var(--gold)}
+.mini-revealed{cursor:pointer}
 
 @media (max-width:600px){
   :root{--card-w:112px}
@@ -3959,7 +3968,11 @@ function polishReading(d) {
   /* 新提示词要求是非题以判决词开头（"是——…"/"不会——…"）。这类句子未必含旧倾向词，必须同样算"有立场"，
      否则模型合规输出会被规则句整段顶掉、丢掉牌面理由，(2b) 的时间锚也会漏补。 */
   const VERDICT_HEAD = /^(是|不是|会|不会|能|不能|该|不该|要|不要|有|没有|值|不值)(。|——|，|、)/;
-  const hasVerdict = t => VERDICT_RE.test(t) || VERDICT_HEAD.test(t);
+  /* v4「核心结论直给」的定性本身就是立场。旧闸只认倾向词，会把"他最近就是在硬撑…是铁证"这类
+     合格直给句判成没立场、整句换成规则引擎的含糊话——线上实测翻车点（作者截图复现）。
+     只放"决绝定性"这一类，含糊话仍由 HEDGE_RE 拦，不削弱兜底。 */
+  const VERDICT_DIRECT = /大概率|铁证|摆明了|明摆着|压根|根本(就是|不是)|就是说白|白说|别心存侥幸|就是(在|没|不|躲|装|拖)|不是(在|没|不想|不愿)|心里(没|没有|有)|在(躲|装|拖|逃避|观望|硬撑|养|耗|冷)|拿.?当|算不上|谈不上|没那个意思/;
+  const hasVerdict = t => VERDICT_RE.test(t) || VERDICT_HEAD.test(t) || VERDICT_DIRECT.test(t);
   const c0 = typeof d.conclusion === "string" ? d.conclusion.trim() : "";
   const cProbe = c0.replace(/「[^」]*」/g, ""); /* 用户问题里常带"可能/会不会"，剥掉引文只看结论自己的措辞 */
   const da = (typeof directAnswer === "function") ? directAnswer() : "";
@@ -4165,11 +4178,27 @@ async function renderReading() {
     list.appendChild(art);
   });
   list.querySelectorAll(".rc-deep").forEach(b => b.addEventListener("click", () => openDeep(+b.dataset.i)));
-  list.querySelectorAll(".rc-collapse").forEach(b => b.addEventListener("click", function() {
-    const art = this.closest(".reading-card");
-    const collapsed = art.classList.toggle("collapsed");
-    this.textContent = collapsed ? "展开深层解读 ↓" : "收起深层解读 ↑";
-  }));
+  /* 点牌才出解读（作者口径：不要全部陈列，占空间）。默认三张都折叠，只留牌名行＋身份标签；
+     牌名行与上方「已翻开的小牌」都是入口，一次只展开一张。 */
+  const rcards = [...list.querySelectorAll(".reading-card")];
+  const setOpen = i => rcards.forEach((a, j) => {
+    const open = j === i;
+    a.classList.toggle("collapsed", !open);
+    const btn = a.querySelector(".rc-collapse");
+    if (btn) btn.textContent = open ? "收起深层解读 ↑" : "展开深层解读 ↓";
+  });
+  const toggleCard = i => {
+    const willOpen = rcards[i].classList.contains("collapsed");
+    setOpen(willOpen ? i : -1);
+    if (willOpen) setTimeout(() => rcards[i].scrollIntoView({ block: "nearest" }), 40);
+  };
+  rcards.forEach((a, i) => {
+    a.querySelector(".rc-head").addEventListener("click", () => toggleCard(i));
+    const btn = a.querySelector(".rc-collapse");
+    if (btn) btn.addEventListener("click", ev => { ev.stopPropagation(); toggleCard(i); });
+  });
+  document.querySelectorAll("#revealed-row .mini-revealed").forEach((m, i) =>
+    m.addEventListener("click", () => { if (rcards[i]) { setOpen(i); rcards[i].scrollIntoView({ block: "start" }); } }));
   /* 尝试 AI 解读：有配置时调 LLM 覆盖 psy 段 + synthesis；P1-1 回看优先用历史记录里的缓存解读，免重复付费 */
   const cfg = loadLLMConfig();
   const replayAi = (wasRestore && state.restoreRec && state.restoreRec.a && typeof state.restoreRec.a === "object") ? state.restoreRec.a : null;
