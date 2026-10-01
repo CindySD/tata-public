@@ -354,6 +354,8 @@ textarea{min-height:96px}
 .spread-strip .mini .tcard .back .sigil{font-size:14px}
 .spread-strip .mini .tcard .front .ph{font-size:9px;letter-spacing:.06em;padding:4px}
 .spread-strip .mini .pos{font-size:11px;color:var(--ink-dim);letter-spacing:.14em;margin-top:7px}
+/* 概览条牌图＝点开这张牌解读的入口（点击已绑到弹窗），悬停时把牌位名提亮做可点暗示 */
+.spread-strip .mini:hover .pos,.spread-strip .mini:focus-visible .pos{color:var(--gold)}
 .reading-card{
   background:var(--panel);border:1px solid var(--panel-line);border-radius:16px;
   padding:30px 28px;margin-top:26px;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);animation:fadeUp .8s ease both;
@@ -510,13 +512,16 @@ footer .gold{color:var(--gold)}
 #modal-body .rc-detail{display:block}
 .reading-card{padding:20px 24px}
 .reading-card .rc-head{cursor:pointer;-webkit-tap-highlight-color:transparent}
-.reading-card .rc-head::after{content:"点开看这张牌的解读 ↓";font-size:10.5px;letter-spacing:.16em;color:var(--ink-faint);white-space:nowrap}
+.reading-card .rc-head::after{content:"点开看这张牌的解读";font-size:10.5px;letter-spacing:.16em;color:var(--ink-faint);white-space:nowrap}
 .reading-card .rc-head:hover::after{color:var(--gold)}
 .mini-revealed{cursor:pointer}
 .cm-title{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;border-bottom:1px solid var(--panel-line);padding-bottom:14px;margin-bottom:6px}
 .cm-title span{font-size:12px;letter-spacing:.3em;color:var(--gold)}
 .cm-title b{font-family:var(--serif);font-size:21px;letter-spacing:.1em;color:var(--ink)}
 .cm-title i{margin-left:auto;font-style:normal;font-size:11px;letter-spacing:.2em;color:var(--ink-faint)}
+/* 弹窗抬头下面那行身份标签（◈ …）：与页面牌行同款字号，让"点开的就是这张牌"对得上 */
+.cm-alias{font-family:var(--serif);font-size:15.5px;letter-spacing:.06em;color:var(--ink-dim);line-height:1.75;margin:2px 0 12px}
+.cm-alias:empty{display:none}
 
 @media (max-width:600px){
   :root{--card-w:112px}
@@ -4142,9 +4147,13 @@ async function renderReading() {
     const p = document.createElement("div");
     p.className = "pos"; p.textContent = d.pos.n;
     m.appendChild(mc); m.appendChild(p);
-    const scrollTo = () => document.getElementById("rc-" + i)?.scrollIntoView({ behavior: "smooth", block: "center" });
-    m.addEventListener("click", scrollTo);
-    m.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); scrollTo(); } });
+    /* 作者要求（2026-10-01）：点概览条上的牌图＝直接开这张牌的解读弹窗。
+       旧行为只是滚到下方牌行——CSS 早就给了 cursor:pointer 与 hover 光晕，看着能点，点了却只是跳位置。
+       openCardModal 在同一函数后面定义，闭包到点击时才求值，不受 const 声明位置限制。 */
+    m.title = "点开看这张牌的解读";
+    const open = () => openCardModal(i);
+    m.addEventListener("click", open);
+    m.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(); } });
     strip.appendChild(m);
   });
   /* 逐牌先用规则引擎渲染（AI 会覆盖 psy 段） */
@@ -4205,8 +4214,12 @@ async function renderReading() {
   const openCardModal = i => {
     const node = document.getElementById("rcd-" + i), d0 = state.draws[i];
     if (!node || !d0 || !d0.card) return;
+    /* 弹窗抬头带上这张牌的身份标签（◈ …）——作者指着牌行说"要的就是这一张的解析"，
+       标签原本只留在页面行里，搬进弹窗的是 .rc-detail 整块，标签在它外面，得单独补一行。 */
+    const al = ((document.getElementById("alias-" + i) || {}).textContent || "").trim();
     openInfoModalMove(node, `<div class="cm-title"><span>${d0.pos.n}</span><b>${d0.card.name}</b>` +
-      `<i>${d0.reversed ? "逆位" : "正位"} · ${d0.pos.lens}</i></div>`);
+      `<i>${d0.reversed ? "逆位" : "正位"} · ${d0.pos.lens}</i></div>` +
+      (al ? `<div class="cm-alias">${escHtml(al)}</div>` : ""));
   };
   [...list.querySelectorAll(".reading-card")].forEach((a, i) =>
     a.querySelector(".rc-head").addEventListener("click", () => openCardModal(i)));
