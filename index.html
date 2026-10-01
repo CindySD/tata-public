@@ -26,6 +26,7 @@
 @font-face{font-family:'Cormorant Garamond';font-style:normal;font-weight:400;font-display:swap;src:url('fonts/cormorant-latin-400.woff2') format('woff2')}
 @font-face{font-family:'Cormorant Garamond';font-style:normal;font-weight:600;font-display:swap;src:url('fonts/cormorant-latin-600.woff2') format('woff2')}
 :root{
+  color-scheme:dark; /* 声明暗色方案：一并纠正 Chrome 的自动填充白块、原生滚动条与表单控件配色 */
   --bg:#07070e; --bg2:#0d0b16;
   --gold:#c9a86a; --gold-hi:#eee0b2; --gold-dim:rgba(201,168,106,.4); --gold-faint:rgba(201,168,106,.13);
   --ink:#eae4d3; --ink-dim:#b3a992; --ink-faint:#9a927e;
@@ -45,6 +46,16 @@ body{
   min-height:100vh; overflow-x:hidden;
 }
 ::selection{background:rgba(201,168,106,.28)}
+/* 暗底页面右侧那条系统默认浅色滚动条（P21）：用细金色滚动条收进月光语言，
+   .fan / .reading-nav 各自的滚动条规则更具体，不受这里影响 */
+html{scrollbar-width:thin;scrollbar-color:var(--gold-dim) transparent}
+/* Chrome 自动填充会把输入框刷成亮白底黑字（实测 #e8f0fe + color:#000），
+   在整页最暗的设置弹窗里像两块贴上去的创可贴（P1）。用 inset 阴影把底色压回面板色，
+   transition 拖到 9999s 是让 Chrome 的填充底色永远来不及覆盖回来。 */
+input:-webkit-autofill,textarea:-webkit-autofill,select:-webkit-autofill{
+  -webkit-box-shadow:0 0 0 100px #14121f inset;
+  -webkit-text-fill-color:var(--ink);caret-color:var(--gold-hi);
+  transition:background-color 9999s ease-in-out 0s}
 #stars{position:fixed;inset:0;z-index:0;pointer-events:none}
 .shell{position:relative;z-index:1;max-width:760px;margin:0 auto;padding:0 24px 96px}
 
@@ -537,6 +548,20 @@ footer .gold{color:var(--gold)}
   .fan .fcard{width:48px;margin-left:-32px}
   /* hold-wrap 已在 arena 内 absolute，移动端不额外处理 */
   .ask-panel{padding:26px 18px}
+  /* 主按钮回到手边（P2）：实测 386×840 视口下「默念毕·开启仪式」的自然位置在 top=1561，
+     要滚近两屏才摸得到——写完问题的人不该先学会找按钮。把「校验错误 + 主按钮」整组钉在屏底，
+     错误提示跟着一起钉：否则报错留在 1500px 外，用户只会以为"点了没反应"。 */
+  .ask-dock{position:sticky;bottom:0;z-index:38;margin-top:0;padding-top:6px;
+    padding-bottom:calc(12px + env(safe-area-inset-bottom));
+    background:linear-gradient(180deg,rgba(7,7,14,0),rgba(7,7,14,.92) 40%,#07070e 100%);
+    -webkit-backdrop-filter:blur(7px);backdrop-filter:blur(7px)}
+  .ask-dock .ask-submit{margin-top:8px}
+  .ask-dock .btn{width:100%;max-width:420px}
+  /* 屏底被按钮占住后，左右两颗悬浮球会压在它上面——提问页让位。
+     :has 不被支持时仅退化为视觉重叠，功能不受影响。 */
+  body:has(#stage-ask.active) .float-home,
+  body:has(#stage-ask.active) .float-settings,
+  body:has(#stage-ask.active) .float-feedback{opacity:0;visibility:hidden;pointer-events:none}
   /* 解除 ask-row min-width 撑爆问题 */
   .ask-row > div[style*="min-width"]{min-width:unset !important;width:100% !important}
   .num-wrap{flex:0 0 130px}
@@ -1078,9 +1103,11 @@ footer::before{
         </div>
       </div>
 
+      <div class="ask-dock">
       <div class="ask-err" id="ask-err" role="alert" aria-live="assertive"></div>
       <div class="ask-submit">
         <button class="btn" id="btn-ask" type="button">默 念 毕 · 开 启 仪 式</button>
+      </div>
       </div>
     </div>
   </section>
@@ -1223,7 +1250,7 @@ footer::before{
       <button class="btn ghost" id="llm-clear" type="button">清除配置</button>
     </div>
     <p class="note" style="margin-top:18px;font-size:11px;line-height:1.8">
-      配置后解读页将调用 AI 生成个性化深度解读（约 20-90 秒，期间可先看逐牌解读）。<br>
+      配置后解读页将调用 AI 生成个性化深度解读（约 20-90 秒，期间可点开牌图看这张牌的完整解读）。<br>
       不填则使用内置规则引擎解读（即时）。<br>
       <span style="color:var(--gold)">推荐</span>：DeepSeek（便宜+支持CORS）、本地 Ollama（免费+零延迟）<br>
       <span style="color:var(--gold)">选档</span>：塔塔的提示词约 6,400 tokens、要求每张牌写五层——<b>flash / turbo / mini 这类闪速档会只按字面遵守、内容塌陷</b>（实测同一副牌：闪速档把"逆耳"写成了牌义复读），请选 plus / chat / pro 级。<br>
@@ -3807,10 +3834,16 @@ function completeHold() {
   setTimeout(() => { holdWrap.classList.remove("show"); }, HOLD_HIDE_MS);
 }
 /* 多数字标记牌的定位按钮：completeHold 与跳过仪式两处共用；已存在的重新显示（startRitual 每轮会隐藏它们） */
+/* 定位按钮：常态只给"下一个该翻的那张"（P3）。
+   此前它只在「凝神聚气」这个可选步骤或跳过仪式之后才造出来，正常走流程的人永远见不到；
+   而 5/10 张阵的标记牌彼此隔着近千 px 牌背，光靠自动居中那一下不够。
+   一次只亮一颗：十张阵全排开就是一行十个药丸，反而压住牌桌。 */
 function addLocateButtons() {
+  const next = state.markedCards[state.draws.length];
   state.markedCards.forEach(mc => {
+    const show = !!next && mc.order === next.order;
     let lb = document.getElementById("btn-locate-" + mc.order);
-    if (lb) { lb.style.display = "inline-block"; return; }
+    if (lb) { lb.style.display = show ? "inline-block" : "none"; return; }
     lb = document.createElement("button");
     lb.type = "button"; lb.id = "btn-locate-" + mc.order; lb.className = "btn-locate-multi";
     lb.textContent = `定位${markLabel(mc.order)} `;
@@ -3824,11 +3857,12 @@ function addLocateButtons() {
     });
     /* 插到牌阵名下方（skip 按钮之前），避免落在 arena 内被牌背压住 */
     skipBtn.parentNode.insertBefore(lb, skipBtn);
-    lb.style.display = "inline-block";
+    lb.style.display = show ? "inline-block" : "none";
   });
 }
 /* 高亮"下一个该翻的数字标记牌"（严格按序抽牌）；pulse=true 时附带一次强调闪烁 */
 function highlightNextMark(pulse) {
+  addLocateButtons(); /* 每次换"下一张"都同步定位按钮：牌铺好、翻完一张、被拒回跳，三处共用这一个入口 */
   fanEl.querySelectorAll(".fcard.next").forEach(f => f.classList.remove("next"));
   const nextMark = state.markedCards[state.draws.length];
   if (!nextMark) return;
