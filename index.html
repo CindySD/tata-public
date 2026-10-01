@@ -356,6 +356,10 @@ textarea{min-height:96px}
 .spread-strip .mini .pos{font-size:11px;color:var(--ink-dim);letter-spacing:.14em;margin-top:7px}
 /* 概览条牌图＝点开这张牌解读的入口（点击已绑到弹窗），悬停时把牌位名提亮做可点暗示 */
 .spread-strip .mini:hover .pos,.spread-strip .mini:focus-visible .pos{color:var(--gold)}
+/* 逐牌牌行＝弹窗的内容宿主，不再与弹窗并排陈列两份同样的东西（作者 2026-10-01：功能重复）。
+   节点必须留在 DOM 里（AI 流式写 #alias-i/#psy-i/#pain-i，点牌图搬进弹窗的是 #rcd-i 本体），
+   所以是"藏起来"而不是"不渲染"。要彻底删得先把逐牌内容改成点开时现生成，那是另一次重构。 */
+#reading-list{display:none}
 .reading-card{
   background:var(--panel);border:1px solid var(--panel-line);border-radius:16px;
   padding:30px 28px;margin-top:26px;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);animation:fadeUp .8s ease both;
@@ -511,9 +515,11 @@ footer .gold{color:var(--gold)}
 .reading-card .rc-detail{display:none}
 #modal-body .rc-detail{display:block}
 .reading-card{padding:20px 24px}
-.reading-card .rc-head{cursor:pointer;-webkit-tap-highlight-color:transparent}
-.reading-card .rc-head::after{content:"点开看这张牌的解读";font-size:10.5px;letter-spacing:.16em;color:var(--ink-faint);white-space:nowrap}
-.reading-card .rc-head:hover::after{color:var(--gold)}
+/* 弹窗抬头＝牌图＋牌名/位＋身份标签（牌行不再上屏，抬头要独立承担"这是哪一张"） */
+.cm-head{display:flex;gap:16px;align-items:flex-start;margin-bottom:4px}
+.cm-img{flex:0 0 76px;width:76px;border-radius:8px;overflow:hidden;border:1px solid var(--gold-dim);background:var(--panel)}
+.cm-img img{width:100%;display:block}
+.cm-meta{flex:1;min-width:0}
 .mini-revealed{cursor:pointer}
 .cm-title{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;border-bottom:1px solid var(--panel-line);padding-bottom:14px;margin-bottom:6px}
 .cm-title span{font-size:12px;letter-spacing:.3em;color:var(--gold)}
@@ -4156,7 +4162,11 @@ async function renderReading() {
     m.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(); } });
     strip.appendChild(m);
   });
-  /* 逐牌先用规则引擎渲染（AI 会覆盖 psy 段） */
+  /* 逐牌先用规则引擎渲染（AI 会覆盖 psy 段）
+     ⚠️ #reading-list 现在是「内容宿主」，不再直接摆到页面上（CSS 里 display:none）：
+     牌行与弹窗是同一份内容，作者 2026-10-01 判为功能重复，留弹窗那份。
+     但这些节点必须存在——AI 流式写的就是 #alias-i/#psy-i/#pain-i，点开牌图搬进弹窗的也是 #rcd-i 本体，
+     删掉渲染＝弹窗与流式双双没有落点。要真删得先把逐牌内容改成"点开时现生成"，那是另一次重构。 */
   const list = $("#reading-list"); list.innerHTML = "";
   const oldNote = list.parentNode.querySelector(".rev-note");
   if (oldNote) oldNote.remove();
@@ -4214,15 +4224,16 @@ async function renderReading() {
   const openCardModal = i => {
     const node = document.getElementById("rcd-" + i), d0 = state.draws[i];
     if (!node || !d0 || !d0.card) return;
-    /* 弹窗抬头带上这张牌的身份标签（◈ …）——作者指着牌行说"要的就是这一张的解析"，
-       标签原本只留在页面行里，搬进弹窗的是 .rc-detail 整块，标签在它外面，得单独补一行。 */
+    /* 抬头左边放这张牌的画面（作者：点了图点开却看不到图，重复的那份牌行已收进弹窗，图更该在）。
+       逆位沿用深读弹窗同一招：整图转 180°，不另找逆位图；双源兜底同 IMG_BASE/CDN_BASE。 */
     const al = ((document.getElementById("alias-" + i) || {}).textContent || "").trim();
-    openInfoModalMove(node, `<div class="cm-title"><span>${d0.pos.n}</span><b>${d0.card.name}</b>` +
+    openInfoModalMove(node,
+      `<div class="cm-head"><div class="cm-img"><img src="${IMG_BASE + d0.card.image}" data-fallback="${CDN_BASE + d0.card.image}" alt="${escHtml(d0.card.name)}" referrerpolicy="no-referrer" loading="eager"${d0.reversed ? ' style="transform:rotate(180deg)"' : ""} onerror="if(!this.dataset.fb){this.dataset.fb=1;this.src=this.dataset.fallback}"></div>` +
+      `<div class="cm-meta"><div class="cm-title"><span>${d0.pos.n}</span><b>${d0.card.name}</b>` +
       `<i>${d0.reversed ? "逆位" : "正位"} · ${d0.pos.lens}</i></div>` +
-      (al ? `<div class="cm-alias">${escHtml(al)}</div>` : ""));
+      (al ? `<div class="cm-alias">${escHtml(al)}</div>` : "") + `</div></div>`);
   };
-  [...list.querySelectorAll(".reading-card")].forEach((a, i) =>
-    a.querySelector(".rc-head").addEventListener("click", () => openCardModal(i)));
+  /* 牌行本身不再上屏（见 #reading-list 注释），所以不绑 .rc-head 点击——入口只有概览条牌图与揭示条小卡。 */
   document.querySelectorAll("#revealed-row .mini-revealed").forEach((m, i) =>
     m.addEventListener("click", () => openCardModal(i)));
   /* 尝试 AI 解读：有配置时调 LLM 覆盖 psy 段 + synthesis；P1-1 回看优先用历史记录里的缓存解读，免重复付费 */
@@ -4444,7 +4455,7 @@ function renderReadingNav() {
   const head = document.querySelector("#stage-reading .reading-head");
   if (!head) return;
   const cand = [
-    ["牌面", "#reading-list"],
+    ["牌面", "#spread-strip"],   /* 牌行已收进弹窗，牌面段就是这条牌图概览条（点图开该牌解读） */
     ["应期", "#stage-reading .timing-block"],
     ["联动", "#stage-reading .links-block"],
     ["综合", "#synthesis"],
