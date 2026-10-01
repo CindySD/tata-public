@@ -4016,17 +4016,28 @@ function polishReading(d) {
   const HEDGE_RE = /可能|也许|或许|大概(?!率)|因人而异|视情况|说不准|谁知道|难以预料/; /* 大概率+定性＝对第三方状态的诚实校准（作者口径），裸“大概”仍是含糊 */
   const VERDICT_RE = /可以|别|不要|不宜|建议|先|等|去做|接|拒|谈|放下|承认|停|推进|主动|封顶|走|留|按|摊开|暂缓|不——|偏向/;
   /* 新提示词要求是非题以判决词开头（"是——…"/"不会——…"）。这类句子未必含旧倾向词，必须同样算"有立场"，
-     否则模型合规输出会被规则句整段顶掉、丢掉牌面理由，(2b) 的时间锚也会漏补。 */
-  const VERDICT_HEAD = /^(是|不是|会|不会|能|不能|该|不该|要|不要|有|没有|值|不值)(。|——|，|、)/;
+     否则模型合规输出会被规则句整段顶掉、丢掉牌面理由，(2b) 的时间锚也会漏补。
+     末尾三档「不可能/没可能/没有可能」＝否定式判决（作者线上实测补：模型对"还有可能吗"答"不可能——…"，
+     旧表只认"不会——"，判决句被当成没立场）。与 NEG_POSSIBLE_RE 同一形状，改一处须同步另一处。 */
+  const VERDICT_HEAD = /^(是|不是|会|不会|能|不能|该|不该|要|不要|有|没有|值|不值|不可能|没可能|没有可能)(。|——|，|、)/;
   /* v4「核心结论直给」的定性本身就是立场。旧闸只认倾向词，会把"他最近就是在硬撑…是铁证"这类
      合格直给句判成没立场、整句换成规则引擎的含糊话——线上实测翻车点（作者截图复现）。
      只放"决绝定性"这一类，含糊话仍由 HEDGE_RE 拦，不削弱兜底。 */
   const VERDICT_DIRECT = /大概率|铁证|摆明了|明摆着|压根|根本(就是|不是)|就是说白|白说|别心存侥幸|就是(在|没|不|躲|装|拖|睡|忙|怕|卡)|(你|他|她|这|那|你们|他们)现在就?是|不是(在|没|不想|不愿|在意)|心里(没|没有|有)|在(躲|装|拖|逃避|观望|硬撑|养|耗|冷)|拿.?当|算不上|谈不上|没那个意思/;
   const hasVerdict = t => VERDICT_RE.test(t) || VERDICT_HEAD.test(t) || VERDICT_DIRECT.test(t);
+  /* 否定式判决不是含糊话：HEDGE_RE 裸匹配「可能」，于是"不可能——"这种最决绝的回答被判成 hedge，
+     整句换成规则引擎模板（作者线上实测 2026-10-01：流式里是判决句，落笔后被换成
+     「关于「…」：不会。…先做一件最小的事…」）。只剥"否定词+〔有〕+可能"这一形状——
+     "还有可能"没有否定词、"不太可能"中间夹着"太"，都剥不掉，仍按含糊话拦，闸门不放水。
+     ⚠️ 这条剥除只许用于 hedge 探针：剥完「不可能」三个字就没了，句首判决词也就没了
+     （第一版图省事把 cProbe 一并换成 hedgeProbe，结果 hasVerdict 反而测不出立场，场景13 立刻红）。
+     两条探针各管各的：hedgeProbe 喂 HEDGE_RE，cProbe 只剥引文、喂 hasVerdict。 */
+  const NEG_POSSIBLE_RE = /(?:不|没|没有|不会|并非|绝非)[有]?可能/g;
+  const hedgeProbe = s => s.replace(/「[^」]*」/g, "").replace(NEG_POSSIBLE_RE, "");
   const c0 = typeof d.conclusion === "string" ? d.conclusion.trim() : "";
   const cProbe = c0.replace(/「[^」]*」/g, ""); /* 用户问题里常带"可能/会不会"，剥掉引文只看结论自己的措辞 */
   const da = (typeof directAnswer === "function") ? directAnswer() : "";
-  if (da && (!c0 || c0.length < 14 || HEDGE_RE.test(cProbe) || !hasVerdict(cProbe))) d.conclusion = da;
+  if (da && (!c0 || c0.length < 14 || HEDGE_RE.test(hedgeProbe(c0)) || !hasVerdict(cProbe))) d.conclusion = da;
   else if (!c0) d.conclusion = da;
   /* (1a) 是非题句首强制判决词：红线要求"是不是/会不会/该不该"第一句必须是一个字的判决词。
      旧版只在"整句没有立场"时顶掉 AI 结论，而 VERDICT_RE 含裸"先/别/留/走"，实测
@@ -4061,7 +4072,7 @@ function polishReading(d) {
   /* 模型已给「检视日」时不再往直觉框硬塞时间从句——回访锚点已有专门区块承载，
      再拼一句"到明天中午之前，回头看它应不应验"会把判决句拖成模板腔（作者线上实测反馈）。 */
   const hasCp = !!(d.checkpoint && typeof d.checkpoint === "object" && (d.checkpoint.when || d.checkpoint.if_yes || d.checkpoint.if_no));
-  if (!basisAdded && !hasCp && cNow.length >= 14 && hasVerdict(cProbe2) && !HEDGE_RE.test(cProbe2) && !HAS_TIME.test(cProbe2) && !INTRO_RE.test(cProbe2)) {
+  if (!basisAdded && !hasCp && cNow.length >= 14 && hasVerdict(cProbe2) && !HEDGE_RE.test(hedgeProbe(cNow)) && !HAS_TIME.test(cProbe2) && !INTRO_RE.test(cProbe2)) {
     const anch = timeAnchor(state.seed >>> 3, ["今晚睡前", "明天中午之前", "48 小时之内", "本周五之前", "这周末之前"]);
     d.conclusion = cNow + (/[。！？]$/.test(cNow) ? "" : "。") + `${/内$/.test(anch) ? "" : "到"}${anch}，回头看它应不应验。`;
   }
