@@ -1903,7 +1903,21 @@ function escHtml(v) {
   if (typeof v !== "string") { try { v = String(v); } catch (e) { return ""; } }
   return v.replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 }
-function loadLLMConfig() { try { return JSON.parse(localStorage.getItem(LLM_KEY) || "{}"); } catch (e) { return {}; } }
+/* 静默升级表：只动"同厂商、同免费档、更新快照"这一种情况，不擅自给用户换到要付费的档。
+   glm-4-flash → glm-4-flash-250414：同一副牌真模型对比，五层接住率 4/5→5/5、
+   可照抄台词从缺到有、逆耳不再复读牌义（旧快照还会把邻牌的牌义串到本牌上）。
+   幂等：升级后的值不在表里，不会反复写；用户想退回，在设置里把模型名改回去即可。 */
+const MODEL_UPGRADES = { "glm-4-flash": "glm-4-flash-250414" };
+function loadLLMConfig() {
+  try {
+    const c = JSON.parse(localStorage.getItem(LLM_KEY) || "{}") || {};
+    if (c.model && MODEL_UPGRADES[c.model]) {
+      c.model = MODEL_UPGRADES[c.model];
+      try { localStorage.setItem(LLM_KEY, JSON.stringify(c)); } catch (e) { /* 写不进去也不影响本次使用 */ }
+    }
+    return c;
+  } catch (e) { return {}; }
+}
 function saveLLMConfig(cfg) {
   try {
     localStorage.setItem(LLM_KEY, JSON.stringify(cfg));
@@ -1947,7 +1961,7 @@ const LLM_SYSTEM_PROMPT = `你是塔塔🔮の心灵疗愈室的首席解牌师�
 - 牌组比例：权杖=行动创造、圣杯=情感人际、宝剑=冲突思考、星币=金钱现实。问感情而阵中无圣杯，点破"感情成分已所剩不多"；宝剑云集要点出"伤害与思虑过载"。
 - 正逆位比例：逆位压倒性多数时，提示"事情并非自然发展"——有回避、有暗流、或事态艰难。
 - 同号牌呼应：多张同号小牌（如两张五号）是该阵的主旋律（五号=冲突与失落）。
-- 四要素流向：权杖(火)与宝剑(风)同现、或圣杯(水)与星币(土)同现=能量相生、情况改善；火水同现、风土同现=能量相克、事态易恶化；缺哪个元素=缺哪种性质（问事业缺星币=现实基础薄弱）。**这条不只喂 overview：牌面顺、无逆位无大牌时，缺位就是逐牌 pain 栏的唯一合法素材**（见第 2 条）。
+- 四要素流向：权杖(火)与宝剑(风)同现、或圣杯(水)与星币(土)同现=能量相生、情况改善；火水同现、风土同现=能量相克、事态易恶化；缺哪个元素=缺哪种性质（问事业缺星币=现实基础薄弱）。**这条不只喂 overview：牌面顺、无逆位无大牌时，缺位就是逐牌 pain 栏的唯一合法素材**（见第 2 条）。**元素以每张牌标注的「元素：」为准，不得自行推断或改判**：花色→元素是固定映射（权杖=火、圣杯=水、宝剑=风、星币=土），大阿卡纳不属于任何元素、不得计入元素统计——实测有模型把星币二说成"水"、把大牌的存在与否算成元素缺位。
 - 结合法：把整阵牌当作一个完整故事讲出来——起点、冲突、走向，而不是一张张孤立的牌。
 - 比较法：主动找出阵中互相呼应（相似牌=症结强化）或互相矛盾（相反牌=内在拉扯）的组合并点明。
 - 行动词参考已随牌附上：advice 的 step 要尽量承接这些动词的质感，把牌义翻译成本周可执行的动作，而不是复述牌义。
@@ -2012,9 +2026,14 @@ function readingDataBlocks(question, spreadName, draws) {
     const kw = (o.keywords || []).join("、");
     const acts = (typeof CARD_ACTIONS !== "undefined" && CARD_ACTIONS[d.card.name]) ? CARD_ACTIONS[d.card.name].slice(0, 4).join("、") : "";
     const scene = (d.card.symbolism || "").replace(/【[^】]*】/g, "").replace(/\s+/g, " ").trim().slice(0, 90);
+    /* 元素必须显式喂：实测 glm-4-flash-250414 把星币二说成"水在土上打滑"——花色→元素让它自己推就会错。
+       大阿卡纳不属于任何元素，也要当场讲明，否则它会被塞进某个元素参与比例统计。 */
+    const elem = d.card.group === "major" ? "大阿卡纳（不属于四要素，不得计入元素统计）"
+      : ((SUIT_ELEMENT[d.card.suitName] || "?") + "（" + (d.card.suitName || "?") + "花色，固定映射，不得改判）");
     return `${i + 1}. ${d.pos.n}位置：${d.card.name}${d.reversed ? "（逆位）" : ""}` +
       (o.meaning ? `\n   牌义：${o.meaning}` : "") +
       (scene ? `\n   画面：${scene}` : "") +
+      `\n   元素：${elem}` +
       (kw ? `\n   关键词：${kw}` : "") +
       (acts ? `\n   行动词参考：${acts}` : "") +
       (d.reversed ? `\n   读法边界：逆位只表示能量受阻或内收，不得写成现实层面的失败、疾病、损失或欺骗。` : "");
@@ -2648,6 +2667,8 @@ const LENS_INTRO = {
    换成视角专有名之后，同一句话才像"这一位专门对你说的"。 */
 const PAIN_LABEL = { "镜子": "你 的 盲 点", "窗户": "对 面 的 真 相", "门": "门 口 的 代 价", "锚": "卡 在 哪 里" };
 function painLabel(lens) { return PAIN_LABEL[lens] || "逆 耳 的 那 半 句"; }
+/* 花色→元素是塔罗的固定映射，不是可发挥项：模型自行推断时实测会把星币二说成水元素。 */
+const SUIT_ELEMENT = { "权杖": "火", "圣杯": "水", "宝剑": "风", "星币": "土" };
 
 /* ---------- 随机与抽牌 ---------- */
 function mulberry32(a) {
