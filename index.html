@@ -3578,26 +3578,44 @@ function trapFocus(container) {
     else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
   });
 }
-let bodyOverflowSaved = "";
-let savedScrollY = 0;
+/* ---------- 弹窗锁滚动（单一真源的计数锁） ----------
+   四个入口共用一把锁：设置页、深读、搬入式信息弹窗、通用信息弹窗。
+   旧写法是四处各往同一对全局变量里存"锁之前的样子"，于是两种常见操作会把整页永久钉死：
+   ① 在已打开的弹窗上再开一个（嵌套）——保存值被覆盖成"已经锁住"的那份，关外层时把它还原回去，锁解不掉；
+   ② Escape 连着调 closeDeep() + closeSettings()——第二个 close 读到的还是上一份脏值。
+   线上实测到的症状：关完弹窗后 body 仍是 position:fixed + overflow:hidden，文档高度塌成一屏，页面滚不动。
+   现在按"哪一层开着"计数：只有最后一层释放时才真还原；没锁过的 close 是 no-op；同一层重复打开不加锁
+   （三个信息弹窗共用 #modal-mask，从弹窗里换开另一个弹窗就是这种情况）。 */
+let scrollLockDepth = 0, scrollLockSavedCss = "", scrollLockSavedY = 0;
+function lockScroll(layer) {
+  if (!layer.classList.contains("show")) {
+    if (scrollLockDepth === 0) { scrollLockSavedCss = document.body.style.cssText; scrollLockSavedY = window.scrollY; }
+    scrollLockDepth++;
+  }
+  layer.classList.add("show");
+  document.body.style.cssText = "position:fixed;top:0;left:0;right:0;bottom:0;overflow:hidden;width:100%";
+  document.body.style.top = `-${scrollLockSavedY}px`;
+}
+function unlockScroll(layer) {
+  if (!layer.classList.contains("show")) return; /* 这层本来就没开着：no-op（Escape 连调两个 close 就是这种） */
+  layer.classList.remove("show");
+  if (scrollLockDepth > 0) scrollLockDepth--;
+  if (scrollLockDepth > 0) return;               /* 外层弹窗还在，保持锁住 */
+  document.body.style.cssText = scrollLockSavedCss;
+  scrollLockSavedCss = "";
+  window.scrollTo(0, scrollLockSavedY);
+}
 function openSettings() {
   const cfg = loadLLMConfig();
   $("#llm-baseurl").value = cfg.baseURL || "";
   $("#llm-apikey").value = cfg.apiKey || "";
   $("#llm-model").value = cfg.model || "";
-  savedScrollY = window.scrollY;
-  bodyOverflowSaved = document.body.style.cssText;
-  document.body.style.cssText = "position:fixed;top:0;left:0;right:0;bottom:0;overflow:hidden;width:100%";
-  document.body.style.top = `-${savedScrollY}px`;
   renderTierReadout(); syncToneChips();
-  settingsMask.classList.add("show");
+  lockScroll(settingsMask);
   trapFocus(settingsMask);
 }
 function closeSettings() {
-  if (!settingsMask.classList.contains("show")) return;
-  settingsMask.classList.remove("show");
-  document.body.style.cssText = bodyOverflowSaved || "";
-  window.scrollTo(0, savedScrollY);
+  unlockScroll(settingsMask);
 }
 $("#btn-settings").addEventListener("click", openSettings);
 $("#settings-close").addEventListener("click", closeSettings);
@@ -5243,14 +5261,10 @@ function openDeep(i) {
     <div class="m-row"><div class="m-label">另 一 位 · ${d.reversed ? "正位" : "逆位"}参考 · ${alt.keywords.join(" / ")}</div><p>${alt.meaning}</p></div>
     <div class="m-row"><div class="m-label">学 习 提 示</div><p>${c.learningTip || ""}</p></div>`;
   modalBody.querySelector(".modal-close").addEventListener("click", closeDeep);
-  mask.classList.add("show");
-  savedScrollY = window.scrollY;
-  bodyOverflowSaved = document.body.style.cssText;
-  document.body.style.cssText = "position:fixed;top:0;left:0;right:0;bottom:0;overflow:hidden;width:100%";
-  document.body.style.top = `-${savedScrollY}px`;
+  lockScroll(mask);
   trapFocus(mask);
 }
-function closeDeep() { if (!mask.classList.contains("show")) return; restoreMovedNode(); mask.classList.remove("show"); document.body.style.cssText = bodyOverflowSaved || ""; window.scrollTo(0, savedScrollY); if (mask._opener && mask._opener.isConnected) { try { mask._opener.focus(); } catch (e) {} } mask._opener = null; }
+function closeDeep() { if (!mask.classList.contains("show")) return; restoreMovedNode(); unlockScroll(mask); if (mask._opener && mask._opener.isConnected) { try { mask._opener.focus(); } catch (e) {} } mask._opener = null; }
 /* 弹窗搬入/搬回：逐牌详情平时藏在 .reading-card 里（CSS 不显示），点开时整块搬进弹窗，
    关闭或换开别的弹窗时搬回原位。任何会重写 modalBody.innerHTML 的入口都必须先 restore，否则节点会被丢掉。 */
 let movedNode = null, movedHost = null;
@@ -5261,11 +5275,7 @@ function openInfoModalMove(node, titleHtml) {
   modalBody.innerHTML = `<button class="modal-close" type="button" aria-label="关闭">✕</button>` + (titleHtml || "");
   modalBody.appendChild(node);
   modalBody.querySelector(".modal-close").addEventListener("click", closeDeep);
-  mask.classList.add("show");
-  savedScrollY = window.scrollY;
-  bodyOverflowSaved = document.body.style.cssText;
-  document.body.style.cssText = "position:fixed;top:0;left:0;right:0;bottom:0;overflow:hidden;width:100%";
-  document.body.style.top = `-${savedScrollY}px`;
+  lockScroll(mask);
   trapFocus(mask);
 }
 mask.addEventListener("click", e => { if (e.target === mask) closeDeep(); });
@@ -5276,11 +5286,7 @@ function openInfoModal(html) {
   restoreMovedNode();
   modalBody.innerHTML = `<button class="modal-close" type="button" aria-label="关闭">✕</button>${html}`;
   modalBody.querySelector(".modal-close").addEventListener("click", closeDeep);
-  mask.classList.add("show");
-  savedScrollY = window.scrollY;
-  bodyOverflowSaved = document.body.style.cssText;
-  document.body.style.cssText = "position:fixed;top:0;left:0;right:0;bottom:0;overflow:hidden;width:100%";
-  document.body.style.top = `-${savedScrollY}px`;
+  lockScroll(mask);
   trapFocus(mask);
 }
 
