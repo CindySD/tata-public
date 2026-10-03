@@ -488,7 +488,7 @@ body:has(#stage-serene.active) footer,body:has(#stage-ask.active) footer,body:ha
    而 sticky 只对 in-flow 元素生效，所以那条修法在长弹窗上根本不成立（本地短内容只滚 22px，
    恰好没暴露）。现在改用 margin-left:auto + width:max-content 右对齐，元素留在常规流里，
    sticky 才真的生效；margin-bottom 负值把它占掉的那一行收回来，正文不因此下移。 */
-.modal-close{position:sticky;top:8px;margin:0 0 -30px auto;width:max-content;z-index:2;
+.modal-close{position:sticky;top:8px;margin:0 0 -30px auto;width:max-content;display:block;z-index:2;
   background:rgba(16,14,27,.9);border:1px solid var(--panel-line);border-radius:999px;
   color:var(--ink-dim);font-size:18px;line-height:1;cursor:pointer;letter-spacing:0;padding:8px 11px}
 .modal-close:hover{color:var(--gold);border-color:var(--gold-dim)}
