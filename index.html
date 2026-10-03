@@ -1170,7 +1170,7 @@ footer::before{
   <section class="stage" id="stage-history">
     <div class="kicker">回 响 档 案</div>
     <div class="ask-panel" style="margin-top:8px">
-      <input class="num-input" id="hist-search" type="search" placeholder="🔍 搜问题、牌名、牌阵或能量之词" style="width:100%;height:42px;text-align:left;font-size:13px;font-family:var(--sans);margin-bottom:6px" aria-label="搜索占卜记录">
+      <input class="num-input" id="hist-search" type="search" placeholder="搜问题、牌名、牌阵或能量之词" style="width:100%;height:42px;text-align:left;font-size:13px;font-family:var(--sans);margin-bottom:6px" aria-label="搜索占卜记录">
       <div id="history-list"></div>
       <div style="display:flex;gap:14px;justify-content:center;margin-top:30px;flex-wrap:wrap">
         <button class="btn ghost" id="btn-hist-new" type="button">✦ 新的占卜</button>
@@ -1179,7 +1179,7 @@ footer::before{
         <button class="btn ghost" id="btn-hist-clear" type="button">清空记录</button>
       </div>
       <input type="file" id="hist-import-file" accept=".json,application/json" style="display:none" aria-label="选择历史记录备份文件">
-      <p class="note" style="margin-top:20px">记录保存在你的浏览器本机，最多保留最近 40 次，不上传任何服务器。<br>导出的 JSON 文件可用于换机迁移——在新设备上点「导入记录」即可合并。<br>怕忘记备份？回首页点「⏰ 每日提醒」，让<b>你自己的日历</b>提醒你备份和抽牌。</p>
+      <p class="note" style="margin-top:20px">记录保存在你的浏览器本机，最多保留最近 40 次，不上传任何服务器。<br>导出的 JSON 文件可用于换机迁移——在新设备上点「导入记录」即可合并。<br>怕忘记备份？回首页点「☾ 每日提醒」，让<b>你自己的日历</b>提醒你备份和抽牌。</p>
     </div>
   </section>
 
@@ -1198,15 +1198,15 @@ footer::before{
     <span class="gold">✦</span> 塔塔🔮の心灵疗愈室 · 塔罗是镜子，不是宣判 —— 你的选择随时可以改变走向 <span class="gold">✦</span><br>
     牌义数据参考开源项目 strawberrynine/tarot-archive · 牌阵与解读框架参考 daman-ovo-0404/tarot-skill（MIT）<br>
     牌面为 Rider-Waite-Smith（1909，公有领域）· 百科页古典断语引自 A.E. Waite《The Pictorial Key to the Tarot》(1910，公有领域) · 解读仅供自我觉察与娱乐参考，不构成医疗、法律或投资建议
-    <a href="cards/index.html" class="footer-feedback">📖 韦特牌义百科 · 78 张正逆位与古典断语对照</a>
-    <a href="javascript:void(0)" id="btn-feedback" class="footer-feedback">💬 意见反馈 · 告诉我们怎么改得更好</a>
+    <a href="cards/index.html" class="footer-feedback">✦ 韦特牌义百科 · 78 张正逆位与古典断语对照</a>
+    <a href="javascript:void(0)" id="btn-feedback" class="footer-feedback">✦ 意见反馈 · 告诉我们怎么改得更好</a>
   </footer>
 </div>
 
 <!-- 浮动设置入口（非封面页可见） -->
 <button class="float-home" id="float-home" type="button" aria-label="返回首页">✦</button>
 <button class="float-settings" id="float-settings" type="button" aria-label="AI 解读设置">⚙</button>
-<button class="float-feedback" id="float-feedback" type="button" aria-label="意见反馈">💬</button>
+<button class="float-feedback" id="float-feedback" type="button" aria-label="意见反馈">✦</button>
 
 <!-- 深读弹窗 -->
 <div class="modal-mask" id="modal-mask" role="dialog" aria-modal="true" aria-label="牌义深读">
@@ -1257,7 +1257,7 @@ footer::before{
       <span style="color:var(--gold)">注意</span>：通义/OpenAI 默认不允许浏览器跨域，需配 CORS 代理<br>
       配置与 API Key 只存本机浏览器，本站不收集、不上传任何数据；但<b>启用 AI 后，你的问题原文与所抽牌面会发送给你所配置的那家 AI 服务商 API</b>（由其处理），请选用可信服务商。<br>
       希望数据完全不出本机：用「本地 Ollama」预设，或留空配置直接走内置规则引擎解读。<br>
-      <span style="color:#bf9488">⚠️ 安全提示</span>：API Key 以明文形式保存在本机，请勿在公共或共用设备上填写；使用后可在公共设备上点「清除配置」。
+      <span style="color:#bf9488">⚠ 安全提示</span>：API Key 以明文形式保存在本机，请勿在公共或共用设备上填写；使用后可在公共设备上点「清除配置」。
     </p>
   </div>
 </div>
@@ -2201,7 +2201,7 @@ async function runFollowup(fq) {
   const gen = ++fuGen;
   let round = document.querySelector(".followup-round");
   if (!round) { round = document.createElement("div"); round.className = "followup-round"; synEl.parentNode.insertBefore(round, synEl.nextSibling); }
-  round.innerHTML = `<div class="fr-tag">第 2 轮 · 校正，不是新占卜</div><div class="fr-q">💬 ${escHtml(fq)}</div><div class="fr-body"><p class="fr-load">塔塔沉吟中……</p></div>`;
+  round.innerHTML = `<div class="fr-tag">第 2 轮 · 校正，不是新占卜</div><div class="fr-q">✦ ${escHtml(fq)}</div><div class="fr-body"><p class="fr-load">塔塔沉吟中……</p></div>`;
   document.querySelectorAll(".fu-btn").forEach(b => { b.disabled = true; });
   const brief = lastAiBrief || {};
   const content = readingDataBlocks(state.question, SPREADS[state.spreadKey].name, state.draws)
@@ -2220,7 +2220,7 @@ async function runFollowup(fq) {
     return;
   }
   body.innerHTML = `<p>${escHtml(data.answer.trim())}</p>`
-    + (typeof data.action === "string" && data.action.trim() ? `<p class="fr-act">🎯 ${escHtml(data.action.trim())}</p>` : "")
+    + (typeof data.action === "string" && data.action.trim() ? `<p class="fr-act">✦ ${escHtml(data.action.trim())}</p>` : "")
     + `<p class="fr-sov">这是照目前状况的推演，不是注定。</p>`;
   round.scrollIntoView({ behavior: "smooth", block: "nearest" });
 }
@@ -3217,7 +3217,7 @@ function renderRecentQuestions() {
   } catch (e) { list = []; }
   if (list.length < 1) { box.innerHTML = ""; box.hidden = true; return; }
   box.hidden = false;
-  box.innerHTML = `<span class="rq-label">🕘 最近问过：</span>` + list.map(q0 =>
+  box.innerHTML = `<span class="rq-label">☾ 最近问过：</span>` + list.map(q0 =>
     `<button type="button" data-q="${escHtml(q0)}">${escHtml(q0.length > 12 ? q0.slice(0, 12) + "…" : q0)}</button>`).join("");
   box.querySelectorAll("[data-q]").forEach(b => b.addEventListener("click", () => {
     qEl.value = b.getAttribute("data-q");
@@ -4165,11 +4165,11 @@ async function renderReading() {
   /* C1：从朋友分享链接进来——一次性讲清牌由谁抽的、深度解读取决于谁付额度（文案诚实红线） */
   if (shareLinkView) {
     shareLinkView = false;
-    $("#reading-q").insertAdjacentHTML("beforebegin", `<div class="share-link-note">🔗 这是朋友分享的牌局——牌由<b>分享者亲手抽定</b>（印记 ${seedHex()}），你打开看到的是站内内置解读视角。<br>本站没有后端，读不到对方的记录；AI 深度版要配置你自己的 API key 才会生成（用你的额度）。</div>`);
+    $("#reading-q").insertAdjacentHTML("beforebegin", `<div class="share-link-note">◈ 这是朋友分享的牌局——牌由<b>分享者亲手抽定</b>（印记 ${seedHex()}），你打开看到的是站内内置解读视角。<br>本站没有后端，读不到对方的记录；AI 深度版要配置你自己的 API key 才会生成（用你的额度）。</div>`);
   }
   const h = new Date(state.readingDate || Date.now()).getHours();
   const daypart = h >= 6 && h < 12 ? "晨光初启的时分" : h < 18 ? "日光渐沉的时分" : "夜色渐深的时分";
-  $("#reading-meta").innerHTML = `${state.numbers.length ? "直觉数字 " + state.numbers.join(" ") : state.number ? "直觉数字 " + state.number : "分享牌局"} · ${daypart} · 印记 <button class="echo-code" id="echo-code" type="button" title="这次占卜的唯一印记，点一下即可复制。想原样回看这一局，去「占卜记录」点开它即可（印记用来标识与核对，不支持手动输入重演）。">${seedHex()}</button>` + (state.cutCard ? ` · <button class="meta-cut" id="meta-cut" type="button" title="点开看这张心态牌的牌义">切牌：${state.cutCard.name}（${state.cutCard.upright.keywords[0]}）</button>` : "") + ((state.numbers.length || state.number) ? ` · <button class="meta-cut" id="draw-facts" type="button" title="洗牌方法、每个数字怎么对上这张牌——全部由印记确定，可复算">🧾 这局怎么发出来的</button>` : "");
+  $("#reading-meta").innerHTML = `${state.numbers.length ? "直觉数字 " + state.numbers.join(" ") : state.number ? "直觉数字 " + state.number : "分享牌局"} · ${daypart} · 印记 <button class="echo-code" id="echo-code" type="button" title="这次占卜的唯一印记，点一下即可复制。想原样回看这一局，去「占卜记录」点开它即可（印记用来标识与核对，不支持手动输入重演）。">${seedHex()}</button>` + (state.cutCard ? ` · <button class="meta-cut" id="meta-cut" type="button" title="点开看这张心态牌的牌义">切牌：${state.cutCard.name}（${state.cutCard.upright.keywords[0]}）</button>` : "") + ((state.numbers.length || state.number) ? ` · <button class="meta-cut" id="draw-facts" type="button" title="洗牌方法、每个数字怎么对上这张牌——全部由印记确定，可复算">◈ 这局怎么发出来的</button>` : "");
   $("#meta-cut")?.addEventListener("click", openCutDeep);
   $("#draw-facts")?.addEventListener("click", openFactsModal);
   $("#echo-code")?.addEventListener("click", () => {
@@ -4208,7 +4208,7 @@ async function renderReading() {
   if (hasReversed) {
     const note = document.createElement("div");
     note.className = "rev-note";
-    note.innerHTML = "ℹ️ 本轮出现逆位牌：逆位 ≠ 坏消息——它提示能量转向了内部或被卡住，是需要被看见的部分。";
+    note.innerHTML = "ⓘ 本轮出现逆位牌：逆位 ≠ 坏消息——它提示能量转向了内部或被卡住，是需要被看见的部分。";
     list.parentNode.insertBefore(note, list);
   }
   const ruleReadings = state.draws.map(d => composeReading(d, state.domain));
@@ -4241,7 +4241,7 @@ async function renderReading() {
       const a1 = acts[state.seed % acts.length];
       const a2 = acts[(state.seed + Math.floor(acts.length / 2)) % acts.length];
       const uniq2 = a1 === a2 ? [a1] : [a1, a2];
-      html += `<div class="rc-actions">🎯 行动指引：${uniq2.join("　·　")}</div>`;
+      html += `<div class="rc-actions">✦ 行动指引：${uniq2.join("　·　")}</div>`;
     }
     /* 作者口径：逐牌解读走弹窗，不在下方陈列（占空间）。详情整块搬进 #modal-body，关闭搬回，
        所以这里不再需要"展开深层解读"按钮。 */
@@ -4341,7 +4341,7 @@ async function renderReading() {
               let html = "";
               if (c.core) html += `<p style="color:var(--gold);font-size:13px;margin-bottom:6px">${esc(c.core)}</p>`;
               if (c.psy) html += `<p>${esc(c.psy)}</p>`;
-              if (c.example) html += `<p style="color:var(--ink-dim);font-size:13px;margin-top:6px;font-style:italic">💭 ${esc(c.example)}</p>`;
+              if (c.example) html += `<p style="color:var(--ink-dim);font-size:13px;margin-top:6px;font-style:italic">◈ ${esc(c.example)}</p>`;
               if (html) psyEl.innerHTML = html;
             }
           } else if (path.indexOf("syn.") === 0) {
@@ -4383,7 +4383,7 @@ async function renderReading() {
             let html = "";
             if (c.core) html += `<p style="color:var(--gold);font-size:13px;margin-bottom:6px">${escHtml(c.core)}</p>`;
             if (c.psy) html += `<p>${escHtml(c.psy)}</p>`;
-            if (c.example) html += `<p style="color:var(--ink-dim);font-size:13px;margin-top:6px;font-style:italic">💭 ${escHtml(c.example)}</p>`;
+            if (c.example) html += `<p style="color:var(--ink-dim);font-size:13px;margin-top:6px;font-style:italic">◈ ${escHtml(c.example)}</p>`;
             if (html) psyEl.innerHTML = html;
           }
           /* 逆耳那半句：标题按牌位视角取名，规则引擎版没有这句，容器留空即整块缺席 */
@@ -4452,7 +4452,7 @@ async function renderReading() {
         if (shrunk) updateHistoryRecord(targetT, wasRestore ? { a: shrunk, e: state.shareSnapshot.energy } : { a: shrunk });
       }
       if (fuList.length) {
-        synHTML += `<div class="followup-block"><div class="sb-label">想 继 续 问</div>${fuList.map((q2, i) => `<button class="fu-btn" type="button" data-fu="${i}">💬 ${escHtml(q2)}</button>`).join("")}</div>`;
+        synHTML += `<div class="followup-block"><div class="sb-label">想 继 续 问</div>${fuList.map((q2, i) => `<button class="fu-btn" type="button" data-fu="${i}">✦ ${escHtml(q2)}</button>`).join("")}</div>`;
       }
       synHTML += `<p class="sovereign">牌显示的是当下的能量，不是注定的结局。<br>你的选择，随时可以改变走向。</p>`;
       synHTML += `<p class="ai-note">✦ 本段解读由 AI 生成，仅供自我觉察参考，不构成任何专业建议</p>`;
@@ -4566,7 +4566,7 @@ function renderLinks() {
   if (!insight) return;
   const block = document.createElement("div");
   block.className = "links-block";
-  block.innerHTML = '<div class="links-insight"><span class="li-label">🔗 牌面呼应</span><span class="li-text">' + escHtml(insight) + "</span></div>";
+  block.innerHTML = '<div class="links-insight"><span class="li-label">◈ 牌面呼应</span><span class="li-text">' + escHtml(insight) + "</span></div>";
   synEl.parentNode.insertBefore(block, synEl.nextSibling);
 }
 
@@ -4667,7 +4667,7 @@ function renderTiming() {
   if (!line) return;
   const block = document.createElement("div");
   block.className = "timing-block";
-  block.innerHTML = '<div class="tb-title">⏳ 应期参考</div><div class="timing-pace">' + escHtml(line) + '</div><p class="tb-note">应期谈的是节奏不是判决——时机终究操之在己，不是注定。</p>';
+  block.innerHTML = '<div class="tb-title">☾ 应期参考</div><div class="timing-pace">' + escHtml(line) + '</div><p class="tb-note">应期谈的是节奏不是判决——时机终究操之在己，不是注定。</p>';
   synEl.parentNode.insertBefore(block, synEl.nextSibling);
 }
 
@@ -4687,7 +4687,7 @@ function fortuneModel(card, reversed) {
     energy: (typeof energyWord === "function" ? energyWord() : ""),
     keywords: (o.keywords || []).slice(0, 4),
     suitName: card.suitName || "大阿卡纳",
-    facets: [["💗", "爱情", o.love], ["💼", "事业·学业", o.career], ["💰", "财运", o.finance], ["🤝", "人际", o.relationship]]
+    facets: [["✦", "爱情", o.love], ["✦", "事业·学业", o.career], ["✦", "财运", o.finance], ["✦", "人际", o.relationship]]
       .filter(x => x[2]).map(x => ({ i: x[0], k: x[1], v: x[2] })),
     advice: o.advice || "",
     timing: (typeof timingFor === "function" ? (timingFor(card.name) || "") : ""),
@@ -4767,8 +4767,8 @@ function renderDailyFortune() {
     ${streakLine}
     <div class="df-grid">${m.facets.map(x => `<div class="df-item"><div class="df-k">${x.i} ${x.k}</div><p>${escHtml(x.v)}</p></div>`).join("")}</div>
     ${m.reversed ? `<div class="df-revnote">逆位不是"坏"——它提示「${escHtml(m.name)}」这股能量更多在内在或被卡住，${dayWord}先向内看，别只向外求。</div>` : ""}
-    ${m.advice ? `<div class="df-row"><span class="df-k">🧭 ${dayWord}指引</span><p>${escHtml(m.advice)}</p></div>` : ""}
-    <div class="df-lucky"><span>🎨 幸运色 ${escHtml(m.colors)}</span><span>🔢 牌面吉数 ${m.luckyNum}</span><span>🧭 参考方位 ${escHtml(m.dir)}</span></div>
+    ${m.advice ? `<div class="df-row"><span class="df-k">✦ ${dayWord}指引</span><p>${escHtml(m.advice)}</p></div>` : ""}
+    <div class="df-lucky"><span>✦ 幸运色 ${escHtml(m.colors)}</span><span>✦ 牌面吉数 ${m.luckyNum}</span><span>✦ 参考方位 ${escHtml(m.dir)}</span></div>
     ${m.timing ? `<div class="df-season">♓ 这张牌的传统季节：${escHtml(m.timing)} · 占星象征，与「今天」无关</div>` : ""}
     <p class="df-src">↑ 以上分项、时段、吉数与方位，都由你抽到的这张 <b>${escHtml(m.suitName)}</b> 牌推得——它们是传统象征对应，不是日程预言。</p>
     <p class="df-note">牌是镜子，不是判决书——这是你此刻能量的一种读法，选择权始终在你手里。</p>`;
@@ -4808,7 +4808,7 @@ function escapeHtml(s) { return escHtml(s); }
 function openFactsModal() {
   const nums = (state.facts && state.facts.numbers.length) ? state.facts.numbers : (state.numbers.length ? state.numbers.slice() : (state.number ? [state.number] : []));
   const spreadKey = (state.facts && state.facts.spreadKey) || state.spreadKey;
-  if (!nums.length) { openInfoModal(`<h4>🧾 这局怎么发出来的</h4><div class="m-row"><p>这局的发牌数字没有随记录保存（旧记录或分享链接）。牌面与印记 <b>${seedHex()}</b> 都已还原，可在「占卜记录」原样回看。</p></div>`); return; }
+  if (!nums.length) { openInfoModal(`<h4>◈ 这局怎么发出来的</h4><div class="m-row"><p>这局的发牌数字没有随记录保存（旧记录或分享链接）。牌面与印记 <b>${seedHex()}</b> 都已还原，可在「占卜记录」原样回看。</p></div>`); return; }
   let picks;
   if (state.facts && state.facts.seed === state.seed && state.facts.numbers.length === nums.length)
     picks = state.facts.picks.map((p, i) => ({ ...p, id: (state.markedCards[i] && state.markedCards[i].card.id) || "" }));
@@ -4816,14 +4816,14 @@ function openFactsModal() {
   /* 审查必修#2：逐位对账——复算出的牌必须与当局实际展示的牌一一对上，否则整面板降级（改版前的每日一牌曾放开任选、旧记录数字残缺、牌库版本漂移、手改链接都走这里，绝不编造映射） */
   const aligned = picks.length === state.draws.length && picks.every((p, i) => !p.id || !state.draws[i] || p.id === state.draws[i].card.id);
   if (!aligned) {
-    openInfoModal(`<h4>🧾 这局怎么发出来的</h4><div class="m-row"><p>印记 <b>${seedHex()}</b> 与牌面都已还原，但这局的「数字 ↔ 牌」映射无法从留存信息完整复算（改版前的每日一牌曾放开任选、旧记录可能只存了部分数字、或牌库版本已更新）。</p></div><div class="m-row"><p>能确定的是：洗牌与正逆位都由印记唯一决定，翻牌只是揭示——塔塔没有偷偷换牌，更替不了你的直觉。</p></div>`);
+    openInfoModal(`<h4>◈ 这局怎么发出来的</h4><div class="m-row"><p>印记 <b>${seedHex()}</b> 与牌面都已还原，但这局的「数字 ↔ 牌」映射无法从留存信息完整复算（改版前的每日一牌曾放开任选、旧记录可能只存了部分数字、或牌库版本已更新）。</p></div><div class="m-row"><p>能确定的是：洗牌与正逆位都由印记唯一决定，翻牌只是揭示——塔塔没有偷偷换牌，更替不了你的直觉。</p></div>`);
     return;
   }
   const withCards = picks.map((p, i) => ({ ...p, name: (state.draws[i] && state.draws[i].card.name) || p.name || "", rev: state.draws[i] ? !!state.draws[i].reversed : !!p.rev }));
   const rows = withCards.map((p, i) => `<p style="margin:6px 0;font-size:13px">${i + 1}. 你的数字 <b>${p.num}</b> → 在${p.poolLabel}里对位第 ${p.k + 1} 个 → 洗牌后整副第 ${p.idx + 1} 张 →「${escHtml(p.name)}」${p.rev ? "（逆位）" : "（正位）"}</p>`).join("");
   const suitLine = (SPREADS[spreadKey] || {}).positions && withCards.some((p, i) => { const pos = (SPREADS[spreadKey].positions || [])[i] || {}; return pos.suit || pos.major; }) ? `<div class="m-row"><p>本阵为花色限定抽牌：每个位置只从牌阵说明标定的牌池里取（撞车时按池内顺序顺延一位）。</p></div>` : "";
   openInfoModal(`
-    <h4>🧾 这局是怎么发出来的</h4>
+    <h4>◈ 这局是怎么发出来的</h4>
     <div class="m-row"><p>洗牌：Fisher-Yates，由印记 <b>${seedHex()}</b> 的确定性随机流驱动——同一个印记永远洗出同一副顺序；正逆位在洗牌时就已整副既定（约 1/3 逆位），翻牌只是揭示。</p></div>
     <div class="m-row">${rows}</div>
     ${suitLine}
@@ -4858,7 +4858,7 @@ function openCutDeep() {
   if (!c) return;
   openInfoModal(`
     <div class="m-img"><img src="${IMG_BASE + c.image}" data-fallback="${CDN_BASE + c.image}" alt="${c.name}" referrerpolicy="no-referrer" onerror="if(!this.dataset.fb){this.dataset.fb=1;this.src=this.dataset.fallback}"></div>
-    ${COARSE_POINTER ? `<div style="text-align:center;font-size:11px;color:var(--ink-faint);letter-spacing:.04em;margin:-2px 0 10px">📱 长按图片可保存到相册</div>` : ""}
+    ${COARSE_POINTER ? `<div style="text-align:center;font-size:11px;color:var(--ink-faint);letter-spacing:.04em;margin:-2px 0 10px">✧ 长按图片可保存到相册</div>` : ""}
     <h4>切牌 · ${c.name}</h4>
     <div class="m-en">${c.englishName} · 你此刻的心态底色</div>
     <div class="m-row"><div class="m-label">关 键 词</div><p>${c.upright.keywords.join(" / ")}</p></div>
@@ -4878,7 +4878,7 @@ function openDeep(i) {
   modalBody.innerHTML = `
     <button class="modal-close" type="button" aria-label="关闭">✕</button>
     <div class="m-img"><img src="${IMG_BASE + c.image}" data-fallback="${CDN_BASE + c.image}" alt="${c.name}" referrerpolicy="no-referrer" ${d.reversed ? 'style="transform:rotate(180deg)"' : ""} onerror="if(!this.dataset.fb){this.dataset.fb=1;this.src=this.dataset.fallback}"></div>
-    ${COARSE_POINTER ? `<div style="text-align:center;font-size:11px;color:var(--ink-faint);letter-spacing:.04em;margin:-2px 0 10px">📱 长按图片可保存到相册</div>` : ""}
+    ${COARSE_POINTER ? `<div style="text-align:center;font-size:11px;color:var(--ink-faint);letter-spacing:.04em;margin:-2px 0 10px">✧ 长按图片可保存到相册</div>` : ""}
     <h4>${c.name}${d.reversed ? "（逆位）" : ""}</h4>
     <div class="m-en">${c.englishName} · ${c.group === "major" ? "大阿卡纳" : c.suitName}</div>
     <div class="m-row"><div class="m-label">本 位 解 读 · ${cur.keywords.join(" / ")}</div><p>${cur.meaning}</p></div>
@@ -4956,7 +4956,7 @@ function renderCoach() {
   const box = $("#coach-tips");
   if (!box) return;
   const tips = coachTips(qEl.value);
-  box.innerHTML = tips.map(t => `<div class="coach-tip">💡 ${t}</div>`).join("");
+  box.innerHTML = tips.map(t => `<div class="coach-tip">✦ ${t}</div>`).join("");
 }
 qEl.addEventListener("input", renderCoach);
 (function initOnboarding() {
@@ -5027,7 +5027,7 @@ function updateCoverDailyHint() {
   else if (lock && lock.day === y) txt = `今天还没抽牌 · 昨天连的 <b>${lock.streak || 1}</b> 天，别在今天断掉`;
   else txt = "今天还没抽牌 ✦ 凭直觉翻一张？";
   const rm = _readRemind();
-  el.innerHTML = `<span class="cdh-text">${txt}</span><button class="cdh-link" id="btn-remind" type="button">⏰ 每日提醒${rm && rm.hhmm ? " · " + escHtml(rm.hhmm) : ""}</button>`;
+  el.innerHTML = `<span class="cdh-text">${txt}</span><button class="cdh-link" id="btn-remind" type="button">☾ 每日提醒${rm && rm.hhmm ? " · " + escHtml(rm.hhmm) : ""}</button>`;
   el.classList.toggle("done", !!today);
   el.hidden = false;
   const rb = $("#btn-remind");
@@ -5037,7 +5037,7 @@ function openRemindModal() {
   const rm = _readRemind();
   const val = (rm && /^\d{2}:\d{2}$/.test(rm.hhmm || "") && rm.hhmm) || "09:00";
   openInfoModal(`
-    <h4>⏰ 每日提醒</h4>
+    <h4>☾ 每日提醒</h4>
     <div class="m-row"><p>先说清楚能做到的：<b>塔塔没有服务器，也不做推送</b>——它不会在你没打开网页时"叮"你一下。
     它能做的是生成一个日历文件（.ics），导入你自己的日历后，由<b>你的日历 App</b> 每天在此时提醒你「该翻牌了」。</p></div>
     <div class="m-row" style="margin-top:10px">
@@ -5380,8 +5380,8 @@ async function buildShareCard() {
       fy += 36 * wrapText(ctx, x.v, fLX, fy, fLW, 36, 2) + 26;
     });
     ctx.textAlign = "center";
-    if (fM.advice) { ctx.fillStyle = "#c9a86a"; ctx.font = `600 27px ${SANS}`; ctx.fillText("🧭 " + fdw + "指引", CX, fy); ctx.fillStyle = "#e8e2d4"; ctx.font = `26px ${SANS}`; fy += 42; fy += 40 * wrapText(ctx, fM.advice, CX, fy, SHARE_W - 240, 40, 2) + 22; }
-    ctx.fillStyle = "#c9a86a"; ctx.font = `600 26px ${SANS}`; ctx.fillText("🎨 " + fM.colors + "    🔢 牌面吉数 " + fM.luckyNum + "    🧭 " + fM.dir, CX, fy); fy += 40;
+    if (fM.advice) { ctx.fillStyle = "#c9a86a"; ctx.font = `600 27px ${SANS}`; ctx.fillText("✦ " + fdw + "指引", CX, fy); ctx.fillStyle = "#e8e2d4"; ctx.font = `26px ${SANS}`; fy += 42; fy += 40 * wrapText(ctx, fM.advice, CX, fy, SHARE_W - 240, 40, 2) + 22; }
+    ctx.fillStyle = "#c9a86a"; ctx.font = `600 26px ${SANS}`; ctx.fillText("✦ 幸运色 " + fM.colors + "    ✦ 吉数 " + fM.luckyNum + "    ✦ 方位 " + fM.dir, CX, fy); fy += 40;
     /* 季节对应降为次要小字（原先挂在"今日指引"下方，五周后的日期区间会被读成"今天的事要等到那天"） */
     if (fM.timing) { ctx.fillStyle = "#847c6a"; ctx.font = `22px ${SANS}`; ctx.fillText("♓ 这张牌的传统季节：" + fM.timing + " · 占星象征，与「今天」无关", CX, fy); fy += 36; }
     ctx.fillStyle = "#847c6a"; ctx.font = `22px ${SANS}`; ctx.fillText("以上由你抽到的「" + fM.suitName + "」牌推得 · 传统象征对应，不是日程预言 · 牌是镜子，不是判决书", CX, fy);
@@ -5757,7 +5757,7 @@ $("#btn-card").addEventListener("click", async () => {
   openInfoModal(`
     <h4>分享图已生成</h4>
     <div class="share-variants" role="group" aria-label="分享图规格">${chipsHtml}</div>
-    <div style="margin:6px auto 14px;max-width:460px;text-align:center;font-size:13px;line-height:1.7;color:#0b0917;background:linear-gradient(90deg,#c9a86a,#b18e52);border-radius:10px;padding:9px 14px;font-weight:600">📱 手机上长按图片 →「存储到照片」，即可存入相册。</div>
+    <div style="margin:6px auto 14px;max-width:460px;text-align:center;font-size:13px;line-height:1.7;color:#0b0917;background:linear-gradient(90deg,#c9a86a,#b18e52);border-radius:10px;padding:9px 14px;font-weight:600">✧ 手机上长按图片 →「存储到照片」，即可存入相册。</div>
     <div id="share-stage" style="text-align:center;min-height:240px;display:flex;align-items:center;justify-content:center"><span class="share-stage-wait">绘制中……</span></div>
     <div style="display:flex;gap:14px;justify-content:center;margin-top:18px;flex-wrap:wrap">
       <button class="btn" id="share-img" type="button" style="display:none">保存到相册</button>
@@ -5911,7 +5911,7 @@ function memScore(rec) {
   return Math.exp(-days / 60) * (1 + 0.35 * (rec.seen || 0)) * (rec.check ? 1.4 : 1);
 }
 const REFLECT_MOODS = ["平静", "焦虑", "期待", "困惑", "释然"];
-const REFLECT_CHECKS = [["met", "✅ 应验了"], ["part", "◐ 部分应验"], ["miss", "⏳ 还没应验"]];
+const REFLECT_CHECKS = [["met", "应验了"], ["part", "部分应验"], ["miss", "还没应验"]];
 function renderReflectBlock(isReplay) {
   const synEl = $("#synthesis");
   if (!synEl) return;
@@ -5926,7 +5926,7 @@ function renderReflectBlock(isReplay) {
   if (isReplay) html += `<div class="rb-row">${REFLECT_CHECKS.map(([k, tx]) => `<button class="rf-chip chk${chk === k ? " on" : ""}" data-c="${k}" type="button">${tx}</button>`).join("")}</div>`;
   /* C2：日记式批注——复盘不止"看当时抽了什么"，还留下"当时我怎么想"（随这条记录存本机，日记导出会带上） */
   const memoV = (cur && typeof cur.memo === "string") ? cur.memo : "";
-  html += `<div class="rb-memo"><textarea class="rb-memo-in" maxlength="200" placeholder="写点批注：当时我怎么想、后来哪里对上了号……">${escHtml(memoV)}</textarea><div class="rb-memo-row"><button class="rf-chip memo-save" type="button">💾 存进这条记录</button><span class="rb-memo-st">${memoV.trim() ? "已存有批注 ✓" : "批注只存本机这条记录"}</span></div></div>`;
+  html += `<div class="rb-memo"><textarea class="rb-memo-in" maxlength="200" placeholder="写点批注：当时我怎么想、后来哪里对上了号……">${escHtml(memoV)}</textarea><div class="rb-memo-row"><button class="rf-chip memo-save" type="button">✧ 存进这条记录</button><span class="rb-memo-st">${memoV.trim() ? "已存有批注 ✓" : "批注只存本机这条记录"}</span></div></div>`;
   html += `<p class="rb-note">${isReplay ? "标记会存进这条记录——「按记忆强度排序」会优先带你回到最近的回响。" : "标记只存在本机记录里，之后的回看与复盘会用得上。"}</p></div>`;
   synEl.insertAdjacentHTML("beforeend", html);
   const block = synEl.querySelector(".reflect-block");
@@ -5995,7 +5995,7 @@ function trendPanel(t) {
   const sp = Object.entries(t.spread).sort((a, b) => b[1] - a[1])[0];
   const spName = sp && SPREADS[sp[0]] ? SPREADS[sp[0]].name : "";
   return `<div class="trend-panel" role="region" aria-label="抽牌趋势">
-    <div class="tp-head"><span class="tp-title">🪞 我 的 牌 镜</span><span class="tp-sub">最近 ${t.n} 次 · 共翻开 ${t.draws} 张 · 逆位 ${revPct}%${spName ? ` · 最常用「${spName}」` : ""}</span></div>
+    <div class="tp-head"><span class="tp-title">◈ 我 的 牌 镜</span><span class="tp-sub">最近 ${t.n} 次 · 共翻开 ${t.draws} 张 · 逆位 ${revPct}%${spName ? ` · 最常用「${spName}」` : ""}</span></div>
     ${topSuit ? `<p class="tp-insight">${TREND_SUIT_INSIGHT[topSuit.s] || ""}</p>` : ""}
     ${bars ? `<div class="tp-bars">${bars}</div>` : ""}
     ${topCards ? `<div class="tp-sec"><span class="tp-cap">最 常 相 见</span><div class="tp-row">${topCards}</div></div>` : ""}
@@ -6016,7 +6016,7 @@ function monthPanel(h) {
   const revPct = Math.round(t.rev / t.draws * 100);
   const top = t.top && t.top[0];
   return `<div class="month-panel" role="region" aria-label="近三十天概览">
-    <span class="mp-title">🌙 这 30 天</span>
+    <span class="mp-title">☽ 这 30 天</span>
     <span class="mp-item">抽牌 <b>${recs.length}</b> 次</span>
     <span class="mp-item">翻开 <b>${t.draws}</b> 张牌</span>
     <span class="mp-item">逆位 <b>${revPct}%</b></span>
@@ -6052,7 +6052,7 @@ function renderTimeMirror(wasRestore) {
   const refConcl = (prev.a && typeof prev.a === "object" && typeof prev.a.conclusion === "string" && prev.a.conclusion)
     ? `<p class="tm-ref">上一次，塔塔是这样说的：<br>「${escHtml(prev.a.conclusion.slice(0, 90))}${prev.a.conclusion.length > 90 ? "……" : ""}」</p>` : "";
   const html = `<div class="time-mirror" role="region" aria-label="同题对照">
-    <div class="tm-title">🕰️ 时 间 的 镜 子</div>
+    <div class="tm-title">☾ 时 间 的 镜 子</div>
     <p class="tm-sub">${days} 天前（${fmtTime(prev.t)}），你问过同一件事。</p>
     ${rows}${refConcl}
     <p class="tm-note">两次抽牌只是同一个问题在不同时刻的映照，不构成预测——牌不替时间下结论，变的是你，镜子只负责照见。</p>
@@ -6079,7 +6079,7 @@ function renderHistList() {
   const kw = ($("#hist-search")?.value || "").trim().toLowerCase();
   /* 满额预警：接近 20 条上限时提醒备份（搜索时不显示，避免干扰结果） */
   const warnHtml = (!kw && h.length >= HIST_MAX - 3)
-    ? `<div class="hist-warn">📦 记录已存 ${h.length}/${HIST_MAX} 条${h.length >= HIST_MAX ? "，再占卜将淘汰最旧记录" : `，再占 ${HIST_MAX - h.length} 次将开始淘汰最旧记录`}——建议先「导出记录」备份。</div>`
+    ? `<div class="hist-warn">✦ 记录已存 ${h.length}/${HIST_MAX} 条${h.length >= HIST_MAX ? "，再占卜将淘汰最旧记录" : `，再占 ${HIST_MAX - h.length} 次将开始淘汰最旧记录`}——建议先「导出记录」备份。</div>`
     : "";
   /* P1-1 复盘小结 + 排序开关 */
   let headHtml = "";
@@ -6093,7 +6093,7 @@ function renderHistList() {
       const moodCnt = {};
       h.forEach(r => { if (r && r.mood) moodCnt[r.mood] = (moodCnt[r.mood] || 0) + 1; });
       const topMood = Object.keys(moodCnt).sort((a, b) => moodCnt[b] - moodCnt[a])[0];
-      headHtml += `<div class="hist-summary">📿 复盘小结：${h.length} 次占卜 · 已回访 ${checked.length}（✅${cnt("met")} ◐${cnt("part")} ⏳${cnt("miss")}）${topMood ? ` · 最常见的落点感受：${topMood}` : ""}</div>`;
+      headHtml += `<div class="hist-summary">✦ 复盘小结：${h.length} 次占卜 · 已回访 ${checked.length}（应验 ${cnt("met")} · 部分 ${cnt("part")} · 待回访 ${cnt("miss")}）${topMood ? ` · 最常见的落点感受：${topMood}` : ""}</div>`;
     }
   }
   if (!h.length) {
@@ -6116,7 +6116,7 @@ function renderHistList() {
     it.tabIndex = 0; it.setAttribute("role", "button"); it.setAttribute("aria-label", `回看 ${fmtTime(rec.t)} 的占卜记录`);
     const cards = rec.d.map(x => { const c = x && cardById[x.id]; return c ? `${c.name}${x.r ? "·逆" : ""}` : "？"; }).join(" / ");
     const chkOK = rec.check && ["met", "part", "miss"].indexOf(rec.check.s) >= 0; /* R2：渲染位白名单，防存量脏数据属性注入 */
-    const chkBadge = chkOK ? `<span class="hist-badge ${rec.check.s}">${{ met: "✅ 应验", part: "◐ 部分", miss: "⏳ 未应验" }[rec.check.s] || ""}</span>` : "";
+    const chkBadge = chkOK ? `<span class="hist-badge ${rec.check.s}">${{ met: "应验", part: "部分", miss: "未应验" }[rec.check.s] || ""}</span>` : "";
     const moodBadge = rec.mood ? `<span class="hist-badge mood">${escapeHtml(rec.mood)}</span>` : "";
     /* 多张阵要显示全部数字：完整数组一直存在 rec.nu（回看与事实面板都用它），旧版只显示首数字，
        问者会误以为"我只报了一个 7"。存量脏数据按 1–78 整数白名单过滤后再拼。 */
@@ -6239,12 +6239,12 @@ function openFeedback() {
   const fb = "【塔塔🔮の心灵疗愈室 反馈】" + NL + "类型：（解读质量 / 体验问题 / 功能愿望）" + NL + "内容：";
   const fbAll = FEEDBACK_EMAIL + NL + NL + fb;
   openInfoModal(`
-    <h4>💬 意见反馈</h4>
+    <h4>✦ 意见反馈</h4>
     <div class="m-row"><p>这个站的每一次迭代都靠真实反馈驱动。解读准不准、哪里用着别扭、想要什么功能——都说来听听。</p></div>
     <div class="m-row" style="margin-top:12px;font-size:13px;text-align:center">反馈去向：直达站长邮箱<br><b class="gold" style="letter-spacing:.06em">${FEEDBACK_EMAIL}</b></div>
     <div style="display:flex;gap:14px;justify-content:center;margin-top:18px;flex-wrap:wrap">
       <a class="btn" href="mailto:${FEEDBACK_EMAIL}?subject=${encodeURIComponent("[塔塔反馈] 我想说说")}&body=${encodeURIComponent(fb)}" style="text-decoration:none">✉ 写邮件（自动打开邮件应用）</a>
-      <button class="btn ghost" id="fb-copy" type="button">📋 复制邮箱 + 模板</button>
+      <button class="btn ghost" id="fb-copy" type="button">✧ 复制邮箱 + 模板</button>
     </div>
     <p class="note" style="margin-top:14px;text-align:center;line-height:1.9">「写邮件」会唤起你设备上的邮件应用；若没有弹出，请点「复制邮箱 + 模板」，<br>粘贴到你的邮箱或微信发送。涉及个人隐私的内容（问题原文等）请自行斟酌是否附上。</p>`);
   const fbCopy = document.getElementById("fb-copy");
