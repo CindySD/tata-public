@@ -4030,6 +4030,10 @@ function pickFromSpread(el) {
   el.classList.add("picked");
   /* 移除标记（数据驱动方案：单一类 + data 属性，任意张数牌阵通用） */
   el.classList.remove("marked", "next");
+  /* E2 补漏：翻走的牌必须同时退出 Tab 序。只摘 .next 类不重置 tabIndex，
+     这张牌会以 pointer-events:none 的隐形状态继续占一个焦点位，而真正该翻的那张
+     反而拿不到焦点——线上实测到「3 个可聚焦元素全是 picked」。 */
+  el.tabIndex = -1;
   delete el.dataset.markBadge;
   el.style.zIndex = ""; /* 位置层级一并撤掉：否则这张已翻的牌会以高层级继续压住右邻左上角的徽章 */
   /* 隐藏定位按钮 */
