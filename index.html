@@ -483,9 +483,12 @@ body:has(#stage-serene.active) footer,body:has(#stage-ask.active) footer,body:ha
 .modal-mask{position:fixed;inset:0;background:rgba(4,4,9,.82);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);z-index:80; /* P8：必须高于氛围层 .grain(65)/body::after(70)，否则弹窗被晕影与颗粒盖住 */display:none;align-items:flex-start;justify-content:center;padding:6vh 18px;overflow:auto}
 .modal-mask.show{display:flex}
 .modal{background:#100e1b;border:1px solid var(--gold-dim);border-radius:16px;max-width:640px;width:100%;padding:34px 30px;animation:fadeUp var(--dur-enter) var(--ease-out) both;position:relative}
-/* P9：弹窗比屏幕高时，原来 absolute 的 ✕ 会跟着滚出视口（实测滚到底 close.top = −298），
-   鼠标用户既找不到关闭也看不见 Esc 提示。改成 sticky 钉在遮罩顶，并垫一层底色保证压在正文上也可读。 */
-.modal-close{position:sticky;top:8px;float:right;clear:right;margin:-14px -10px 0 0;z-index:2;
+/* P9：弹窗比屏幕高时，原来 absolute 的 ✕ 会跟着滚出视口（实测 close.top = −298）。
+   第一版只把 absolute 换成 sticky 却仍留着 float:right —— 按规范 float 会让元素脱离常规流，
+   而 sticky 只对 in-flow 元素生效，所以那条修法在长弹窗上根本不成立（本地短内容只滚 22px，
+   恰好没暴露）。现在改用 margin-left:auto + width:max-content 右对齐，元素留在常规流里，
+   sticky 才真的生效；margin-bottom 负值把它占掉的那一行收回来，正文不因此下移。 */
+.modal-close{position:sticky;top:8px;margin:0 0 -30px auto;width:max-content;z-index:2;
   background:rgba(16,14,27,.9);border:1px solid var(--panel-line);border-radius:999px;
   color:var(--ink-dim);font-size:18px;line-height:1;cursor:pointer;letter-spacing:0;padding:8px 11px}
 .modal-close:hover{color:var(--gold);border-color:var(--gold-dim)}
