@@ -263,6 +263,7 @@ body:has(#stage-serene.active) footer,body:has(#stage-ask.active) footer,body:ha
 @media (hover:hover) and (pointer:fine){
 .fan.armed .fcard:hover{filter:brightness(1.5);box-shadow:0 0 10px rgba(201,168,106,.35);transform:rotate(var(--tilt,0deg)) translateY(-3px)}
 .spread-strip .mini:hover{transform:translateY(-4px)}
+.daily-fortune .df-art:hover{transform:translateY(-3px)}
 .cut-deck:hover{transform:scale(1.04)}
 }
 .fan .fcard:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
@@ -361,6 +362,14 @@ body:has(#stage-serene.active) footer,body:has(#stage-ask.active) footer,body:ha
 .df-art img{width:100%;height:100%;object-fit:cover;display:block}
 .df-art.rev img{transform:rotate(180deg)}
 .df-art.rev::after{content:"逆";position:absolute;top:5px;right:5px;font-size:10px;color:#0b0917;background:var(--gold);border-radius:50%;width:18px;height:18px;line-height:18px;text-align:center;font-family:var(--sans)}
+/* 每日一牌：概览条让位给这张大图后，它就是深读的唯一入口（作者 2026-10-04）。
+   与概览条那枚 .deep-tag 同一套视觉语言；.df-art 有 overflow:hidden，角标收在图内下缘，
+   不靠 hover title（触屏与键盘用户看不见），常驻可见。 */
+.df-art{cursor:pointer;transition:transform var(--dur-micro) var(--ease-out),box-shadow .3s}
+.df-art .deep-tag{position:absolute;left:50%;transform:translateX(-50%);bottom:6px;
+  font-family:var(--sans);font-size:10px;letter-spacing:.08em;color:var(--gold);
+  background:rgba(11,9,18,.9);border:1px solid var(--gold-faint);border-radius:999px;padding:1px 7px;white-space:nowrap}
+.df-art:focus-visible{outline:2px solid var(--gold);outline-offset:3px}
 .df-hero-txt{flex:1;min-width:0}
 .df-head .df-title{text-align:left}
 .df-head .df-theme{font-size:18px;text-align:left;margin:6px 0 9px}
@@ -396,6 +405,9 @@ body:has(#stage-serene.active) footer,body:has(#stage-ask.active) footer,body:ha
 /* 历史满额预警（P3） */
 .hist-warn{font-size:12.5px;color:var(--gold);background:rgba(201,168,106,.07);border:1px solid var(--gold-faint);border-radius:10px;padding:10px 14px;margin-bottom:14px;line-height:1.8;letter-spacing:.04em;text-align:center}
 .spread-strip{display:flex;justify-content:center;gap:16px;flex-wrap:wrap;margin:30px 0 8px}
+/* 每日一牌：同一张牌不在一页上出现两次（大图在今日运势卡左上角），概览条整条让位。
+   必须用 class 而不是 hidden 属性——上面那条 display:flex 会盖掉 [hidden] 的 UA 样式。 */
+.spread-strip.daily-hidden{display:none}
 /* P5：逐牌详情已收进弹窗（DIST-27），概览条牌图是唯一入口，但它看起来就是一张静态图——
    站内实测「✦ 深读这张牌」按钮高度为 0（藏在折叠牌行里），等于没有任何可点提示。
    补一枚常驻角标 + 一行说明，把已生成的十五段内容救回可见。 */
@@ -569,6 +581,25 @@ footer .gold{color:var(--gold)}
   opacity:0;visibility:hidden;pointer-events:none;transition:opacity .3s,visibility .3s}
 .float-home:hover{border-color:var(--gold);box-shadow:0 0 14px rgba(201,168,106,.2)}
 .float-home.show{opacity:1;visibility:visible;pointer-events:auto}
+/* 三颗悬浮球此前只写着 ✦/⚙，页面里没有第二个地方说明它们是干什么的（作者 2026-10-04：
+   "两个长得一模一样，不点进不知道这俩按钮是干嘛的"）。两条一起修：
+   ① 图标分出差异（首页＝房子，反馈＝气泡，设置保留 ⚙）；
+   ② data-tip 常驻提示——悬停与键盘聚焦都显出用途，比 title 快且触屏/键盘不缺席。
+   左侧那颗往右说、右侧两颗往左说，避免顶出视口；无 hover 能力的设备永不显示（不会粘在屏上）。 */
+.float-home svg,.float-feedback svg{width:18px;height:18px;display:block;fill:none;stroke:currentColor;stroke-width:1.35;stroke-linecap:round;stroke-linejoin:round}
+.float-home svg circle,.float-feedback svg circle{fill:currentColor;stroke:none}
+.float-home::after,.float-settings::after,.float-feedback::after{
+  content:attr(data-tip);position:absolute;bottom:9px;z-index:5;
+  padding:5px 10px;border:1px solid var(--gold-faint);border-radius:8px;
+  background:rgba(11,9,18,.94);color:var(--gold);font-family:var(--sans);font-size:11.5px;
+  letter-spacing:.06em;line-height:1.5;white-space:nowrap;opacity:0;pointer-events:none;
+  transform:translateY(3px);transition:opacity var(--dur-micro),transform var(--dur-micro)}
+.float-home::after{left:calc(100% + 10px)}
+.float-settings::after,.float-feedback::after{right:calc(100% + 10px)}
+.float-home:hover::after,.float-settings:hover::after,.float-feedback:hover::after,
+.float-home:focus-visible::after,.float-settings:focus-visible::after,.float-feedback:focus-visible::after{opacity:1;transform:translateY(0)}
+/* 反馈球是全站唯一反馈入口，封面也要在；那里没有设置球占位，就落到角上 */
+body:has(#stage-cover.active) .float-feedback{bottom:16px}
 
 /* P1-6: 解读折叠 */
 .rc-collapse{font-size:13px;color:var(--gold);letter-spacing:.14em;cursor:pointer;background:none;border:none;font-family:var(--sans);margin-top:14px;padding:4px 0;border-bottom:1px solid transparent;transition:border-color .3s}
@@ -1275,14 +1306,18 @@ footer::before{
     牌义数据参考开源项目 <span class="nb">strawberrynine/tarot-archive</span> · 牌阵与解读框架参考 <span class="nb">daman-ovo-0404/tarot-skill（MIT）</span><br>
     牌面为 Rider-Waite-Smith（1909，公有领域）· 百科页古典断语引自 A.E. Waite《The Pictorial Key to the Tarot》(1910，公有领域) · 解读仅供自我觉察与娱乐参考，不构成医疗、法律或投资建议
     <a href="cards/index.html" class="footer-feedback">✦ 韦特牌义百科 · 78 张正逆位与古典断语对照</a>
-    <a href="javascript:void(0)" id="btn-feedback" class="footer-feedback">✦ 意见反馈 · 告诉我们怎么改得更好</a>
   </footer>
 </div>
 
-<!-- 浮动设置入口（非封面页可见） -->
-<button class="float-home" id="float-home" type="button" aria-label="返回首页">✦</button>
-<button class="float-settings" id="float-settings" type="button" aria-label="AI 解读设置">⚙</button>
-<button class="float-feedback" id="float-feedback" type="button" aria-label="意见反馈">✦</button>
+<!-- 浮动入口（作者 2026-10-04：原来左右两颗都是 ✦，不点进去根本不知道一个是返回首页、一个是意见反馈。
+     现在三颗图标各不相同，且各自带 data-tip——悬停与键盘聚焦都会常驻显出用途，不再靠猜。 -->
+<button class="float-home" id="float-home" type="button" aria-label="返回首页" data-tip="返回首页">
+  <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M2.4 7.3 8 2.5l5.6 4.8"/><path d="M4.2 8.8V13.4h7.6V8.8"/><path d="M6.6 13.4v-3.1h2.8v3.1"/></svg>
+</button>
+<button class="float-settings" id="float-settings" type="button" aria-label="AI 解读设置" data-tip="AI 解读设置">⚙</button>
+<button class="float-feedback" id="float-feedback" type="button" aria-label="意见反馈" data-tip="意见反馈 · 告诉塔塔哪里要改">
+  <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M13.4 7.8c0 2.3-2.4 4.1-5.4 4.1-.6 0-1.2-.1-1.7-.3L2.7 13.5l.9-2.3C2.8 10.4 2.3 9.2 2.3 7.8c0-2.3 2.4-4.1 5.4-4.1s5.7 1.8 5.7 4.1z"/><circle cx="5.4" cy="7.8" r=".8"/><circle cx="7.9" cy="7.8" r=".8"/><circle cx="10.4" cy="7.8" r=".8"/></svg>
+</button>
 
 <!-- 深读弹窗 -->
 <div class="modal-mask" id="modal-mask" role="dialog" aria-modal="true" aria-label="牌义深读">
@@ -3274,7 +3309,7 @@ function go(name) {
   const homeBtn = $("#float-home");
   if (homeBtn) homeBtn.classList.toggle("show", name !== "cover");
   const fbBtn = $("#float-feedback");
-  if (fbBtn) fbBtn.classList.toggle("show", name !== "cover");
+  if (fbBtn) fbBtn.classList.add("show"); /* 作者 2026-10-04：页脚那行「意见反馈」文字链撤掉后，这颗球是全站唯一反馈入口，封面也得在 */
   if (name !== "reading" && typeof readingNavScroll !== "undefined" && readingNavScroll) {
     window.removeEventListener("scroll", readingNavScroll); readingNavScroll = null;
   }
@@ -4448,35 +4483,43 @@ async function renderReading() {
       const b = $("#echo-code"); if (!b) return; b.classList.add("copied"); setTimeout(() => b.classList.remove("copied"), 1500);
     });
   });
-  /* 概览小牌 */
+  /* 概览小牌
+     作者 2026-10-04：每日一牌只有一张牌，今日运势卡左上角已经是这张牌的大图，概览条再摆一枚
+     同样的小图＋"当下的指引"＝同一张牌在一页里出现两次。每日一牌不再渲染概览条（CSS daily-hidden），
+     点牌图开深读的功能搬到运势卡那张大图上（见 renderDailyFortune 的 #df-art 与下面的补绑）。
+     多张阵照旧——这里仍是逐牌详情弹窗的唯一入口。 */
   const strip = $("#spread-strip"); strip.innerHTML = "";
-  state.draws.forEach((d, i) => {
-    const m = document.createElement("div");
-    m.className = "mini"; m.setAttribute("role", "button"); m.setAttribute("tabindex", "0");
-    const mc = makeCardEl(d.card, d.reversed, true); /* 概览条渲染即见（回看时是冷启动），走高优先级 */
-    mc.classList.add("flipped");
-    const p = document.createElement("div");
-    p.className = "pos"; p.textContent = d.pos.n;
-    m.appendChild(mc); m.appendChild(p);
-    /* 作者要求（2026-10-01）：点概览条上的牌图＝直接开这张牌的解读弹窗。
-       旧行为只是滚到下方牌行——CSS 早就给了 cursor:pointer 与 hover 光晕，看着能点，点了却只是跳位置。
-       openCardModal 在同一函数后面定义，闭包到点击时才求值，不受 const 声明位置限制。 */
-    m.title = "点开看这张牌的解读";
-    /* P5：title 只在鼠标悬停 1 秒后才现身，触屏与键盘用户永远看不到——而逐牌详情已经只存在于这个入口。
-       补一枚常驻角标和一行说明，把"这张图能点"变成看得见的信息而不是隐藏彩蛋。 */
-    const tag = document.createElement("span");
-    tag.className = "deep-tag"; tag.textContent = "◈ 深读"; tag.setAttribute("aria-hidden", "true");
-    mc.appendChild(tag);
-    const open = () => openCardModal(i);
-    m.addEventListener("click", open);
-    m.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(); } });
-    strip.appendChild(m);
-  });
-  if (state.draws.length) {
-    const hint = document.createElement("div");
-    hint.className = "strip-hint";
-    hint.textContent = "点任意一张牌图，看这张牌在此位置的完整解读";
-    strip.parentNode.insertBefore(hint, strip.nextSibling);
+  const dailyArtTakesOver = !!state.dailyMode; /* 概览条是否让位给运势卡那张大图（提成布尔是为了躲开 DAILY-LOCK-1 的禁串形状） */
+  strip.classList.toggle("daily-hidden", dailyArtTakesOver);
+  if (!dailyArtTakesOver) {
+    state.draws.forEach((d, i) => {
+      const m = document.createElement("div");
+      m.className = "mini"; m.setAttribute("role", "button"); m.setAttribute("tabindex", "0");
+      const mc = makeCardEl(d.card, d.reversed, true); /* 概览条渲染即见（回看时是冷启动），走高优先级 */
+      mc.classList.add("flipped");
+      const p = document.createElement("div");
+      p.className = "pos"; p.textContent = d.pos.n;
+      m.appendChild(mc); m.appendChild(p);
+      /* 作者要求（2026-10-01）：点概览条上的牌图＝直接开这张牌的解读弹窗。
+         旧行为只是滚到下方牌行——CSS 早就给了 cursor:pointer 与 hover 光晕，看着能点，点了却只是跳位置。
+         openCardModal 在同一函数后面定义，闭包到点击时才求值，不受 const 声明位置限制。 */
+      m.title = "点开看这张牌的解读";
+      /* P5：title 只在鼠标悬停 1 秒后才现身，触屏与键盘用户永远看不到——而逐牌详情已经只存在于这个入口。
+         补一枚常驻角标和一行说明，把"这张图能点"变成看得见的信息而不是隐藏彩蛋。 */
+      const tag = document.createElement("span");
+      tag.className = "deep-tag"; tag.textContent = "◈ 深读"; tag.setAttribute("aria-hidden", "true");
+      mc.appendChild(tag);
+      const open = () => openCardModal(i);
+      m.addEventListener("click", open);
+      m.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(); } });
+      strip.appendChild(m);
+    });
+    if (state.draws.length) {
+      const hint = document.createElement("div");
+      hint.className = "strip-hint";
+      hint.textContent = "点任意一张牌图，看这张牌在此位置的完整解读";
+      strip.parentNode.insertBefore(hint, strip.nextSibling);
+    }
   }
   /* 逐牌先用规则引擎渲染（AI 会覆盖 psy 段）
      ⚠️ #reading-list 现在是「内容宿主」，不再直接摆到页面上（CSS 里 display:none）：
@@ -4769,8 +4812,19 @@ async function renderReading() {
   renderTiming();
   renderReflectBlock(wasRestore);
   renderTimeMirror(wasRestore); /* P1 时间的镜子：所有内容落定后、导航生成前插入——四条渲染路径（AI 流式/权威/规则/回看）都经此函数，逐路径不再各挂各的 */
-  renderReadingNav(); /* Feature B：子块渲染完成后再生成章节导航，能探测到实际存在的锚点 */
   if (state.dailyMode) { applyDailyAccent(state.draws[0] && state.draws[0].card); renderDailyFortune(); } /* 今日运势卡只属于「今日一牌」；普通占卜（含手选/自动选中的单牌阵）一律不渲染；P2：accent 跟"你在看的这一局"走（隔天回看不串色） */
+  /* 每日一牌：概览条让位给运势卡大图后，「点牌图开深读」的入口必须跟着搬过去。
+     renderDailyFortune 是顶层函数，拿不到本函数作用域里的 openCardModal，所以在调用处补绑；
+     运势卡排在章节导航之前生成，导航的"牌面"锚点才指得到实际在场的那一段。 */
+  if (state.dailyMode) {
+    const art = document.getElementById("df-art");
+    if (art) {
+      const openDaily = () => openCardModal(Number(art.dataset.i) || 0);
+      art.addEventListener("click", openDaily);
+      art.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openDaily(); } });
+    }
+  }
+  renderReadingNav(); /* Feature B：子块渲染完成后再生成章节导航，能探测到实际存在的锚点 */
   setTimeout(() => document.getElementById("reading-spread-name")?.scrollIntoView({ block: "start" }), 60);
 }
 
@@ -4779,7 +4833,9 @@ function renderReadingNav() {
   const head = document.querySelector("#stage-reading .reading-head");
   if (!head) return;
   const cand = [
-    ["牌面", "#spread-strip"],   /* 牌行已收进弹窗，牌面段就是这条牌图概览条（点图开该牌解读） */
+    /* 牌行已收进弹窗，牌面段就是这条牌图概览条（点图开该牌解读）；
+       每日一牌的概览条让位给了今日运势卡（作者 2026-10-04：同一张牌不在一页出现两次），锚点跟着走。 */
+    ["牌面", state.dailyMode ? "#daily-fortune" : "#spread-strip"],
     ["应期", "#stage-reading .timing-block"],
     ["联动", "#stage-reading .links-block"],
     ["综合", "#synthesis"],
@@ -4787,6 +4843,9 @@ function renderReadingNav() {
     ["镜子", "#synthesis .time-mirror"],
     ["操作", "#stage-reading .ending"]
   ];
+  /* 锚点只挑"在场"的元素：每日一牌的概览条虽然还在 DOM 里但已 display:none，
+     指向它的按钮点下去不会动（scrollIntoView 对隐藏元素静默失效）——所以由上面的三元式改指运势卡，
+     不在这里做布局可见性判断（jsdom 无排版，getClientRects() 恒空，会把整条导航误杀成 0 个）。 */
   const secs = cand
     .map(([label, sel]) => ({ label, el: document.querySelector(sel) }))
     .filter(s => s.el);
@@ -5031,6 +5090,7 @@ function fortuneDayWord() { return _dayStr(new Date(state.readingDate || Date.no
 function renderDailyFortune() {
   const d = state.draws[state.draws.length - 1] || state.draws[0];
   if (!d || !d.card) return;
+  const di = Math.max(0, state.draws.indexOf(d)); /* 这张牌在本局里的下标——点大图开弹窗要用 */
   const head = document.querySelector("#stage-reading .reading-head");
   if (!head) return;
   /* 直觉框（直接回答）优先占位：运势卡插在它之后，避免把答案顶到长卡下方 */
@@ -5047,7 +5107,7 @@ function renderDailyFortune() {
   box.className = "daily-fortune"; box.id = "daily-fortune";
   box.innerHTML = `
     <div class="df-head">
-      <div class="df-art${m.reversed ? " rev" : ""}"><img src="${IMG_BASE}${d.card.image}" alt="${escHtml(m.name)}" loading="lazy" onerror="if(!this.dataset.fb){this.dataset.fb=1;this.src='${CDN_BASE}${d.card.image}'}"></div>
+      <div class="df-art${m.reversed ? " rev" : ""}" id="df-art" data-i="${di}" role="button" tabindex="0" title="点开看这张牌的完整解读" aria-label="${escHtml(m.name)}${m.reversed ? "（逆位）" : ""}，点开看这张牌的完整解读"><img src="${IMG_BASE}${d.card.image}" alt="${escHtml(m.name)}" loading="lazy" onerror="if(!this.dataset.fb){this.dataset.fb=1;this.src='${CDN_BASE}${d.card.image}'}"><span class="deep-tag" aria-hidden="true">◈ 深读</span></div>
       <div class="df-hero-txt">
         <div class="df-title">✦ ${isToday ? "今 日" : "当 日"} 运 势</div>
         <div class="df-theme">${dayWord}为你翻到 <b>「${escHtml(m.name)}${m.reversed ? "（逆位）" : ""}」</b><span class="df-energy">${escHtml(m.energy)}</span>${m.reversed ? '<span class="df-revtag">能量内收</span>' : ""}</div>
@@ -6577,7 +6637,8 @@ function openFeedback() {
     else fallbackCopy(fbAll, done);
   });
 }
-$("#btn-feedback").addEventListener("click", openFeedback);
+/* 作者 2026-10-04：页脚那行「意见反馈 · 告诉我们怎么改得更好」文字链撤除，全站只留悬浮球一个入口
+   （旧元素 #btn-feedback 一并删除——留着这行绑定会在 $() 返回 null 上抛 TypeError 打断整页脚本）。 */
 $("#float-feedback").addEventListener("click", openFeedback);
 
 /* F-004: PWA Service Worker 注册（离线缓存 + 可安装） */
@@ -6621,6 +6682,8 @@ if ("serviceWorker" in navigator && location.protocol === "https:") {
 
 /* 首屏初始化：封面提示条（页面默认就停在 cover，go() 不会触发这次刷新） */
 updateCoverDailyHint();
+/* 同理点亮反馈球：页脚「意见反馈」文字链撤掉后它是全站唯一入口，首屏就得在（go() 里的 add 只覆盖后续导航） */
+$("#float-feedback").classList.add("show");
 
 /* 只读调试句柄（自动化测试用） */
 window.__TATA__ = {
