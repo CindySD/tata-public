@@ -59,6 +59,11 @@ input:-webkit-autofill,textarea:-webkit-autofill,select:-webkit-autofill{
   -webkit-text-fill-color:var(--ink);caret-color:var(--gold-hi);
   transition:background-color 9999s ease-in-out 0s}
 #stars{position:fixed;inset:0;z-index:0;pointer-events:none}
+/* E2 skip-link：平时不可见，键盘 Tab 才出现——不做常显是怕破坏氛围 */
+.skip-link{position:fixed;left:12px;top:-60px;z-index:9999;background:#100e1b;border:1px solid var(--gold-dim);
+  color:var(--gold-hi);font-size:13px;letter-spacing:.08em;padding:9px 16px;border-radius:999px;text-decoration:none;
+  transition:top .18s var(--ease-out)}
+.skip-link:focus{top:12px}
 .shell{position:relative;z-index:1;max-width:760px;margin:0 auto;padding:0 24px 96px}
 
 /* ---------- 通用 ---------- */
@@ -161,6 +166,11 @@ textarea{min-height:96px}
 .ask-submit{margin-top:32px;text-align:center}
 /* P22：署名里的仓库名与许可标注一旦被折行甩成孤行很难看，整段保持可换行、名字内部不换 */
 .nb{white-space:nowrap}
+/* P0-5 隐私微文案：比 ask-hint 更弱一档，但位置在输入框正下方——敲问题那一刻才看得到 */
+.ask-privacy{margin-top:8px;font-size:11.5px;line-height:1.75;color:var(--ink-faint);letter-spacing:.03em;text-align:center}
+.tone-note{font-size:11.5px;color:var(--ink-faint);letter-spacing:.04em;margin-top:7px;line-height:1.7}
+.order-audit{margin:10px auto 0;max-width:560px;font-size:12px;line-height:1.8;color:var(--ink-dim);
+  border-left:2px solid var(--gold-dim);padding-left:11px;letter-spacing:.03em}
 .ask-err{color:#bf9488;font-size:13px;text-align:center;min-height:20px;margin-top:10px;letter-spacing:.06em}
 /* 每日一牌入口·PC 美化：只留"给个数字"时居中放大、去掉右侧牌阵栏隐藏后留下的空档 */
 #stage-ask.daily .ask-panel{padding-bottom:38px}
@@ -1029,6 +1039,21 @@ footer::before{
 /* ---------- ⑲ 2026-09-13 全面优化批次：透视翻牌 / 锚点 / 联想 / 批注 / 分享链接 ---------- */
 .pedestal,.cut-deck{perspective:1000px}
 .mini-revealed.flying{will-change:transform}
+/* E4 打印：有人会把解读打出来贴手账。去掉星尘/颗粒/晕影与一切交互件，只留正文与牌名，
+   并强制浅色纸面——深色底直接打印会吃掉半盒墨。 */
+@media print{
+  body{background:#fff !important;color:#111 !important}
+  #stars,.grain,.float-home,.float-settings,.float-feedback,.reading-nav,.ask-dock,
+  .cover-secondary,.cover-cta,.example-chips,.recent-qs,.hist-tools,.footer-feedback{display:none !important}
+  body::after{content:none !important}
+  .shell{max-width:none;padding:0}
+  .conclusion-banner,.synthesis,.reading-card,.modal{border:1px solid #ccc !important;background:#fff !important;
+    box-shadow:none !important;color:#111 !important;backdrop-filter:none !important;-webkit-backdrop-filter:none !important}
+  .cb-label,.bk-label,.m-label,.df-k{color:#555 !important}
+  p,li,td{color:#111 !important}
+  .modal-mask{position:static !important;display:none !important}
+  #modal-mask.show{display:block !important;position:static !important;background:none !important;padding:0 !important}
+}
 @media (prefers-reduced-motion:reduce){.tcard{transition-duration:.15s;transition-timing-function:ease}}
 .recent-qs{display:flex;flex-wrap:wrap;gap:6px 14px;justify-content:center;align-items:center;margin-top:12px}
 .recent-qs .rq-label{font-size:11.5px;color:var(--ink-faint);letter-spacing:.06em}
@@ -1074,9 +1099,11 @@ footer::before{
 </style>
 </head>
 <body>
+<!-- E2 键盘用户原来要 Tab 过 78 张牌背才能离开扇形区，这里给一条出路 -->
+     <a class="skip-link" href="#main">跳到主要内容</a>
 <canvas id="stars" aria-hidden="true"></canvas>
 <div class="grain" aria-hidden="true"></div>
-<div class="shell">
+<div class="shell" id="main" tabindex="-1">
 
   <!-- ===== S0 封面 ===== -->
   <section class="stage active" id="stage-cover">
@@ -1131,6 +1158,7 @@ footer::before{
       <div class="example-chips" id="example-chips" aria-label="不知道问什么？点一个试试"></div>
       <div class="recent-qs" id="q-recent" hidden aria-label="你之前问过的问题，点一下直接带入"></div>
       <div class="ask-hint">问题越具体，牌的回答越清晰。是非题照样能问——塔塔会先给一个字的答案；把「那我该怎么办」一起问，牌能搭的手更多。</div>
+      <div class="ask-privacy">问题只存在你这台机器的浏览器里，不上传任何服务器；开了 AI 后它会发给你配置的那家服务商（见 AI 设置）。别写太敏感的内容。</div>
       <div class="anchor-wrap" id="anchor-wrap" hidden>
         <div class="aw-label">⚖ 这是一个重大决策——先给自己留一句底</div>
         <textarea id="anchor-input" maxlength="60" placeholder="不管牌怎么说，你此刻心里的底线或顾虑是：……"></textarea>
@@ -1300,6 +1328,14 @@ footer::before{
       <div class="m-label">模型名（可选）</div>
       <input class="num-input" id="llm-model" type="text" placeholder="如 deepseek-chat / glm-4-plus" style="font-size:13px;font-family:var(--sans);height:42px;text-align:left">
       <div class="tier-readout" id="tier-readout" role="status" aria-live="polite"></div>
+    </div>
+    <div class="m-row">
+      <div class="m-label">解读语气</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="ex-chip" type="button" data-tone="direct">直说</button>
+        <button class="ex-chip" type="button" data-tone="gentle">温和</button>
+      </div>
+      <div class="tone-note">只改说话方式，不改结论——两档都会给明确判断和逆耳那半句。</div>
     </div>
     <div class="m-row sfx-row">
       <label class="sfx-label" for="sfx-toggle">音效与震动</label>
@@ -2100,7 +2136,7 @@ const LLM_SYSTEM_PROMPT = `你是塔塔🔮の心灵疗愈室的首席解牌师�
     "tension": "张力（点出阵中互相矛盾或拉扯的组合）",
     "turn": "转折（指出最关键的牌或组合，以及撬动它的支点）",
     "line": "把本局两张牌拼成一句身份选择，≤30字，「你是X，不是Y」式；牌阵不足两张则填空字符串",
-    "judgment": "综合判断，1-2句，用'照目前状况推演'框架，但不得反转 conclusion 的判断方向"
+    "judgment": "综合判断，1-2句，用'照目前状况推演'框架，但不得反转 conclusion 的判断方向；若存在会削弱该判断的牌，必须点明它影响的是结果、程度还是时间（❌'也有不利因素' ✅'星币四逆位不改结果，只把时间往后推两三周'）"
   },
   "advice": [
     {"step": "具体操作", "why": "为什么这样做", "script": "可选：把这条翻译成可以照抄说出口的一句话，≤80字；不值得说就留空"},
@@ -2217,7 +2253,7 @@ async function callLLM(question, spreadName, draws, userContentOverride) {
     headers: { "Content-Type": "application/json", "Authorization": "Bearer " + cfg.apiKey },
     body: JSON.stringify({
       model: cfg.model || "deepseek-chat" /* 兜底默认档：qwen-turbo/glm-4-flash 这类 flash 档撑不住 6k token 的密集指令（实测只按字面遵守、内容塌陷），而设置页推荐的正是支持 CORS 的 DeepSeek */,
-      messages: [{ role: "system", content: LLM_SYSTEM_PROMPT }, { role: "user", content: userContent }],
+      messages: [{ role: "system", content: systemPrompt() }, { role: "user", content: userContent }],
       temperature: 0.7, max_tokens: maxTokensFor(draws.length)
     })
   };
@@ -2360,7 +2396,7 @@ async function callLLMStream(question, spreadName, draws, onPart) {
       headers: { "Content-Type": "application/json", "Authorization": "Bearer " + cfg.apiKey },
       body: JSON.stringify({
         model: cfg.model || "deepseek-chat" /* 兜底默认档：qwen-turbo/glm-4-flash 这类 flash 档撑不住 6k token 的密集指令（实测只按字面遵守、内容塌陷），而设置页推荐的正是支持 CORS 的 DeepSeek */,
-        messages: [{ role: "system", content: LLM_SYSTEM_PROMPT }, { role: "user", content: userContent }],
+        messages: [{ role: "system", content: systemPrompt() }, { role: "user", content: userContent }],
         temperature: 0.7, max_tokens: maxTokensFor(draws.length),
         stream: true
       }),
@@ -2393,6 +2429,7 @@ async function callLLMStream(question, spreadName, draws, onPart) {
       seen.add(path);
       onPart(path, unescapeJson(rawVal));
     };
+    let scanPend = null, lastScanLen = 0;   /* P0-3 缓冲态 */
     const scanAll = () => {
       const c = scanJsonString(acc, "conclusion");
       if (c !== null) deliver("conclusion", c);
@@ -2425,11 +2462,21 @@ async function callLLMStream(question, spreadName, draws, onPart) {
           try {
             const chunk = JSON.parse(payload);
             const delta = chunk.choices?.[0]?.delta?.content || chunk.choices?.[0]?.text || "";
-            if (delta) { acc += delta; scanAll(); }
+            if (delta) {
+              acc += delta;
+              /* P0-3 按句收口再渲染：原来每个 token 都重跑一次 scanAll（它会遍历 cards 与 synthesis
+                 的全部字段），中文长解读下既是 reflow 抖动也是主线程负担。攒到句末标点或每 120 字
+                 扫一次，最迟 220ms 兜一次；流结束处仍有完整文本的权威解析，字段边界不受影响。 */
+              const hitEnd = /[。！？；\n]/.test(delta) || acc.length - lastScanLen >= 120;
+              if (hitEnd) { if (scanPend) { clearTimeout(scanPend); scanPend = null; } lastScanLen = acc.length; scanAll(); }
+              else if (!scanPend) scanPend = setTimeout(() => { scanPend = null; lastScanLen = acc.length; scanAll(); }, 220);
+            }
           } catch (e) { /* 半帧 JSON，等下一块 */ }
         }
       }
     }
+    if (scanPend) { clearTimeout(scanPend); scanPend = null; }   /* P0-3 冲刷未落地的缓冲 */
+    scanAll();
     /* 流结束：以完整文本做权威解析 */
     if (streamTimer) clearTimeout(streamTimer);
     const jsonMatch = acc.match(/\{[\s\S]*\}/);
@@ -3106,6 +3153,102 @@ const SAFETY_RE = /自杀|轻生|自残|自伤|割腕|伤害自己|不想活|活
 /* P0-D 高危预测分级：预测措辞 × 健康生死/官司判决/买卖涨跌主题 双命中才拦截（普通"会不会复合"不拦截，交给提示词重构） */
 const PREDICTIVE_RE = /会不会|能不能|能否|何时|什么时候|结果会|有没有可能|命中注定|是不是会|会好[吗呢]|能好[吗呢]|还有救吗|还有希望吗|会[^？?]{0,6}[吗呢]/;
 const HIGH_STAKES_RE = /癌症|肿瘤|绝症|病危|重病|会不会死|死了没有|活不过|活不成了|离世|病故|坐牢|判刑|刑罚|死刑|官司.{0,10}(赢|输|结果|怎么)|起诉.{0,10}(赢|结果)|判决|涨停|涨跌|股票.{0,8}(买|卖|涨|赔|亏)|币价|期货|投资.{0,8}(回本|赚|亏|赔|打水漂)/;
+
+/* ============================================================
+   2026-10-04 对标调研批次 D：语气档 / 逆位按牌位 / 读侧同步 /
+   标签页完成信号 / 牌序对账 / 离线与失败分型 / 操控类拦截
+   =========================================================== */
+/* 语气档：只调说话方式，不动结论强度。刻意不改 LLM_SYSTEM_PROMPT 那段长模板——
+   模板里钉着大量 verify-p0 锁串，动它容易踩'改对了仍假红'。改为在发送时追加。 */
+const TONE_KEY = "tata-tone-v1";
+function getTone() { try { return localStorage.getItem(TONE_KEY) === "gentle" ? "gentle" : "direct"; } catch (e) { return "direct"; } }
+function setTone(t) { try { localStorage.setItem(TONE_KEY, t === "gentle" ? "gentle" : "direct"); } catch (e) {} }
+function systemPrompt() {
+  const tone = getTone() === "gentle"
+    ? "\n【语气档：温和】措辞可以软，可以先接住情绪再给判断，但结论照给、不许含糊、不许只报好消息——温和指的是说话方式，不是把判断换成安慰；「核心结论直给」三步与逆耳那半句一条都不能少。"
+    : "\n【语气档：直说】按上面的实战派口径走，不加缓冲。";
+  /* 同一个逆位在不同牌位上是不同的事。原来只按牌型给总纲，模型会把所有逆位一律写成'坏消息'。 */
+  const revPos = "\n【逆位读法按牌位选模式，五选一后再展开】过去位＝已经发生过的阻滞、或已被内化的伤；现在位＝正在卡住、能量向内消耗；未来或结果位＝延迟、或代价后移（绝不等于不会发生）；建议对策位＝需要主动收回到内部去做的事；对方位＝只能描述其可观察的退缩与回避，不得断其内心；核心或关系位＝张力与错位所在。逆位不是失败的同义词。";
+  return LLM_SYSTEM_PROMPT + tone + revPos;
+}
+
+/* P0-4 牌序对账：模型偶尔把某张牌的牌义安到别的位次上。只做'点名核对'——
+   某槽位文字里出现了本局另一张牌的名字、却没提自己这张，就标出来给用户看。
+   与上游 AetherTarot 不同的是：不判生成失败，走塔塔式诚实降级；也不改写任何模型原话。 */
+function auditCardOrder(data, draws) {
+  try {
+    if (!data || !Array.isArray(data.cards) || !draws || !draws.length) return null;
+    const names = draws.map(d => d && d.card ? d.card.name : "");
+    const bad = [];
+    data.cards.forEach((c, i) => {
+      if (!c || typeof c !== "object" || !names[i]) return;
+      const blob = [c.alias, c.core, c.psy, c.pain, c.example].filter(x => typeof x === "string").join(" ");
+      if (!blob || blob.indexOf(names[i]) >= 0) return;
+      const other = names.findIndex((n, j) => j !== i && n && blob.indexOf(n) >= 0);
+      if (other >= 0) bad.push({ at: i, said: names[other], should: names[i] });
+    });
+    return bad.length ? bad : null;
+  } catch (e) { return null; }
+}
+function renderOrderAudit(bad) {
+  try {
+    const old = document.querySelector(".order-audit"); if (old) old.remove();
+    if (!bad || !bad.length) return;
+    const host = document.getElementById("reading-list") || document.getElementById("synthesis");
+    if (!host || !host.parentNode) return;
+    const n = document.createElement("div");
+    n.className = "order-audit"; n.setAttribute("role", "status");
+    n.textContent = "ⓘ 有 " + bad.length + " 处解读点到了别的牌（" + bad.map(x => "第" + (x.at + 1) + "位说了「" + x.said + "」").join("、") + "）。牌面以你亲手翻开的为准——点开那张牌图可看逐位解读。";
+    host.parentNode.insertBefore(n, host.nextSibling);
+  } catch (e) {}
+}
+
+/* P0-2 标签页完成信号：AI 出流实测 30 秒、承诺 20-90 秒，用户切走时原来毫无反馈。
+   只改 title，不加任何通知权限请求——那属于打扰。 */
+const BASE_TITLE = document.title;
+let titleTimer = null;
+function titleBusy(on) {
+  try {
+    if (titleTimer) { clearTimeout(titleTimer); titleTimer = null; }
+    document.title = on ? "● 塔塔正在落笔…" : BASE_TITLE;
+  } catch (e) {}
+}
+function titleDone() {
+  try {
+    if (titleTimer) clearTimeout(titleTimer);
+    document.title = "✓ 塔塔の心灵疗愈室 · 这一局好了";
+    titleTimer = setTimeout(() => { document.title = BASE_TITLE; titleTimer = null; }, 8000);
+  } catch (e) {}
+}
+
+/* P0-1 读侧同步：写侧早由 mutateHistory 防了跨页覆盖（不是丢数据风险），
+   缺的是他页写了、本页显示的历史与封面提示还停在旧值。storage 事件恰好只在其他标签页触发。 */
+function bindCrossTabSync() {
+  try {
+    window.addEventListener("storage", e => {
+      if (!e || (e.key !== HKEY && e.key !== DAILY_KEY && e.key !== TONE_KEY)) return;
+      if (e.key === HKEY && document.querySelector("#stage-history.active") && typeof renderHistList === "function") renderHistList();
+      if (e.key === DAILY_KEY && document.querySelector("#stage-cover.active") && typeof updateCoverDailyHint === "function") updateCoverDailyHint();
+    });
+  } catch (err) {}
+}
+
+/* P0-9 离线与失败分型：断网时原来只有一句笼统的"AI 连接失败"。
+   塔塔的牌由 seed 决定、本就不会丢，所以"牌与问题仍保留"这句可以理直气壮地说。 */
+function classifyLLMFailure(err) {
+  const msg = (err && err.message) ? String(err.message) : "";
+  try { if (typeof navigator !== "undefined" && navigator.onLine === false) return "你现在离线。牌与问题都还在本机，联网后再试一次就行。"; } catch (e) {}
+  if (/Failed to fetch|NetworkError|Load failed|ERR_/i.test(msg)) return "连不上这家服务商（网络不通，或该地址不允许浏览器跨域访问）。牌与问题都还在本机。";
+  if (/timeout|超时/i.test(msg)) return "服务商响应超时。牌与问题都还在本机，可以再试一次。";
+  if (/401|403|invalid.*key|api.key/i.test(msg)) return "Key 被拒（401/403）。牌与问题都还在本机，可在 ⚙ 里换 Key 或先走内置解读。";
+  if (/429|quota|insufficient/i.test(msg)) return "该模型额度不足或被限流。牌与问题都还在本机——换免费快照或先走内置解读。";
+  return "";
+}
+
+/* P0-8 操控/越界类：只硬拦"要伤害/控制对方"这一小撮。
+   刻意不拦'他会不会回心转意'这类第三方心意问题——那是本站主要流量，硬拦等于赶客；
+   它由提示词侧的禁读心与 coachTips 引导处理，不在这里堵。 */
+const MANIPULATION_RE = /怎么让他离不开|让他听话|控制他|操纵他|让他服从|报复他|让他好看|跟踪他|监视他|定位他|查他手机|偷看他|逼他签字|PUA|精神控制他|让他愧疚到|毁掉他|整死他|弄死他/;
 /* B1：指向"特定他人"的操控/试探/监控类问题——护栏的硬拦档：牌不教操控话术（与 prompt【职业操守】同规） */
 const MANIP_RE = /(怎么|如何|怎样|用什么).{0,14}(让|叫|使|令).{0,10}(他|她|对方|前任|男朋友|女朋友|老公|老婆|暗恋的人|喜欢的人|某人).{0,14}(回心转意|回头|复合|主动|先找|联系|认错|求和|答应|娶|嫁|离不开|着迷|服软|听话|想我|回消息)|(查|盯|跟踪|偷看|翻|定位).{0,8}(他|她|对方|前任).{0,8}(手机|行踪|聊天记录|微信|微博|定位)|测.{0,6}(他|她|对方).{0,8}(是不是|有没有|还).{0,6}(喜欢|爱|想着|惦记)/;
 /* B2：重大决策（不可逆/长期影响）→ 抽牌前请用户亲笔留一句底线；刻意不含裸"要不要"（"要不要点外卖"不算大事） */
@@ -3411,7 +3554,7 @@ function openSettings() {
   bodyOverflowSaved = document.body.style.cssText;
   document.body.style.cssText = "position:fixed;top:0;left:0;right:0;bottom:0;overflow:hidden;width:100%";
   document.body.style.top = `-${savedScrollY}px`;
-  renderTierReadout();
+  renderTierReadout(); syncToneChips();
   settingsMask.classList.add("show");
   trapFocus(settingsMask);
 }
@@ -3460,6 +3603,10 @@ document.querySelectorAll("[data-preset]").forEach(b => b.addEventListener("clic
   if (b.dataset.preset === "ollama" && !$("#llm-apikey").value.trim()) $("#llm-apikey").value = "ollama";
   renderTierReadout(p.tier);
 }));
+
+/* P0-6 语气档：选中态同时给 class 与 aria-pressed（牌阵 chip 本轮已补过，这里同规矩） */
+function syncToneChips() { const t = getTone(); document.querySelectorAll("[data-tone]").forEach(b => { const on = b.dataset.tone === t; b.classList.toggle("on", on); b.setAttribute("aria-pressed", on ? "true" : "false"); }); }
+document.querySelectorAll("[data-tone]").forEach(b => b.addEventListener("click", () => { setTone(b.dataset.tone); syncToneChips(); }));
 
 /* 档位读数（P11）：把"我配的到底是免费档还是深度档、代价是什么"从弹窗底部那段 11px
    小字里提到界面上。分类只认两件事——地址是不是本机、模型名是不是闪速档，
@@ -3522,6 +3669,9 @@ $("#btn-ask").addEventListener("click", () => {
   const q = qEl.value.trim();
   /* 关怀优先：自伤/自杀信号必须在任何表单校验之前被接住——一个正在求助的人不该先被"请填写数字"教育一遍 */
   if (SAFETY_RE.test(q)) { qEl.value = ""; go("care"); return; }
+  /* P0-8 要伤害／控制对方的问题，牌答不了——这类不转关怀页（那不是自伤场景），
+     而是把问题交回问者自己身上。刻意不做道德说教。 */
+  if (MANIPULATION_RE.test(q)) { flashErr("这类问题牌答不了——它问的是怎么摆布别人，不是你要走哪条路。把问题换成「我还要不要留在这段关系里」，牌就能照见你自己。"); qEl.focus(); return; }
   /* 每日一牌允许空问题：轻量定位，默认记为「今日指引」 */
   if (!q && !state.dailyMode) { flashErr("请先写下你的问题，再开启仪式。"); qEl.focus(); return; }
   const tokens = numEl.value.trim().split(/[\s,，]+/).filter(s => s.length > 0);
@@ -3585,7 +3735,7 @@ const HOLD_HIDE_MS = 3000;    /* 凝神完成后定位按钮收起的延时 */
 const REVERSED_CHANCE = 0.34; /* 逆位概率（约三分之一，对应传统韦特逆位习惯） */
 /* A7：等待期彩蛋轮播（纯氛围文案、零承诺；洗牌段 850ms 一轮、AI 段 6s 一轮，节点被替换即自停） */
 const RITUAL_LINES = ["深呼吸，让心静下来……", "正在给牌背挠痒……", "把星尘扫到牌桌边上……", "跟月亮打了声招呼，稍候……"];
-const AI_WAIT_LINES = ["上面的逐牌解读可以先看，这里生成好了会自动替换", "正在把牌面和你的问题放在一起看", "塔罗不赶时间，字句在路上", "等得久的话先喝口水——它不会让你多付一次"];
+const AI_WAIT_LINES = ["可以先点上面的牌图逐张细看，这里生成好了会自动替换", "正在把牌面和你的问题放在一起看", "塔罗不赶时间，字句在路上", "等得久的话先喝口水——它不会让你多付一次"];
 let ritualSpin = 0;
 /* P1-2：正逆在洗牌时已按 seed 预分配，翻牌只是揭示（可复现）；无预分配数据时退回现场随机（防御） */
 function drawReversed(card) {
@@ -3780,6 +3930,10 @@ function showSpread() {
     const marked = state.markedCards.find(m => m.idx === i);
     const f = document.createElement("button");
     f.type = "button";
+    /* E2 78 张牌背全可 Tab，键盘用户要按 78 次才走得出去；而严格按序下只有「下一张」能翻。
+       默认全部 tabindex=-1，由 highlightNextMark 把 0 交给当前该翻的那一张——
+       焦点顺序反而更准地表达了玩法。 */
+    f.tabIndex = -1;
     f.className = "fcard" + (marked ? " marked" : "");
     f.style.setProperty("--fd", (i * 0.012) + "s");
     f.style.setProperty("--tilt", ((i * 7919) % 7 - 3) * 0.9 + "deg");
@@ -3971,12 +4125,12 @@ function addLocateButtons() {
 /* 高亮"下一个该翻的数字标记牌"（严格按序抽牌）；pulse=true 时附带一次强调闪烁 */
 function highlightNextMark(pulse) {
   addLocateButtons(); /* 每次换"下一张"都同步定位按钮：牌铺好、翻完一张、被拒回跳，三处共用这一个入口 */
-  fanEl.querySelectorAll(".fcard.next").forEach(f => f.classList.remove("next"));
+  fanEl.querySelectorAll(".fcard.next").forEach(f => { f.classList.remove("next"); f.tabIndex = -1; });   /* E2 焦点跟着「下一张」走 */
   const nextMark = state.markedCards[state.draws.length];
   if (!nextMark) return;
   const el = [...fanEl.querySelectorAll(".fcard")].find(f => f.__card === nextMark.card && !f.classList.contains("picked"));
   if (!el) return;
-  el.classList.add("next");
+  el.classList.add("next"); el.tabIndex = 0;   /* E2 */
   if (pulse) { el.classList.remove("next-pulse"); void el.offsetWidth; el.classList.add("next-pulse"); }
   const target = Math.max(0, el.offsetLeft - fanEl.clientWidth / 2 + el.offsetWidth / 2);
   fanEl.scrollTo({ left: target, behavior: "smooth" });
@@ -4402,7 +4556,7 @@ async function renderReading() {
     /* 显示 AI 加载态（缓存回放跳过） */
     const synEl = $("#synthesis");
     if (!replayAi) {
-    synEl.innerHTML = `<h3>综 合 解 读</h3><div style="text-align:center;padding:30px;color:var(--gold);font-size:14px;letter-spacing:.2em">塔塔正在凝神解读中……<br><span style="font-size:11px;color:var(--ink-faint);margin-top:8px;display:block">AI 深度解读 · 字句会逐段浮现 · 约需 ${aiWaitRange(state.draws.length)}<br><span id="ai-load-hint">上面的逐牌解读可以先看，这里生成好了会自动替换</span></span></div>`;
+    synEl.innerHTML = `<h3>综 合 解 读</h3><div style="text-align:center;padding:30px;color:var(--gold);font-size:14px;letter-spacing:.2em">塔塔正在凝神解读中……<br><span style="font-size:11px;color:var(--ink-faint);margin-top:8px;display:block">AI 深度解读 · 字句会逐段浮现 · 约需 ${aiWaitRange(state.draws.length)}<br><span id="ai-load-hint">可以先点上面的牌图逐张细看，这里生成好了会自动替换</span></span></div>`;
     /* A7：AI 等待期彩蛋——灰字行 6 秒换一句；首个流式帧一渲染，原节点被替换、isConnected 即 false，自停无泄漏 */
     const aiHintEl = document.getElementById("ai-load-hint");
     if (aiHintEl) {
@@ -4437,6 +4591,7 @@ async function renderReading() {
         $("#synthesis").innerHTML = h;
       };
       try {
+        titleBusy(true);   /* P0-2 用户可能已经切走标签页，30-90 秒后需要一个'好了'的信号 */
         result = await callLLMStream(state.question, spread.name, state.draws, (path, val) => {
           if (gen !== aiGen) return; /* R1：旧轮流式帧直接丢弃 */
           if (path === "conclusion") {
@@ -4485,8 +4640,10 @@ async function renderReading() {
       resolve(result);
     });
     if (gen !== aiGen) return; /* R1：旧轮结果不得进入权威渲染 */
+    titleBusy(false); if (aiResult && aiResult.data) titleDone();   /* P0-2 切走的用户靠标签页拿到完成信号 */
     if (aiResult && aiResult.data) {
       const d = polishReading(aiResult.data);
+      renderOrderAudit(auditCardOrder(d, state.draws));   /* P0-4 只点名核对，不改写模型原话 */
       /* 结论先行：顶部 banner（流式阶段可能已插入，先清掉再权威渲染） */
       document.querySelectorAll(".conclusion-banner").forEach(b => b.remove());
       if (d.conclusion) {
@@ -4592,7 +4749,12 @@ async function renderReading() {
       notice.className = "ai-fail-notice";
       notice.setAttribute("role", "status");
       notice.style.cssText = "text-align:center;padding:10px 16px;margin:12px auto;max-width:420px;font-size:12.5px;color:#bf9488;border:1px solid rgba(191,148,136,.32);border-radius:10px;letter-spacing:.06em";
-      notice.textContent = `AI 连接失败（${(aiResult && aiResult.error) || "未知错误"}）· 已使用内置解读。可点 ⚙ 检查 API 设置。`;
+      /* P0-9：原来只有一句笼统的"AI 连接失败"。断网 / 跨域 / 超时 / Key 被拒 / 额度限流
+         是五件不同的事，用户要的是下一步做什么。每句都带"牌与问题仍保留"——
+         牌由 seed 决定、存在本机，这话我们说得起。 */
+      titleBusy(false);
+      const _typed = classifyLLMFailure({ message: (aiResult && aiResult.error) || "" });
+      notice.textContent = (_typed || `AI 连接失败（${(aiResult && aiResult.error) || "未知错误"}）`) + " · 已改用内置解读，牌与问题都还在本机。可点 ⚙ 检查 API 设置。";
       synEl.parentNode.insertBefore(notice, synEl);
     }
   } else {
@@ -5083,6 +5245,11 @@ function renderCoach() {
   box.innerHTML = tips.map(t => `<div class="coach-tip">✦ ${t}</div>`).join("");
 }
 qEl.addEventListener("input", renderCoach);
+/* P0-5：⌘/Ctrl+Enter 提交。刻意不用裸 Enter——提问框是 textarea，
+   换行是正常输入，抢掉它会让人写不了多行问题。 */
+qEl.addEventListener("keydown", e => {
+  if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) { e.preventDefault(); const b = $("#btn-ask"); if (b && !b.disabled) b.click(); }
+});
 (function initOnboarding() {
   const chipBox = $("#example-chips");
   if (chipBox && !chipBox.children.length) {
@@ -5141,6 +5308,34 @@ $("#btn-daily").addEventListener("click", () => {
 /* ---------- P0-B 每日提醒：封面"今天抽了吗"提示条 + .ics 日历提醒（零服务器，诚实可兑现） ---------- */
 const REMIND_KEY = "tata-remind-v1";
 function _readRemind() { try { return JSON.parse(localStorage.getItem(REMIND_KEY) || "null"); } catch (e) { return null; } }
+bindCrossTabSync();   /* P0-1 */
+
+/* E1 数据只在你手里是本站唯一的承诺，那就得主动确认这块存储不会被浏览器悄悄回收。
+   静态托管下浏览器可以静默丢弃 localStorage，用户不会收到任何提示。
+   persist() 是唯一的解药；拿不到就把风险说清楚，而不是假装没事。 */
+let storagePersisted = null;   /* null＝还没问到结果 */
+function probeStorage() {
+  try {
+    if (navigator.storage && navigator.storage.persist) {
+      navigator.storage.persisted().then(granted => {
+        if (granted) { storagePersisted = true; return; }
+        return navigator.storage.persist().then(ok => { storagePersisted = !!ok; });
+      }).catch(() => { storagePersisted = false; });
+    } else storagePersisted = false;
+  } catch (e) { storagePersisted = false; }
+}
+function storageRiskLine() {
+  /* 只在「已经存了不少、又没拿到持久化授权」时提醒——刚开局就弹风险提示是噪音 */
+  try {
+    const n = loadHistory().length;
+    if (storagePersisted === false && n >= 10) return " 这台浏览器还没允许本站长期保存，记录可能被自动清理——建议点「导出记录」存一份。";
+  } catch (e) {}
+  return "";
+}
+/* E1：调用必须排在 let storagePersisted 与两个函数之后。
+   jsdom / 老浏览器里 navigator.storage 不存在，probeStorage 会同步走 else 分支去写
+   storagePersisted——放在 let 之前就是 TDZ 崩溃，整页在渲染中途挂掉（本轮实测踩过）。 */
+probeStorage();
 function updateCoverDailyHint() {
   const el = $("#cover-daily-hint"); if (!el) return;
   applyDailyAccent(); /* P2：今日牌色 accent 随封面刷新（未抽牌自动清回金色默认） */
@@ -6203,7 +6398,7 @@ function renderHistList() {
   const kw = ($("#hist-search")?.value || "").trim().toLowerCase();
   /* 满额预警：接近 20 条上限时提醒备份（搜索时不显示，避免干扰结果） */
   const warnHtml = (!kw && h.length >= HIST_MAX - 3)
-    ? `<div class="hist-warn">✦ 记录已存 ${h.length}/${HIST_MAX} 条${h.length >= HIST_MAX ? "，再占卜将淘汰最旧记录" : `，再占 ${HIST_MAX - h.length} 次将开始淘汰最旧记录`}——建议先「导出记录」备份。</div>`
+    ? `<div class="hist-warn">✦ 记录已存 ${h.length}/${HIST_MAX} 条${h.length >= HIST_MAX ? "，再占卜将淘汰最旧记录" : `，再占 ${HIST_MAX - h.length} 次将开始淘汰最旧记录`}——建议先「导出记录」备份。${storageRiskLine()}</div>`
     : "";
   /* P1-1 复盘小结 + 排序开关 */
   let headHtml = "";
