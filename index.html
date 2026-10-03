@@ -33,8 +33,10 @@
   --panel:rgba(18,16,28,.62); --panel-line:rgba(201,168,106,.16);
   --card-w:142px; --card-r:10px;
   --ease-out:cubic-bezier(.16,1,.3,1);
-  /* spacing scale (8pt grid) */
-  --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px; --sp-5:24px; --sp-6:32px; --sp-7:48px; --sp-8:64px; --sp-9:96px;
+  /* 动效时长单一真源（P26）：入场/微交互各一档，同族元素必须同值同曲线。
+     原先 --sp-1..9 这套 8pt 间距令牌定义后 0 次引用（间距全是裸 px），已删——
+     留一套没人用的刻度比没有刻度更害人。 */
+  --dur-enter:.55s; --dur-micro:.25s;
   --serif:"Cormorant Garamond","Songti SC","STSong","NSimSun","SimSun","Noto Serif CJK SC",Georgia,"Times New Roman",serif;
   --sans:"PingFang SC","Microsoft YaHei","Noto Sans CJK SC",-apple-system,"Segoe UI",sans-serif;
 }
@@ -60,7 +62,7 @@ input:-webkit-autofill,textarea:-webkit-autofill,select:-webkit-autofill{
 .shell{position:relative;z-index:1;max-width:760px;margin:0 auto;padding:0 24px 96px}
 
 /* ---------- 通用 ---------- */
-.kicker{font-family:var(--sans);font-size:11px;letter-spacing:.42em;color:var(--gold);text-transform:uppercase;margin-bottom:18px;text-align:center}
+.kicker{font-family:var(--sans);font-size:11px;letter-spacing:.3em;color:var(--gold);text-transform:uppercase;margin-bottom:18px;text-align:center}
 .h-serif{font-family:var(--serif);font-weight:600;letter-spacing:.06em}
 .divider{display:flex;align-items:center;gap:14px;justify-content:center;color:var(--gold-dim);margin:34px auto;max-width:420px}
 .divider::before,.divider::after{content:"";height:1px;flex:1;background:linear-gradient(90deg,transparent,var(--gold-dim))}
@@ -85,7 +87,7 @@ textarea:focus-visible,.num-input:focus-visible{outline:2px solid var(--gold-dim
 
 /* ---------- 舞台切换 ---------- */
 .stage{display:none}
-.stage.active{display:block;animation:fadeUp .5s var(--ease-out) both}
+.stage.active{display:block;animation:fadeUp var(--dur-enter) var(--ease-out) both}
 @keyframes fadeUp{from{opacity:0;transform:translateY(26px)}to{opacity:1;transform:none}}
 
 /* ---------- S0 封面 ---------- */
@@ -112,7 +114,7 @@ textarea:focus-visible,.num-input:focus-visible{outline:2px solid var(--gold-dim
 .field-label::after{content:"";height:1px;flex:1;background:linear-gradient(90deg,var(--gold-faint),transparent)}
 /* F-002 新手引导 */
 .example-chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
-.ex-chip{font-size:12.5px;font-family:var(--sans);color:var(--ink-dim);background:rgba(201,168,106,.06);border:1px solid var(--gold-faint);border-radius:999px;padding:6px 14px;cursor:pointer;letter-spacing:.03em;transition:border-color .25s,color .25s}
+.ex-chip{font-size:12.5px;font-family:var(--sans);color:var(--ink-dim);background:rgba(201,168,106,.06);border:1px solid var(--gold-faint);border-radius:999px;padding:6px 14px;cursor:pointer;letter-spacing:.03em;transition:border-color var(--dur-micro),color var(--dur-micro)}
 .ex-chip:hover,.ex-chip:focus-visible{border-color:var(--gold);color:var(--gold)}
 .help-dot{background:none;border:1px solid var(--gold-faint);color:var(--gold);border-radius:50%;width:24px;height:24px;line-height:22px;font-size:13px;cursor:pointer;margin-left:2px;padding:0;font-family:var(--sans);flex:none}
 .help-dot:hover,.help-dot:focus-visible{border-color:var(--gold)}
@@ -136,7 +138,7 @@ textarea{min-height:96px}
   border:1px solid var(--panel-line);cursor:pointer;transition:all .3s;background:rgba(255,255,255,.015);font-family:var(--sans);line-height:1.35;
 }
 .chip-top{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
-.chip-n{font-style:normal;font-size:10px;color:var(--ink-faint);letter-spacing:.04em;flex:0 0 auto}
+.chip-n{font-style:normal;font-size:11px;color:var(--ink-faint);letter-spacing:.04em;flex:0 0 auto}
 .chip-rec{display:none;position:absolute;top:-8px;right:8px;font-style:normal;font-size:10px;color:#0b0917;background:var(--gold);border-radius:20px;padding:1px 8px;letter-spacing:.06em;font-weight:600}
 .chip.rec .chip-rec{display:inline-block}
 .chip:hover{border-color:var(--gold-dim);color:var(--gold-hi)}
@@ -146,6 +148,8 @@ textarea{min-height:96px}
 @media(min-width:560px){.spread-chips{grid-template-columns:repeat(3,1fr)}}
 .spread-reason{margin-top:16px;font-size:13px;color:var(--gold);letter-spacing:.08em;min-height:22px;font-family:var(--serif)}
 .ask-submit{margin-top:32px;text-align:center}
+/* P22：署名里的仓库名与许可标注一旦被折行甩成孤行很难看，整段保持可换行、名字内部不换 */
+.nb{white-space:nowrap}
 .ask-err{color:#bf9488;font-size:13px;text-align:center;min-height:20px;margin-top:10px;letter-spacing:.06em}
 /* 每日一牌入口·PC 美化：只留"给个数字"时居中放大、去掉右侧牌阵栏隐藏后留下的空档 */
 #stage-ask.daily .ask-panel{padding-bottom:38px}
@@ -166,6 +170,10 @@ textarea{min-height:96px}
 .pedestal{position:absolute;left:50%;top:48%;transform:translate(-50%,-50%);width:calc(var(--card-w)*1.16);aspect-ratio:3/5;
   border:1px dashed rgba(201,168,106,.28);border-radius:var(--card-r);z-index:5;
   box-shadow:inset 0 0 30px rgba(201,168,106,.05)}
+/* P17：扇形铺开时牌座只当动画落点用——虚线框与中央 ✦ 会压在牌桌和凝神按钮之间，像渲染残留。
+   元素与子节点都保留（揭示动画往里 append），只收装饰。 */
+.fan.show ~ .pedestal{border-color:transparent;box-shadow:none}
+.fan.show ~ .pedestal::after{opacity:0}
 .pedestal::after{content:"✦";position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);color:var(--gold-dim);font-size:18px;animation:breathe-txt 3.4s ease-in-out infinite}
 @keyframes breathe-txt{0%,100%{opacity:.35}50%{opacity:.9}}
 .arena-hint{position:absolute;left:0;right:0;bottom:-6px;font-size:11px;letter-spacing:.34em;color:var(--ink-faint)}
@@ -211,6 +219,9 @@ textarea{min-height:96px}
   touch-action:pan-x;cursor:grab;scrollbar-width:thin;scrollbar-color:var(--gold-dim) transparent}
 .fan:active{cursor:grabbing}
 .fan.show{opacity:1}
+/* P16：静心/提问/仪式三屏往下滑会露出全站页脚（开源署名＋法务长段），把氛围打断在
+   最不该断的地方。解读页不隐藏——「不构成医疗/法律/投资建议」那句免责正是这一屏该在的。 */
+body:has(#stage-serene.active) footer,body:has(#stage-ask.active) footer,body:has(#stage-ritual.active) footer{display:none}
 .fan::-webkit-scrollbar{height:4px}
 .fan::-webkit-scrollbar-track{background:transparent}
 .fan::-webkit-scrollbar-thumb{background:var(--gold-dim);border-radius:2px}
@@ -226,7 +237,13 @@ textarea{min-height:96px}
   transition:border-color .2s,box-shadow .2s,filter .2s,transform .2s;
 }
 .fan.armed .fcard{cursor:pointer;border-color:rgba(201,168,106,.55)}
+/* P27：触屏上点一下牌背，hover 态会一直「粘」在最后一张碰过的牌上（提亮+抬起）。
+   只有能真正悬停的设备才该有这层反馈；纯换色的 hover 不在此列——粘住只是颜色深一点。 */
+@media (hover:hover) and (pointer:fine){
 .fan.armed .fcard:hover{filter:brightness(1.5);box-shadow:0 0 10px rgba(201,168,106,.35);transform:rotate(var(--tilt,0deg)) translateY(-3px)}
+.spread-strip .mini:hover{transform:translateY(-4px)}
+.cut-deck:hover{transform:scale(1.04)}
+}
 .fan .fcard:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 .fan .fcard.picked{opacity:.14;pointer-events:none;border-style:dashed;filter:none;box-shadow:none;transform:rotate(var(--tilt,0deg))}
 .fan .fcard:first-child{margin-left:0}
@@ -257,17 +274,17 @@ textarea{min-height:96px}
 
 /* 已翻开的小牌行 */
 .revealed-row{display:flex;justify-content:center;gap:16px;margin-top:24px;min-height:100px;flex-wrap:wrap}
-.mini-revealed{width:72px;animation:fadeUp .8s ease both}
+.mini-revealed{width:72px;animation:fadeUp var(--dur-enter) var(--ease-out) both}
 .mini-revealed .tcard{width:72px}
 .mini-revealed .tcard .back::before{inset:4px}
 .mini-revealed .tcard .back .sigil{font-size:14px}
-.mini-revealed .tcard .front .ph{font-size:9px;letter-spacing:.06em;padding:4px}
+.mini-revealed .tcard .front .ph{font-size:11px;letter-spacing:.02em;padding:3px}
 .mini-revealed .pos-name{font-size:11px;color:var(--ink-dim);letter-spacing:.1em;margin-top:8px;text-align:center}
 .mini-revealed .pos-name .mini-cn{display:block;color:var(--gold);font-size:11px;letter-spacing:.08em;margin-top:2px}
-.reveal-cap{position:absolute;left:50%;bottom:-6px;transform:translateX(-50%);z-index:14;pointer-events:none;
+.reveal-cap{position:absolute;left:50%;bottom:4px;transform:translate(-50%,10px);z-index:14;pointer-events:none;
   white-space:nowrap;font-size:13px;letter-spacing:.08em;color:var(--gold-hi);text-shadow:0 1px 8px #000,0 0 2px #000;
   opacity:0;animation:revealCap .7s ease .15s forwards}
-@keyframes revealCap{to{opacity:1;bottom:4px}}
+@keyframes revealCap{to{opacity:1;transform:translate(-50%,0)}}
 
 /* 凝神聚气按钮（叠加在 arena 底部，跟牌桌一起在视野内） */
 .hold-wrap{position:absolute;left:50%;bottom:6px;transform:translateX(-50%);z-index:15;
@@ -282,7 +299,7 @@ textarea{min-height:96px}
   border:1px solid var(--gold-dim);transition:transform .25s, box-shadow .25s;touch-action:none;user-select:none;
 }
 .hold-btn:hover{box-shadow:0 0 30px rgba(201,168,106,.18)}
-.hold-btn .hold-sub{font-size:10px;letter-spacing:.28em;color:var(--ink-dim);font-family:var(--sans)}
+.hold-btn .hold-sub{font-size:11px;letter-spacing:.18em;color:var(--ink-dim);font-family:var(--sans)}
 .hold-btn svg{position:absolute;inset:-6px;width:108px;height:108px;transform:rotate(-90deg)}
 .hold-btn svg circle{fill:none;stroke:var(--gold);stroke-width:1.6;stroke-linecap:round;stroke-dasharray:392;stroke-dashoffset:392;opacity:.9}
 .hold-btn.holding{transform:scale(1.06);box-shadow:0 0 40px rgba(201,168,106,.28), inset 0 0 22px rgba(201,168,106,.12)}
@@ -316,7 +333,7 @@ textarea{min-height:96px}
 .daily-fortune{max-width:100%;margin:18px auto 6px;border:1px solid var(--gold-dim);border-radius:16px;padding:22px 20px 16px;position:relative;
   background:radial-gradient(120% 90% at 50% -10%,rgba(201,168,106,.14),rgba(201,168,106,.02) 55%),linear-gradient(160deg,rgba(201,168,106,.06),rgba(255,255,255,.01));
   box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 12px 32px -20px rgba(0,0,0,.75);
-  animation:fadeUp .55s var(--ease-out) both;will-change:transform}
+  animation:fadeUp var(--dur-enter) var(--ease-out) both;will-change:transform}
 .daily-fortune::before{content:"✦";position:absolute;top:-12px;left:50%;transform:translateX(-50%);background:var(--bg);padding:0 12px;color:var(--gold);font-size:14px}
 .df-head{display:flex;gap:16px;align-items:center;text-align:left;margin-bottom:16px}
 .df-art{flex:0 0 auto;width:96px;aspect-ratio:3/5;border-radius:11px;overflow:hidden;position:relative;border:1px solid var(--gold-dim);box-shadow:0 0 0 1px rgba(201,168,106,.12),0 10px 24px -12px rgba(0,0,0,.85),0 0 30px -8px rgba(201,168,106,.5)}
@@ -335,7 +352,7 @@ textarea{min-height:96px}
 .df-kws{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
 .df-kw{font-size:11px;color:var(--ink-dim);border:1px solid var(--panel-line);border-radius:999px;padding:2px 10px;letter-spacing:.05em}
 .df-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
-.df-item{border:1px solid var(--panel-line);border-top:1px solid rgba(201,168,106,.3);border-radius:12px;padding:13px 14px;background:linear-gradient(180deg,rgba(201,168,106,.06),rgba(255,255,255,.015));animation:fadeUp .5s var(--ease-out) both}
+.df-item{border:1px solid var(--panel-line);border-top:1px solid rgba(201,168,106,.3);border-radius:12px;padding:13px 14px;background:linear-gradient(180deg,rgba(201,168,106,.06),rgba(255,255,255,.015));animation:fadeUp var(--dur-enter) var(--ease-out) both}
 .df-grid .df-item:nth-child(1){animation-delay:.05s}.df-grid .df-item:nth-child(2){animation-delay:.11s}.df-grid .df-item:nth-child(3){animation-delay:.17s}.df-grid .df-item:nth-child(4){animation-delay:.23s}
 .df-k{display:block;font-size:11.5px;color:var(--gold);letter-spacing:.08em;margin-bottom:5px}
 .df-item p,.df-row p{font-size:12.5px;color:var(--ink-dim);line-height:1.85;margin:0;letter-spacing:.02em}
@@ -358,12 +375,19 @@ textarea{min-height:96px}
 /* 历史满额预警（P3） */
 .hist-warn{font-size:12.5px;color:var(--gold);background:rgba(201,168,106,.07);border:1px solid var(--gold-faint);border-radius:10px;padding:10px 14px;margin-bottom:14px;line-height:1.8;letter-spacing:.04em;text-align:center}
 .spread-strip{display:flex;justify-content:center;gap:16px;flex-wrap:wrap;margin:30px 0 8px}
+/* P5：逐牌详情已收进弹窗（DIST-27），概览条牌图是唯一入口，但它看起来就是一张静态图——
+   站内实测「✦ 深读这张牌」按钮高度为 0（藏在折叠牌行里），等于没有任何可点提示。
+   补一枚常驻角标 + 一行说明，把已生成的十五段内容救回可见。 */
+.spread-strip .mini .tcard{position:relative}
+.spread-strip .mini .deep-tag{position:absolute;left:50%;transform:translateX(-50%);bottom:-7px;
+  font-family:var(--sans);font-size:10px;letter-spacing:.08em;color:var(--gold);
+  background:rgba(11,9,18,.92);border:1px solid var(--gold-faint);border-radius:999px;padding:1px 7px;white-space:nowrap}
+.strip-hint{font-size:11.5px;color:var(--ink-faint);letter-spacing:.06em;text-align:center;margin:2px 0 14px}
 .spread-strip .mini{cursor:pointer;text-align:center;transition:transform .3s}
-.spread-strip .mini:hover{transform:translateY(-4px)}
 .spread-strip .mini .tcard{width:76px;margin:0 auto}
 .spread-strip .mini .tcard .back::before{inset:4px}
 .spread-strip .mini .tcard .back .sigil{font-size:14px}
-.spread-strip .mini .tcard .front .ph{font-size:9px;letter-spacing:.06em;padding:4px}
+.spread-strip .mini .tcard .front .ph{font-size:11px;letter-spacing:.02em;padding:3px}
 .spread-strip .mini .pos{font-size:11px;color:var(--ink-dim);letter-spacing:.14em;margin-top:7px}
 /* 概览条牌图＝点开这张牌解读的入口（点击已绑到弹窗），悬停时把牌位名提亮做可点暗示 */
 .spread-strip .mini:hover .pos,.spread-strip .mini:focus-visible .pos{color:var(--gold)}
@@ -373,7 +397,7 @@ textarea{min-height:96px}
 #reading-list{display:none}
 .reading-card{
   background:var(--panel);border:1px solid var(--panel-line);border-radius:16px;
-  padding:30px 28px;margin-top:26px;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);animation:fadeUp .8s ease both;
+  padding:30px 28px;margin-top:26px;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);animation:fadeUp var(--dur-enter) var(--ease-out) both;
 }
 .reading-card .rc-head{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;border-bottom:1px solid var(--panel-line);padding-bottom:16px}
 .rc-pos{font-size:12px;letter-spacing:.34em;color:var(--gold)}
@@ -445,11 +469,15 @@ textarea{min-height:96px}
 .ending-actions{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
 
 /* 弹窗 */
-.modal-mask{position:fixed;inset:0;background:rgba(4,4,9,.82);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);z-index:50;display:none;align-items:flex-start;justify-content:center;padding:6vh 18px;overflow:auto}
+.modal-mask{position:fixed;inset:0;background:rgba(4,4,9,.82);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);z-index:80; /* P8：必须高于氛围层 .grain(65)/body::after(70)，否则弹窗被晕影与颗粒盖住 */display:none;align-items:flex-start;justify-content:center;padding:6vh 18px;overflow:auto}
 .modal-mask.show{display:flex}
-.modal{background:#100e1b;border:1px solid var(--gold-dim);border-radius:16px;max-width:640px;width:100%;padding:34px 30px;animation:fadeUp .5s ease both;position:relative}
-.modal-close{position:absolute;top:10px;right:12px;background:none;border:none;color:var(--ink-dim);font-size:20px;cursor:pointer;letter-spacing:0;padding:8px 10px}
-.modal-close:hover{color:var(--gold)}
+.modal{background:#100e1b;border:1px solid var(--gold-dim);border-radius:16px;max-width:640px;width:100%;padding:34px 30px;animation:fadeUp var(--dur-enter) var(--ease-out) both;position:relative}
+/* P9：弹窗比屏幕高时，原来 absolute 的 ✕ 会跟着滚出视口（实测滚到底 close.top = −298），
+   鼠标用户既找不到关闭也看不见 Esc 提示。改成 sticky 钉在遮罩顶，并垫一层底色保证压在正文上也可读。 */
+.modal-close{position:sticky;top:8px;float:right;clear:right;margin:-14px -10px 0 0;z-index:2;
+  background:rgba(16,14,27,.9);border:1px solid var(--panel-line);border-radius:999px;
+  color:var(--ink-dim);font-size:18px;line-height:1;cursor:pointer;letter-spacing:0;padding:8px 11px}
+.modal-close:hover{color:var(--gold);border-color:var(--gold-dim)}
 .modal-close:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 .modal .m-img{width:150px;margin:0 auto 20px;border-radius:8px;overflow:hidden;border:1px solid var(--gold-dim)}
 .modal .m-img img{width:100%;display:block}
@@ -489,7 +517,7 @@ footer .gold{color:var(--gold)}
 @keyframes holdPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.12);box-shadow:0 0 36px rgba(201,168,106,.45)}}
 
 /* P1-3: 定位标记牌（多数字版） */
-.btn-locate-multi{font-size:12px;color:var(--gold);letter-spacing:.1em;cursor:pointer;background:none;border:1px solid var(--gold-faint);border-radius:999px;padding:5px 14px;margin-top:6px;transition:all .3s;font-family:var(--sans)}
+.btn-locate-multi{font-size:12px;color:var(--gold);letter-spacing:.1em;cursor:pointer;background:none;border:1px solid var(--gold-faint);border-radius:999px;padding:5px 14px;margin-top:6px;transition:all var(--dur-micro);font-family:var(--sans)}
 .btn-locate-multi:hover{border-color:var(--gold-dim);color:var(--gold-hi)}
 
 /* 多标记牌颜色区分 */
@@ -622,7 +650,6 @@ footer .gold{color:var(--gold)}
 /* 阶段④-3 切牌环节 */
 .cut-layer{position:absolute;inset:0;z-index:16;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:rgba(4,4,9,.55);border-radius:16px}
 .cut-deck{cursor:pointer;width:120px;height:200px;border-radius:12px;transition:transform .25s}
-.cut-deck:hover{transform:scale(1.04)}
 .cut-deck .tcard{width:100%;height:100%;box-shadow:0 6px 24px rgba(0,0,0,.5)}
 .cut-flip{width:120px;height:200px}
 .cut-hint{font-size:13px;color:var(--gold);letter-spacing:.2em}
@@ -688,7 +715,9 @@ footer .gold{color:var(--gold)}
 .followup-round{margin:16px auto 0;max-width:100%;padding:16px 18px;border:1px solid var(--gold-dim);border-radius:14px;background:rgba(201,168,106,.04)}
 .followup-round .fr-q{font-size:13.5px;color:var(--gold-hi);letter-spacing:.05em;margin-bottom:8px}
 .followup-round .fr-body p{font-size:14px;line-height:2.05;color:var(--ink);letter-spacing:.03em}
-.followup-round .fr-load,.followup-round .fr-err{color:var(--ink-dim);font-size:13px}
+.followup-round .fr-load{color:var(--ink-dim);font-size:13px}
+/* P29：追问失败原来跟正文同色，用户分不清是「还在加载」还是「失败了」。与 .ask-err 统一错误色。 */
+.followup-round .fr-err{color:#bf9488;font-size:13px}
 .followup-round .fr-act{margin-top:8px;color:var(--gold);font-size:13.5px}
 .followup-round .fr-sov{margin-top:10px;font-size:12px;color:var(--ink-faint);letter-spacing:.12em;text-align:center}
 
@@ -717,7 +746,7 @@ footer .gold{color:var(--gold)}
 .reflect-block .rb-title{font-size:12px;letter-spacing:.2em;color:var(--gold);text-align:center;margin-bottom:12px}
 .reflect-block .rb-row{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
 .reflect-block .rb-row+.rb-row{margin-top:8px}
-.rf-chip{font:inherit;font-size:13px;letter-spacing:.08em;color:var(--ink-dim);background:transparent;border:1px solid var(--panel-line);border-radius:999px;padding:6px 16px;cursor:pointer;transition:border-color .3s,color .3s,background .3s}
+.rf-chip{font:inherit;font-size:13px;letter-spacing:.08em;color:var(--ink-dim);background:transparent;border:1px solid var(--panel-line);border-radius:999px;padding:6px 16px;cursor:pointer;transition:border-color var(--dur-micro),color var(--dur-micro),background var(--dur-micro)}
 .rf-chip:hover{border-color:var(--gold-dim);color:var(--ink)}
 .rf-chip.on{border-color:var(--gold);color:var(--gold-hi);background:rgba(201,168,106,.1)}
 .reflect-block .rb-note{font-size:11.5px;color:var(--ink-faint);text-align:center;margin-top:10px;letter-spacing:.06em;line-height:1.8}
@@ -735,7 +764,7 @@ footer .gold{color:var(--gold)}
 .tp-bar{display:flex;align-items:center;gap:10px}
 .tp-lab{flex:0 0 58px;font-size:11px;color:var(--ink-faint);letter-spacing:.06em}
 .tp-track{flex:1;height:6px;border-radius:6px;background:rgba(201,168,106,.12);overflow:hidden}
-.tp-track i{display:block;height:100%;background:linear-gradient(90deg,var(--gold-dim),var(--gold));border-radius:6px;transition:width .6s var(--ease-out)}
+.tp-track i{display:block;height:100%;width:100% !important;transform-origin:left center;background:var(--gold);border-radius:6px;transition:transform .6s var(--ease-out)} /* P25：动 width 会重排，改 scaleX；scaleX 会压缩渐变故换实金 */
 .tp-num{flex:0 0 22px;text-align:right;font-size:11px;color:var(--gold-hi)}
 .tp-sec{margin-top:14px}
 .tp-cap{display:block;font-size:10.5px;letter-spacing:.24em;color:var(--gold);margin-bottom:8px}
@@ -823,9 +852,9 @@ body::after{
 .btn::after{
   content:"";position:absolute;top:0;bottom:0;left:-60%;width:40%;pointer-events:none;
   background:linear-gradient(105deg,transparent,rgba(238,224,178,.18),transparent);
-  transform:skewX(-18deg);transition:left .65s ease
+  transform:skewX(-18deg) translateX(0);transition:transform .65s ease /* P25：动 left 会重排，改 translateX；450% = 180% 行程 / 自身 40% 宽 */
 }
-.btn:hover::after{left:120%}
+.btn:hover::after{transform:skewX(-18deg) translateX(450%)}
 .btn.ghost:hover{box-shadow:0 0 16px rgba(201,168,106,.14)}
 #btn-start,#btn-ask,#btn-serene-next{animation:ctaBreath 4.6s ease-in-out infinite}
 @keyframes ctaBreath{0%,100%{box-shadow:0 0 14px rgba(201,168,106,.10)}50%{box-shadow:0 0 30px rgba(201,168,106,.30)}}
@@ -893,7 +922,7 @@ body::after{
 /* ---------- ⑫ 输入 / 选项细节 ---------- */
 textarea,.num-input{caret-color:var(--gold)}
 textarea:focus,.num-input:focus{box-shadow:0 0 0 3px rgba(201,168,106,.08),0 0 26px -6px rgba(201,168,106,.25)}
-.chip{transition:all .3s}
+.chip{transition:all var(--dur-micro)}
 .chip:hover{transform:translateY(-1px)}
 .chip.on{box-shadow:inset 0 0 0 1px var(--gold),0 0 18px -6px rgba(201,168,106,.45)}
 
@@ -987,10 +1016,15 @@ footer::before{
 .pedestal,.cut-deck{perspective:1000px}
 .mini-revealed.flying{will-change:transform}
 @media (prefers-reduced-motion:reduce){.tcard{transition-duration:.15s;transition-timing-function:ease}}
-.recent-qs{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;align-items:center;margin-top:10px}
+.recent-qs{display:flex;flex-wrap:wrap;gap:6px 14px;justify-content:center;align-items:center;margin-top:12px}
 .recent-qs .rq-label{font-size:11.5px;color:var(--ink-faint);letter-spacing:.06em}
-.recent-qs button{font-family:var(--sans);font-size:11.5px;color:var(--ink-dim);background:rgba(201,168,106,.05);border:1px solid rgba(201,168,106,.18);border-radius:999px;padding:4px 11px;cursor:pointer;letter-spacing:.02em;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.recent-qs button:hover{color:var(--gold);border-color:var(--gold-dim)}
+/* P13：原来「最近问过」和上方「示例问题」是两排一模一样的描边胶囊，用户分不清哪个是别人给的、
+   哪个是自己问过的，近义条目还会并排出现。这里去掉胶囊外壳降一级，只留虚线下划线，
+   与示例的实心描边拉开层级。 */
+.recent-qs button{font-family:var(--sans);font-size:11.5px;color:var(--ink-faint);background:none;border:none;
+  border-bottom:1px dotted var(--gold-faint);border-radius:0;padding:1px 0;cursor:pointer;letter-spacing:.02em;
+  max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.recent-qs button:hover{color:var(--gold);border-bottom-color:var(--gold-dim)}
 .anchor-wrap{margin-top:12px;padding:12px 14px;border:1px dashed rgba(201,168,106,.35);border-radius:12px;background:rgba(201,168,106,.04);text-align:left}
 .anchor-wrap .aw-label{font-size:12.5px;color:var(--gold);letter-spacing:.06em;margin-bottom:7px}
 .anchor-wrap textarea{width:100%;min-height:46px;resize:vertical;background:transparent;border:1px solid rgba(201,168,106,.22);border-radius:8px;color:var(--ink);font-family:var(--serif);font-size:14px;padding:8px 10px;line-height:1.8}
@@ -1078,7 +1112,7 @@ footer::before{
       <p class="guide-words">心，沉下来了吗？<br>把此刻<em>最想问的那件事</em>，写在下面就好。<br>不必措辞完美，牌在意的是你真正放不下的那个念头。</p>
 
       <div class="field-label">写下你的问题</div>
-      <textarea id="question" maxlength="120" placeholder="例如：我和他之间还有可能吗？／我该不该接受这份新工作？／最近很迷茫，想看看方向……"></textarea>
+      <textarea id="question" maxlength="120" placeholder="例如：我和他之间还有可能吗？"></textarea>
       <div class="coach-tips" id="coach-tips" aria-live="polite"></div>
       <div class="example-chips" id="example-chips" aria-label="不知道问什么？点一个试试"></div>
       <div class="recent-qs" id="q-recent" hidden aria-label="你之前问过的问题，点一下直接带入"></div>
@@ -1098,7 +1132,7 @@ footer::before{
         </div>
         <div id="ask-spread-block" style="flex:1;min-width:220px">
           <div class="field-label">我为你挑选的牌阵</div>
-          <div class="spread-chips" id="spread-chips"></div>
+          <div class="spread-chips" id="spread-chips" role="group" aria-label="选择牌阵，已按你的问题预选一个"></div>
           <div class="spread-reason" id="spread-reason"></div>
         </div>
       </div>
@@ -1196,7 +1230,7 @@ footer::before{
 
   <footer>
     <span class="gold">✦</span> 塔塔🔮の心灵疗愈室 · 塔罗是镜子，不是宣判 —— 你的选择随时可以改变走向 <span class="gold">✦</span><br>
-    牌义数据参考开源项目 strawberrynine/tarot-archive · 牌阵与解读框架参考 daman-ovo-0404/tarot-skill（MIT）<br>
+    牌义数据参考开源项目 <span class="nb">strawberrynine/tarot-archive</span> · 牌阵与解读框架参考 <span class="nb">daman-ovo-0404/tarot-skill（MIT）</span><br>
     牌面为 Rider-Waite-Smith（1909，公有领域）· 百科页古典断语引自 A.E. Waite《The Pictorial Key to the Tarot》(1910，公有领域) · 解读仅供自我觉察与娱乐参考，不构成医疗、法律或投资建议
     <a href="cards/index.html" class="footer-feedback">✦ 韦特牌义百科 · 78 张正逆位与古典断语对照</a>
     <a href="javascript:void(0)" id="btn-feedback" class="footer-feedback">✦ 意见反馈 · 告诉我们怎么改得更好</a>
@@ -1250,10 +1284,10 @@ footer::before{
       <button class="btn ghost" id="llm-clear" type="button">清除配置</button>
     </div>
     <p class="note" style="margin-top:18px;font-size:11px;line-height:1.8">
-      配置后解读页将调用 AI 生成个性化深度解读（约 20-90 秒，期间可点开牌图看这张牌的完整解读）。<br>
+      配置后解读页将调用 AI 生成个性化深度解读（约 20-90 秒，十张的凯尔特十字约 20-120 秒；期间可点开牌图看这张牌的完整解读）。<br>
       不填则使用内置规则引擎解读（即时）。<br>
       <span style="color:var(--gold)">推荐</span>：DeepSeek（便宜+支持CORS）、本地 Ollama（免费+零延迟）<br>
-      <span style="color:var(--gold)">选档</span>：塔塔的提示词约 6,400 tokens、要求每张牌写五层——<b>flash / turbo / mini 这类闪速档会只按字面遵守、内容塌陷</b>（实测同一副牌：闪速档把"逆耳"写成了牌义复读），请选 plus / chat / pro 级。<br>
+      <span style="color:var(--gold)">选档</span>：塔塔的提示词约 6,400 tokens、要求每张牌写五层。<b>flash / turbo / mini 这类闪速档能用，但会只按字面遵守</b>——实测同一副牌，闪速档把"逆耳"那半句写成了牌义复读（免费快照 250414 比旧 flash 稳：五层 5/5 对 4/5）。想要完整的五层深度，选 plus / chat / pro 级；只想免费试，就用上面「智谱 GLM」预填的免费快照。<br>
       <span style="color:var(--gold)">注意</span>：通义/OpenAI 默认不允许浏览器跨域，需配 CORS 代理<br>
       配置与 API Key 只存本机浏览器，本站不收集、不上传任何数据；但<b>启用 AI 后，你的问题原文与所抽牌面会发送给你所配置的那家 AI 服务商 API</b>（由其处理），请选用可信服务商。<br>
       希望数据完全不出本机：用「本地 Ollama」预设，或留空配置直接走内置规则引擎解读。<br>
@@ -2118,7 +2152,7 @@ function readingDataBlocks(question, spreadName, draws) {
      b1a7cf4 修掉的「对当日牌吐本周五之前」从这个口子漏回来，故在此当场限定，渲染层再兜一道。 */
   let dailyBlk = "";
   try {
-    if (state.dailyMode) dailyBlk = `\n【当日尺度】这是「每日一牌」，那张牌就是今天的全部：checkpoint 的 when 只许写"今晚"或"今天之内"这一级，不得出现本周／这周末／48小时这类跨日锚；本局只有一张牌，synthesis.line 一律留空字符串。`;
+    if (state.dailyMode) dailyBlk = `\n【当日尺度】这是「每日一牌」，那张牌就是今天的全部：checkpoint 的 when 只许写"今晚"或"今天之内"这一级，不得出现本周／这周末／48小时这类跨日锚；本局只有一张牌，synthesis.line 一律留空字符串。\n【每日一牌的 conclusion 两处别犯】① 不要用"今天：""今日："这类日期标签开头——这段文字本来就显示在每日一牌下面，标签再说一遍是废话（❌"今天：今天适合主动出手" ✅"今天适合主动出手"，或直接给判断）；② 点明依据牌之后要把牌面翻译成今天会发生的**具体行为**，不许用破折号挂一串牌义关键词当理由（❌"依据是「权杖七」——捍卫立场、勇气" ✅"依据是权杖七：今天会有人要你让一步，你让了就会反复回想那件事"）。`;
   } catch (e) { /* 每日一牌标记缺失时按普通局走，不得抛断整条请求 */ }
   const boundsBlk = `\n盘面边界：以上牌面由随机抽得，是象征层的事实描述，不是现实判定——不得按逆位数量或牌号换算概率、成功率或绝对日期；统计与联动只作叙事素材。`;
   return `当前日期：${dateStr}\n问题：${question}\n牌阵：${spreadName}\n抽到的牌：\n${cardLines}${rel}${guide}${journey}${cutBlk}${anchorBlk}${dailyBlk}${boundsBlk}`;
@@ -3171,6 +3205,7 @@ const chipsBox = $("#spread-chips"), reasonEl = $("#spread-reason"), qEl = $("#q
 SPREAD_ORDER.forEach(k => {
   const b = document.createElement("button");
   b.type = "button"; b.className = "chip"; b.dataset.k = k;
+  b.setAttribute("aria-pressed", "false"); /* P15：选中态必须让读屏听得见，不能只靠一个 class */
   b.innerHTML = `<span class="chip-top">${SPREADS[k].name}<i class="chip-n">${SPREADS[k].positions.length} 张</i></span><small>${SPREAD_HINT[k]}</small><i class="chip-rec">✦ 推荐</i>`;
   b.addEventListener("click", () => { state.spreadManual = true; state.dailyMode = false; /* 手动换阵即退出每日一牌模式，防止单牌揭示逻辑误套多张阵 */ state.spreadKey = k; refreshChips(); reasonEl.textContent = "好，就用「" + SPREADS[k].name + "」。" + SPREADS[k].reason; refreshNumHint(); });
   chipsBox.appendChild(b);
@@ -3189,7 +3224,8 @@ function syncAskForDaily() {
 function refreshChips() {
   const rec = state.spreadManual ? null : pickSpread(qEl.value);
   chipsBox.querySelectorAll(".chip").forEach(c => {
-    c.classList.toggle("on", c.dataset.k === state.spreadKey);
+    const sel = c.dataset.k === state.spreadKey;
+    c.classList.toggle("on", sel); c.setAttribute("aria-pressed", sel ? "true" : "false");
     c.classList.toggle("rec", !!rec && c.dataset.k === rec);
   });
   syncAskForDaily();
@@ -3210,8 +3246,12 @@ function renderRecentQuestions() {
     const seen = new Set();
     for (const r of loadHistory()) {
       const q0 = (r && typeof r.q === "string") ? r.q.trim() : "";
-      if (!q0 || /今日|今天.*留意/.test(q0) || seen.has(q0)) continue; /* 排除每日一牌的固定问句 */
-      seen.add(q0); list.push(q0);
+      if (!q0 || /今日|今天.*留意/.test(q0)) continue; /* 排除每日一牌的固定问句 */
+      /* P13：原来只按 trim 后的原文去重，「我和他之间还有可能吗」与带问号的版本会并排出现，
+         看着像两件事、其实是同一句。归一化掉空白与尾部标点再比，展示仍用原句。 */
+      const norm = q0.replace(/[\s　]+/g, "").replace(/[？?！!。.，,、~～]+$/g, "");
+      if (!norm || seen.has(norm)) continue;
+      seen.add(norm); list.push(q0);
       if (list.length >= 5) break;
     }
   } catch (e) { list = []; }
@@ -3313,6 +3353,14 @@ $("#btn-care-back").addEventListener("click", () => go("ask"));
 const settingsMask = $("#settings-mask");
 /* #8 弹窗焦点陷阱：Tab 键不跳出弹窗 */
 function trapFocus(container) {
+  /* P10：打开弹窗后 document.activeElement 仍是 BODY——陷阱虽绑上了，键盘用户第一次按
+     Tab 却是从文档开头往下走的。这里把焦点送进弹窗的关闭按钮，并把"谁打开的"记在容器上
+     （不引全局），关闭时还回去。_trapBound 只该挡住重复绑监听，不能把每次都要做的焦点
+     动作一起挡掉，所以焦点逻辑必须放在守卫之前。 */
+  const opener = document.activeElement;
+  if (opener && opener !== document.body && !container.contains(opener)) container._opener = opener;
+  const closers = container.querySelectorAll(".modal-close");
+  if (closers.length) setTimeout(() => { try { closers[0].focus(); } catch (e) {} }, 0);
   if (container._trapBound) return;
   container._trapBound = true;
   container.addEventListener("keydown", e => {
@@ -3364,7 +3412,10 @@ $("#llm-clear").addEventListener("click", () => {
 /* 常用服务快捷填充：免查文档，点一下带出 baseURL 与推荐模型 */
 const LLM_PRESETS = {
   deepseek: { baseURL: "https://api.deepseek.com", model: "deepseek-chat" },
-  zhipu: { baseURL: "https://open.bigmodel.cn/api/paas/v4", model: "glm-4-flash" },
+  /* 不再默认 glm-4-flash：站内实测 250414 快照五层 5/5、plain flash 只有 4/5（见 verify-p0
+     DIST-22/23），而 flash 级正是设置页点名"只按字面遵守"的那一档。仍留在免费档——该 key
+     的 plus/air 会 429，抬成付费档会让这个快捷按钮直接不可用。 */
+  zhipu: { baseURL: "https://open.bigmodel.cn/api/paas/v4", model: "glm-4-flash-250414" },
   ollama: { baseURL: "http://localhost:11434/v1", model: "qwen2.5:7b" }
 };
 document.querySelectorAll("[data-preset]").forEach(b => b.addEventListener("click", () => {
@@ -3603,7 +3654,7 @@ function showCutStep() {
     <div class="cut-deck" aria-hidden="true">
       <div class="tcard cut-stack"><div class="face back"><span class="sigil">✶</span></div></div>
     </div>
-    <div class="cut-hint">你切多厚，就拿起多厚一叠 · 那一叠最底的一张是你的切牌</div>
+    <div class="cut-hint">那一叠最底的一张，就是你的切牌</div>
     <div class="cut-ask">
       <input id="cut-thick" class="cut-num" type="text" inputmode="numeric" maxlength="2" placeholder="1–78" aria-label="切牌厚度：1 到 78 之间的整数">
       <button class="btn" id="btn-cut" type="button" disabled>切 下 这 一 刀</button>
@@ -3988,6 +4039,9 @@ function revealChosen(card, reversed) {
             highlightNextMark();
           } else {
             statusEl.textContent = "所有的牌，都已翻开。";
+            /* P19：这一阶段已经没有可翻的牌了——凝神按钮与滑动提示都该退场，
+               否则不长按凝神的用户会一直看见一个用不上的按钮挂在牌桌下方。 */
+            holdWrap.classList.remove("show"); arenaHint.textContent = "";
             subEl.textContent = "指引已经就位，让我们开始解读。";
             /* 每日一牌·当日锁定在"翻开这一刻"就落盘：不点进解读也不给当天重抽（原来只在 renderReading 里锁，翻完就走=可再抽一张） */
             if (state.dailyMode && state.draws[0] && state.draws[0].card) saveDailyLock(state.draws[0].card, state.draws[0].reversed);
@@ -4168,7 +4222,9 @@ async function renderReading() {
     $("#reading-q").insertAdjacentHTML("beforebegin", `<div class="share-link-note">◈ 这是朋友分享的牌局——牌由<b>分享者亲手抽定</b>（印记 ${seedHex()}），你打开看到的是站内内置解读视角。<br>本站没有后端，读不到对方的记录；AI 深度版要配置你自己的 API key 才会生成（用你的额度）。</div>`);
   }
   const h = new Date(state.readingDate || Date.now()).getHours();
-  const daypart = h >= 6 && h < 12 ? "晨光初启的时分" : h < 18 ? "日光渐沉的时分" : "夜色渐深的时分";
+  /* P20：原来 12–18 整段都叫「日光渐沉」，实测 14:19 也是这句——正午被说成黄昏。
+     拆出日头正盛一档，措辞跟着太阳走。 */
+  const daypart = h >= 6 && h < 11 ? "晨光初启的时分" : h < 15 ? "日头正盛的时分" : h < 19 ? "日光渐沉的时分" : "夜色渐深的时分";
   $("#reading-meta").innerHTML = `${state.numbers.length ? "直觉数字 " + state.numbers.join(" ") : state.number ? "直觉数字 " + state.number : "分享牌局"} · ${daypart} · 印记 <button class="echo-code" id="echo-code" type="button" title="这次占卜的唯一印记，点一下即可复制。想原样回看这一局，去「占卜记录」点开它即可（印记用来标识与核对，不支持手动输入重演）。">${seedHex()}</button>` + (state.cutCard ? ` · <button class="meta-cut" id="meta-cut" type="button" title="点开看这张心态牌的牌义">切牌：${state.cutCard.name}（${state.cutCard.upright.keywords[0]}）</button>` : "") + ((state.numbers.length || state.number) ? ` · <button class="meta-cut" id="draw-facts" type="button" title="洗牌方法、每个数字怎么对上这张牌——全部由印记确定，可复算">◈ 这局怎么发出来的</button>` : "");
   $("#meta-cut")?.addEventListener("click", openCutDeep);
   $("#draw-facts")?.addEventListener("click", openFactsModal);
@@ -4191,11 +4247,22 @@ async function renderReading() {
        旧行为只是滚到下方牌行——CSS 早就给了 cursor:pointer 与 hover 光晕，看着能点，点了却只是跳位置。
        openCardModal 在同一函数后面定义，闭包到点击时才求值，不受 const 声明位置限制。 */
     m.title = "点开看这张牌的解读";
+    /* P5：title 只在鼠标悬停 1 秒后才现身，触屏与键盘用户永远看不到——而逐牌详情已经只存在于这个入口。
+       补一枚常驻角标和一行说明，把"这张图能点"变成看得见的信息而不是隐藏彩蛋。 */
+    const tag = document.createElement("span");
+    tag.className = "deep-tag"; tag.textContent = "◈ 深读"; tag.setAttribute("aria-hidden", "true");
+    mc.appendChild(tag);
     const open = () => openCardModal(i);
     m.addEventListener("click", open);
     m.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(); } });
     strip.appendChild(m);
   });
+  if (state.draws.length) {
+    const hint = document.createElement("div");
+    hint.className = "strip-hint";
+    hint.textContent = "点任意一张牌图，看这张牌在此位置的完整解读";
+    strip.parentNode.insertBefore(hint, strip.nextSibling);
+  }
   /* 逐牌先用规则引擎渲染（AI 会覆盖 psy 段）
      ⚠️ #reading-list 现在是「内容宿主」，不再直接摆到页面上（CSS 里 display:none）：
      牌行与弹窗是同一份内容，作者 2026-10-01 判为功能重复，留弹窗那份。
@@ -4900,7 +4967,7 @@ function openDeep(i) {
   document.body.style.top = `-${savedScrollY}px`;
   trapFocus(mask);
 }
-function closeDeep() { if (!mask.classList.contains("show")) return; restoreMovedNode(); mask.classList.remove("show"); document.body.style.cssText = bodyOverflowSaved || ""; window.scrollTo(0, savedScrollY); }
+function closeDeep() { if (!mask.classList.contains("show")) return; restoreMovedNode(); mask.classList.remove("show"); document.body.style.cssText = bodyOverflowSaved || ""; window.scrollTo(0, savedScrollY); if (mask._opener && mask._opener.isConnected) { try { mask._opener.focus(); } catch (e) {} } mask._opener = null; }
 /* 弹窗搬入/搬回：逐牌详情平时藏在 .reading-card 里（CSS 不显示），点开时整块搬进弹窗，
    关闭或换开别的弹窗时搬回原位。任何会重写 modalBody.innerHTML 的入口都必须先 restore，否则节点会被丢掉。 */
 let movedNode = null, movedHost = null;
@@ -5987,7 +6054,7 @@ function trendPanel(t) {
   if (!t.draws) return "";
   const suits = TREND_SUIT_ORDER.filter(s => t.suit[s]).map(s => ({ s, c: t.suit[s] }));
   const mx = suits.reduce((m, x) => Math.max(m, x.c), 0) || 1;
-  const bars = suits.map(x => `<div class="tp-bar"><span class="tp-lab">${x.s}</span><span class="tp-track"><i style="width:${Math.round(x.c / mx * 100)}%"></i></span><span class="tp-num">${x.c}</span></div>`).join("");
+  const bars = suits.map(x => `<div class="tp-bar"><span class="tp-lab">${x.s}</span><span class="tp-track"><i style="transform:scaleX(${(x.c / mx).toFixed(4)})"></i></span><span class="tp-num">${x.c}</span></div>`).join("");
   const topSuit = suits.slice().sort((a, b) => b.c - a.c)[0];
   const revPct = Math.round(t.rev / t.draws * 100);
   const topCards = t.top.map(([n, c]) => `<span class="tp-card">${n}<b>×${c}</b></span>`).join("");
