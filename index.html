@@ -82,6 +82,17 @@ input:-webkit-autofill,textarea:-webkit-autofill,select:-webkit-autofill{
 .btn:focus-visible,.chip:focus-visible,.hold-btn:focus-visible{outline:2px solid var(--gold);outline-offset:3px}
 textarea:focus-visible,.num-input:focus-visible{outline:2px solid var(--gold-dim);outline-offset:2px}
 .note{color:var(--ink-faint);font-size:13px;letter-spacing:.08em;text-align:center}
+/* P11 免费/深度分流：两组预设各自带一句代价，档位读数贴在模型名下面。
+   读数不上彩色——免费档用暗金、深度档用亮金，靠明度分而不是靠贴色块。 */
+.preset-groups{display:flex;flex-direction:column;gap:12px}
+.preset-group{border:1px solid var(--panel-line);border-radius:12px;padding:11px 13px;background:rgba(201,168,106,.03)}
+.pg-tag{display:block;font-size:11.5px;letter-spacing:.14em;color:var(--gold);margin-bottom:8px}
+.pg-chips{display:flex;gap:8px;flex-wrap:wrap}
+.pg-note{display:block;font-size:11.5px;color:var(--ink-faint);letter-spacing:.04em;margin-top:7px;line-height:1.6}
+.tier-readout{margin-top:8px;font-size:12px;letter-spacing:.05em;line-height:1.7;color:var(--ink-faint);
+  border-left:2px solid var(--gold-faint);padding-left:10px}
+.tier-readout.free{color:var(--ink-dim);border-left-color:var(--gold-dim)}
+.tier-readout.deep,.tier-readout.local{color:var(--gold-hi);border-left-color:var(--gold)}
 .gold{color:var(--gold)}
 .center{text-align:center}
 
@@ -1254,11 +1265,24 @@ footer::before{
     <h4>AI 解读设置</h4>
     <div class="m-en" style="text-align:center;font-size:11px;letter-spacing:.3em;color:var(--ink-faint);margin-bottom:20px">兼容所有 OpenAI 格式 API</div>
     <div class="m-row">
-      <div class="m-label">常用服务快捷填充</div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <button class="ex-chip" type="button" data-preset="deepseek">DeepSeek</button>
-        <button class="ex-chip" type="button" data-preset="zhipu">智谱 GLM</button>
-        <button class="ex-chip" type="button" data-preset="ollama">本地 Ollama</button>
+      <div class="m-label">常用服务快捷填充 · 先选免费还是深度</div>
+      <div class="preset-groups">
+        <div class="preset-group">
+          <span class="pg-tag">免费能跑</span>
+          <div class="pg-chips">
+            <button class="ex-chip" type="button" data-preset="zhipu">智谱 GLM 免费快照</button>
+            <button class="ex-chip" type="button" data-preset="ollama">本地 Ollama</button>
+          </div>
+          <span class="pg-note">不花钱；但五层深度会打折</span>
+        </div>
+        <div class="preset-group">
+          <span class="pg-tag">深度更好 · 要花额度</span>
+          <div class="pg-chips">
+            <button class="ex-chip" type="button" data-preset="deepseek">DeepSeek</button>
+            <button class="ex-chip" type="button" data-preset="zhipu-plus">智谱 GLM Plus</button>
+          </div>
+          <span class="pg-note">五层写满；需在该服务商有可用额度</span>
+        </div>
       </div>
     </div>
     <div class="m-row">
@@ -1272,6 +1296,7 @@ footer::before{
     <div class="m-row">
       <div class="m-label">模型名（可选）</div>
       <input class="num-input" id="llm-model" type="text" placeholder="如 deepseek-chat / glm-4-plus" style="font-size:13px;font-family:var(--sans);height:42px;text-align:left">
+      <div class="tier-readout" id="tier-readout" role="status" aria-live="polite"></div>
     </div>
     <div class="m-row sfx-row">
       <label class="sfx-label" for="sfx-toggle">音效与震动</label>
@@ -3383,6 +3408,7 @@ function openSettings() {
   bodyOverflowSaved = document.body.style.cssText;
   document.body.style.cssText = "position:fixed;top:0;left:0;right:0;bottom:0;overflow:hidden;width:100%";
   document.body.style.top = `-${savedScrollY}px`;
+  renderTierReadout();
   settingsMask.classList.add("show");
   trapFocus(settingsMask);
 }
@@ -3407,16 +3433,21 @@ $("#llm-save").addEventListener("click", () => {
 $("#llm-clear").addEventListener("click", () => {
   try { localStorage.removeItem(LLM_KEY); } catch (e) {}
   $("#llm-baseurl").value = ""; $("#llm-apikey").value = ""; $("#llm-model").value = "";
+  renderTierReadout();
 });
 
 /* 常用服务快捷填充：免查文档，点一下带出 baseURL 与推荐模型 */
 const LLM_PRESETS = {
-  deepseek: { baseURL: "https://api.deepseek.com", model: "deepseek-chat" },
+  /* tier 由预设自己声明——分流口径只在这一处定义，不再靠弹窗里那段描述文字去猜 */
+  deepseek: { baseURL: "https://api.deepseek.com", model: "deepseek-chat", tier: "deep" },
   /* 不再默认 glm-4-flash：站内实测 250414 快照五层 5/5、plain flash 只有 4/5（见 verify-p0
      DIST-22/23），而 flash 级正是设置页点名"只按字面遵守"的那一档。仍留在免费档——该 key
      的 plus/air 会 429，抬成付费档会让这个快捷按钮直接不可用。 */
-  zhipu: { baseURL: "https://open.bigmodel.cn/api/paas/v4", model: "glm-4-flash-250414" },
-  ollama: { baseURL: "http://localhost:11434/v1", model: "qwen2.5:7b" }
+  zhipu: { baseURL: "https://open.bigmodel.cn/api/paas/v4", model: "glm-4-flash-250414", tier: "free" },
+  /* 键名必须与 data-preset 字面一致（dataset 读回来就是 "zhipu-plus"，不会帮你驼峰化）——
+     写成 zhipu_plus 会查不到预设，按钮点了静默无反应 */
+  "zhipu-plus": { baseURL: "https://open.bigmodel.cn/api/paas/v4", model: "glm-4-plus", tier: "deep" },
+  ollama: { baseURL: "http://localhost:11434/v1", model: "qwen2.5:7b", tier: "local" }
 };
 document.querySelectorAll("[data-preset]").forEach(b => b.addEventListener("click", () => {
   const p = LLM_PRESETS[b.dataset.preset];
@@ -3424,7 +3455,30 @@ document.querySelectorAll("[data-preset]").forEach(b => b.addEventListener("clic
   $("#llm-baseurl").value = p.baseURL;
   $("#llm-model").value = p.model;
   if (b.dataset.preset === "ollama" && !$("#llm-apikey").value.trim()) $("#llm-apikey").value = "ollama";
+  renderTierReadout(p.tier);
 }));
+
+/* 档位读数（P11）：把"我配的到底是免费档还是深度档、代价是什么"从弹窗底部那段 11px
+   小字里提到界面上。分类只认两件事——地址是不是本机、模型名是不是闪速档，
+   不猜价格表（服务商随时改价，猜错比不猜更糟）。 */
+const TIER_TEXT = {
+  none:  "未填模型 · 走站内规则引擎（即时，但不是 AI 深度解读）",
+  free:  "免费轻量档 · 能出五层，但实测会只按字面遵守——「逆耳」那半句容易写成牌义复读",
+  deep:  "深度档 · 五层写满，需要该服务商有可用额度",
+  local: "本地档 · 问题与牌面不出这台机器，速度取决于你的硬件",
+};
+function modelTier(model, baseURL) {
+  if (!model) return "none";
+  if (/localhost|127\.0\.0\.1|::1/.test(baseURL || "")) return "local";
+  return /flash|turbo|mini|lite|small|haiku|(^|[-:.\d])(3b|7b|1_?8b)(\b|:|$)/i.test(model) ? "free" : "deep";
+}
+function renderTierReadout(forceTier) {
+  const el = $("#tier-readout"); if (!el) return;
+  const t = forceTier || modelTier($("#llm-model").value.trim(), $("#llm-baseurl").value.trim());
+  el.textContent = TIER_TEXT[t] || TIER_TEXT.none;
+  el.className = "tier-readout " + t;
+}
+["llm-model", "llm-baseurl"].forEach(id => { const n = document.getElementById(id); if (n) n.addEventListener("input", () => renderTierReadout()); });
 
 /* 测试连接：发一条 1 token 请求，免去"配置对不对要开一整局才知道" */
 $("#llm-test").addEventListener("click", async () => {
