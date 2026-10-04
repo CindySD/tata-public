@@ -785,6 +785,7 @@ body:has(#stage-cover.active) .float-feedback{bottom:16px}
 .serene-line.l1{animation-delay:.3s}
 .serene-line.l2{animation-delay:3.1s}
 .serene-line.l3{animation-delay:5.9s}
+.serene-line.l3 .serene-sub{display:inline-block;margin-top:2px;font-size:clamp(13px,1.9vw,15px);line-height:1.7;letter-spacing:.1em;color:var(--ink-faint)}
 .serene-phase{display:flex;align-items:center;justify-content:center;gap:14px;margin:-26px 0 34px;font-size:12px;letter-spacing:.3em;color:var(--ink-faint)}
 .serene-phase .sp-word{font-family:var(--serif);color:var(--gold-hi);letter-spacing:.2em;min-width:1.4em;text-align:center;transition:opacity .6s ease}
 .serene-phase .sp-dots{display:flex;gap:8px;letter-spacing:0}
@@ -1167,7 +1168,7 @@ footer::before{
       <div class="serene-phase" id="serene-phase" aria-hidden="true"><span class="sp-word">吸</span><span class="sp-dots"><i></i><i></i><i></i></span></div>
       <p class="serene-line l1">欢迎来到塔塔🔮の心灵疗愈室。</p>
       <p class="serene-line l2">跟着下面这个圆呼吸：鼓起来时吸气，停一停，落回去时呼出。三次更好，一次也算静下来。</p>
-      <p class="serene-line l3">然后，凭直觉告诉我你想的 1 到 78 之间的数字。</p>
+      <p class="serene-line l3">然后，把此刻最想问的那件事，慢慢想到心里去——下一步就写给它。<br><span class="serene-sub">（一会儿会让你报几个直觉数字，那是抽牌用的，先不用急着想。）</span></p>
       <div class="serene-cta" id="serene-cta">
         <button class="btn" id="btn-serene-next" type="button" disabled>我准备好了 · 输入问题 →</button>
         <button class="btn ghost" id="btn-serene-back" type="button">← 返回</button>
@@ -3528,7 +3529,7 @@ function setSereneReady(on) {
   const cta = document.getElementById("serene-cta"), btn = document.getElementById("btn-serene-next"), note = document.getElementById("serene-note");
   if (cta) cta.classList.toggle("ready", !!on);
   if (btn) btn.disabled = !on;
-  if (note) note.textContent = on ? "可以了——按直觉给个数字，我们开始" : "跟圆呼吸三次更好，亮起来也可直接继续";
+  if (note) note.textContent = on ? "可以了——去写下你想问的那件事" : "跟圆呼吸三次更好，亮起来也可直接继续";
 }
 function stopBreath() {
   if (breathTimer) { clearTimeout(breathTimer); breathTimer = null; }
